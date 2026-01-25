@@ -213,6 +213,8 @@ export default function POS() {
   // Variant selection modal state
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
+  const [variantQuantities, setVariantQuantities] = useState<Record<string, number>>({});
+  const [quickVariantInput, setQuickVariantInput] = useState('');
   
   // Custom Item state
   const [showCustomItemDialog, setShowCustomItemDialog] = useState(false);
@@ -595,6 +597,121 @@ export default function POS() {
     setShowVariantModal(false);
     setSelectedProductForVariant(null);
   }, [selectedProductForVariant, currency, addToCart, soundEnabled, toast, t]);
+
+  // Parse quick variant input for batch entry - supports formats like "S:2 M:3" or "1-10" or "23x5"
+  const parseQuickVariantInput = useCallback((input: string) => {
+    if (!input.trim() || !selectedProductForVariant) return;
+    
+    const variants = getProductVariants(selectedProductForVariant.id);
+    if (variants.length === 0) return;
+    
+    const newQuantities: Record<string, number> = { ...variantQuantities };
+    
+    const findVariantByKey = (key: string) => {
+      const keyLower = key.toLowerCase().trim();
+      return variants.find((v: any) => {
+        const name = (v.name?.toString() || '').toLowerCase().trim();
+        const barcode = (v.barcode?.toString() || '').toLowerCase().trim();
+        const sku = (v.sku?.toString() || '').toLowerCase().trim();
+        const nameNumbers = v.name?.toString().match(/\d+/g);
+        return (
+          name === keyLower ||
+          barcode === keyLower ||
+          sku === keyLower ||
+          name.startsWith(keyLower) ||
+          (nameNumbers && nameNumbers.includes(key))
+        );
+      });
+    };
+    
+    const segments = input.split(/[,\s]+/).filter(Boolean);
+    
+    for (const segment of segments) {
+      const alphaQtyMatch = segment.match(/^([\w-]+)\s*[x*:]\s*(\d+)$/i);
+      if (alphaQtyMatch) {
+        const variantKey = alphaQtyMatch[1];
+        const quantity = parseInt(alphaQtyMatch[2]) || 1;
+        const variant = findVariantByKey(variantKey);
+        if (variant) {
+          newQuantities[variant.id] = (newQuantities[variant.id] || 0) + quantity;
+        }
+        continue;
+      }
+      
+      const numericRangeMatch = segment.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (numericRangeMatch) {
+        const startNum = parseInt(numericRangeMatch[1]);
+        const endNum = parseInt(numericRangeMatch[2]);
+        if (startNum < endNum) {
+          for (let i = startNum; i <= endNum; i++) {
+            const variant = findVariantByKey(String(i));
+            if (variant) {
+              newQuantities[variant.id] = (newQuantities[variant.id] || 0) + 1;
+            }
+          }
+          continue;
+        }
+      }
+      
+      const singleKey = segment.match(/^([\w-]+)$/);
+      if (singleKey) {
+        const variant = findVariantByKey(singleKey[1]);
+        if (variant) {
+          newQuantities[variant.id] = (newQuantities[variant.id] || 0) + 1;
+        }
+      }
+    }
+    
+    setVariantQuantities(newQuantities);
+    setQuickVariantInput('');
+  }, [selectedProductForVariant, getProductVariants, variantQuantities]);
+
+  // Add all selected variants to cart at once
+  const addSelectedVariantsToCart = useCallback(async () => {
+    if (!selectedProductForVariant) return;
+    
+    const variants = getProductVariants(selectedProductForVariant.id);
+    let itemsAdded = 0;
+    
+    for (const variant of variants) {
+      const qty = variantQuantities[variant.id] || 0;
+      if (qty > 0) {
+        const price = currency === 'EUR' 
+          ? parseFloat(selectedProductForVariant.priceEur || variant.priceEur || '0') 
+          : parseFloat(selectedProductForVariant.priceCzk || variant.priceCzk || '0');
+        
+        const variantItem = {
+          ...variant,
+          name: `${selectedProductForVariant.name} - ${variant.name}`,
+          sku: variant.sku || selectedProductForVariant.sku,
+          barcode: variant.barcode || selectedProductForVariant.barcode,
+          priceEur: selectedProductForVariant.priceEur,
+          priceCzk: selectedProductForVariant.priceCzk,
+          imageUrl: variant.imageUrl || selectedProductForVariant.imageUrl,
+          productId: selectedProductForVariant.id,
+          itemType: 'variant',
+        };
+        
+        for (let i = 0; i < qty; i++) {
+          addToCart(variantItem);
+          itemsAdded++;
+        }
+      }
+    }
+    
+    if (itemsAdded > 0) {
+      if (soundEnabled) await soundEffects.playSuccessBeep();
+      toast({
+        title: t('financial:addedToCart'),
+        description: `${itemsAdded} ${t('pos:items', 'items')} added`,
+      });
+    }
+    
+    setShowVariantModal(false);
+    setSelectedProductForVariant(null);
+    setVariantQuantities({});
+    setQuickVariantInput('');
+  }, [selectedProductForVariant, getProductVariants, variantQuantities, currency, addToCart, soundEnabled, toast, t]);
 
   const updateQuantity = (cartId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -2358,54 +2475,135 @@ export default function POS() {
         </DialogContent>
       </Dialog>
 
-      {/* Variant Selection Modal */}
+      {/* Variant Selection Modal - Enhanced with quantity-based selection */}
       <Dialog open={showVariantModal} onOpenChange={(open) => {
         setShowVariantModal(open);
-        if (!open) setSelectedProductForVariant(null);
+        if (!open) {
+          setSelectedProductForVariant(null);
+          setVariantQuantities({});
+          setQuickVariantInput('');
+        }
       }}>
-        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-lg">
-              {t('pos:selectVariant', 'Select Variant')}
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-3 md:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-base md:text-lg">
+              {t('pos:selectVariant', 'Select Variants')}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs md:text-sm line-clamp-1">
               {selectedProductForVariant?.name}
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 min-h-0 max-h-[60vh] pr-2">
-            <div className="space-y-2">
+          {/* Quick variant input */}
+          <div className="space-y-1.5">
+            <Label htmlFor="pos-quick-variant-input" className="text-xs md:text-sm font-medium">
+              {t('pos:quickEntry', 'Quick Entry')}
+            </Label>
+            <div className="flex gap-1.5">
+              <Input
+                id="pos-quick-variant-input"
+                value={quickVariantInput}
+                onChange={(e) => setQuickVariantInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    parseQuickVariantInput(quickVariantInput);
+                  }
+                }}
+                placeholder="e.g. 1:2 3:5 or 1-10"
+                className="flex-1 font-mono text-xs md:text-sm h-9"
+                data-testid="input-pos-quick-variant"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-9 px-2.5 min-w-[44px]"
+                onClick={() => parseQuickVariantInput(quickVariantInput)}
+                data-testid="button-apply-pos-quick-variant"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground hidden sm:block">
+              Format: S:2 M:3 (qty) • 1-10 (range) • 23x5 (multiply)
+            </p>
+          </div>
+          
+          {/* Header row - Responsive grid */}
+          <div className="grid grid-cols-[1fr_50px_120px] md:grid-cols-[1fr_60px_60px_130px] gap-1.5 px-2 py-1.5 bg-muted/50 rounded-t-md text-xs font-medium border-b mt-2">
+            <div>{t('pos:variant', 'Variant')}</div>
+            <div className="text-center hidden md:block">{t('pos:price', 'Price')}</div>
+            <div className="text-center">{t('pos:stock', 'Stock')}</div>
+            <div className="text-right">{t('pos:qty', 'Qty')}</div>
+          </div>
+          
+          {/* Variant list */}
+          <ScrollArea className="flex-1 min-h-0 max-h-[45vh] border rounded-b-md">
+            <div className="divide-y">
               {selectedProductForVariant && getProductVariants(selectedProductForVariant.id).map((variant: any) => {
                 const variantPrice = currency === 'EUR' 
                   ? parseFloat(selectedProductForVariant.priceEur || variant.priceEur || '0') 
                   : parseFloat(selectedProductForVariant.priceCzk || variant.priceCzk || '0');
                 const stockQty = variant.availableQuantity ?? variant.quantity ?? 0;
+                const currentQty = variantQuantities[variant.id] || 0;
                 
                 return (
                   <div
                     key={variant.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:border-primary hover:bg-primary/5 cursor-pointer transition-all active:scale-[0.98]"
-                    onClick={() => addVariantToCart(variant)}
+                    className="grid grid-cols-[1fr_50px_120px] md:grid-cols-[1fr_60px_60px_130px] gap-1.5 px-2 py-2 items-center hover:bg-muted/30"
                     data-testid={`variant-row-${variant.id}`}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{variant.name}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs md:text-sm truncate" title={variant.name}>{variant.name}</p>
                       {variant.sku && (
-                        <p className="text-xs text-muted-foreground font-mono">{variant.sku}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono truncate">{variant.sku}</p>
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-center text-xs hidden md:block">
+                      {variantPrice.toFixed(0)} {currencySymbol}
+                    </div>
+                    
+                    <div className="text-center">
                       <Badge 
                         variant={stockQty > 10 ? "default" : stockQty > 0 ? "outline" : "destructive"}
-                        className="text-xs"
+                        className="text-[10px] px-1.5"
                       >
                         {stockQty}
                       </Badge>
-                      <span className="text-sm font-bold text-primary min-w-[60px] text-right">
-                        {variantPrice.toFixed(2)} {currencySymbol}
-                      </span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    
+                    <div className="flex items-center justify-end gap-1">
+                      <Input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        value={currentQty}
+                        onChange={(e) => setVariantQuantities(prev => ({
+                          ...prev,
+                          [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
+                        }))}
+                        onFocus={(e) => e.target.select()}
+                        className="text-center h-8 w-12 text-xs px-1"
+                        data-testid={`input-variant-quantity-${variant.id}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setVariantQuantities(prev => ({
+                          ...prev,
+                          [variant.id]: (prev[variant.id] || 0) + 1
+                        }))}
+                        className="h-8 px-2 text-xs font-medium text-primary hover:bg-primary/10 rounded border min-w-[32px]"
+                      >+1</button>
+                      <button
+                        type="button"
+                        onClick={() => setVariantQuantities(prev => ({
+                          ...prev,
+                          [variant.id]: (prev[variant.id] || 0) + 10
+                        }))}
+                        className="h-8 px-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded border min-w-[36px]"
+                      >+10</button>
                     </div>
                   </div>
                 );
@@ -2413,16 +2611,34 @@ export default function POS() {
             </div>
           </ScrollArea>
           
-          <DialogFooter className="pt-4">
+          {/* Selected count indicator */}
+          {Object.values(variantQuantities).some(q => q > 0) && (
+            <div className="text-xs text-center text-muted-foreground mt-1">
+              {Object.values(variantQuantities).reduce((sum, q) => sum + q, 0)} {t('pos:itemsSelected', 'items selected')}
+            </div>
+          )}
+          
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-3">
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full sm:w-auto min-h-[44px]"
               onClick={() => {
                 setShowVariantModal(false);
                 setSelectedProductForVariant(null);
+                setVariantQuantities({});
+                setQuickVariantInput('');
               }}
             >
               {t('common:cancel', 'Cancel')}
+            </Button>
+            <Button
+              className="w-full sm:w-auto min-h-[44px]"
+              onClick={addSelectedVariantsToCart}
+              disabled={!Object.values(variantQuantities).some(q => q > 0)}
+              data-testid="button-add-variants-to-cart"
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              {t('pos:addToCart', 'Add to Cart')}
             </Button>
           </DialogFooter>
         </DialogContent>
