@@ -1287,16 +1287,10 @@ export default function POS() {
                         </p>
                         <div className="flex items-center justify-end gap-0.5">
                           <input
+                            key={`price-${item.cartId}-${item.price}`}
                             type="text"
                             inputMode="decimal"
-                            value={item.price.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
-                              const num = parseFloat(val);
-                              if (!isNaN(num) && num >= 0) {
-                                updatePrice(item.cartId, num);
-                              }
-                            }}
+                            defaultValue={item.price.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             onFocus={(e) => {
                               e.target.value = item.price.toString();
                               e.target.select();
@@ -1304,8 +1298,15 @@ export default function POS() {
                             onBlur={(e) => {
                               const val = e.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
                               const num = parseFloat(val);
-                              if (isNaN(num) || num < 0) {
+                              if (!isNaN(num) && num >= 0) {
+                                updatePrice(item.cartId, num);
+                              } else {
                                 updatePrice(item.cartId, 0);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
                               }
                             }}
                             className="w-[70px] text-[10px] text-right text-muted-foreground tabular-nums bg-transparent border border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded px-1 py-0.5 outline-none"
