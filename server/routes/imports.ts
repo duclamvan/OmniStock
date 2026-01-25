@@ -3221,10 +3221,12 @@ router.patch("/purchases/:id", async (req, res) => {
     // AUTO-CREATE SHIPMENT: If status changed to 'delivered' and consolidation is 'No'
     if (req.body.status === 'delivered' && currentPurchase.consolidation === 'No') {
       // Check if a shipment already exists for this purchase
+      // Use first 8 chars of purchaseId to match the format used when creating shipments
+      const purchaseIdShort = purchaseId.substring(0, 8).toUpperCase();
       const existingShipments = await db
         .select()
         .from(shipments)
-        .where(like(shipments.notes, `%PO #${purchaseId}%`))
+        .where(like(shipments.notes, `%PO #${purchaseIdShort}%`))
         .limit(1);
       
       if (existingShipments.length === 0) {
@@ -3240,7 +3242,7 @@ router.patch("/purchases/:id", async (req, res) => {
         await db.insert(shipments).values({
           consolidationId: null,
           carrier: 'Direct Supplier',
-          trackingNumber: currentPurchase.trackingNumber || `PO-${purchaseId}`,
+          trackingNumber: currentPurchase.trackingNumber || `PO-${purchaseIdShort}`,
           origin: currentPurchase.location || 'Supplier',
           destination: 'Warehouse',
           status: 'delivered',
@@ -3251,7 +3253,7 @@ router.patch("/purchases/:id", async (req, res) => {
           totalUnits: totalUnits,
           estimatedDelivery: currentPurchase.estimatedArrival,
           deliveredAt: new Date(),
-          notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
+          notes: `Auto-created from Purchase Order PO #${purchaseIdShort} - ${currentPurchase.supplier}`,
           createdAt: new Date(),
           updatedAt: new Date()
         });
@@ -3299,10 +3301,12 @@ router.patch("/purchases/:id/status", async (req, res) => {
     // AUTO-CREATE SHIPMENT: If status changed to 'delivered' and consolidation is 'No'
     if (status === 'delivered' && currentPurchase.consolidation === 'No') {
       // Check if a shipment already exists for this purchase
+      // Use first 8 chars of purchaseId to match the format used when creating shipments
+      const purchaseIdShort = purchaseId.substring(0, 8).toUpperCase();
       const existingShipments = await db
         .select()
         .from(shipments)
-        .where(like(shipments.notes, `%PO #${purchaseId}%`))
+        .where(like(shipments.notes, `%PO #${purchaseIdShort}%`))
         .limit(1);
       
       if (existingShipments.length === 0) {
@@ -3318,7 +3322,7 @@ router.patch("/purchases/:id/status", async (req, res) => {
         await db.insert(shipments).values({
           consolidationId: null,
           carrier: 'Direct Supplier',
-          trackingNumber: currentPurchase.trackingNumber || `PO-${purchaseId}`,
+          trackingNumber: currentPurchase.trackingNumber || `PO-${purchaseIdShort}`,
           origin: currentPurchase.location || 'Supplier',
           destination: 'Warehouse',
           status: 'delivered',
@@ -3329,7 +3333,7 @@ router.patch("/purchases/:id/status", async (req, res) => {
           totalUnits: totalUnits,
           estimatedDelivery: currentPurchase.estimatedArrival,
           deliveredAt: new Date(),
-          notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
+          notes: `Auto-created from Purchase Order PO #${purchaseIdShort} - ${currentPurchase.supplier}`,
           createdAt: new Date(),
           updatedAt: new Date()
         });
