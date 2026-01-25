@@ -180,7 +180,6 @@ export default function POS() {
   
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [barcodeInput, setBarcodeInput] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(() => {
     return localStorage.getItem('pos_warehouse') || '';
@@ -488,11 +487,11 @@ export default function POS() {
 
   const handleBarcodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const barcode = barcodeInput.trim();
+    const barcode = searchQuery.trim();
     if (!barcode) return;
 
     await processBarcode(barcode);
-    setBarcodeInput('');
+    setSearchQuery('');
     barcodeInputRef.current?.focus();
   };
 
@@ -879,11 +878,9 @@ export default function POS() {
             <Input
               ref={barcodeInputRef}
               placeholder={t('pos:searchOrScan', 'Search or scan barcode...')}
-              value={barcodeInput || searchQuery}
+              value={searchQuery}
               onChange={(e) => {
-                const val = e.target.value;
-                setBarcodeInput(val);
-                setSearchQuery(val);
+                setSearchQuery(e.target.value);
               }}
               className={cn(
                 "pl-10 sm:pl-20 pr-10 h-10 sm:h-14 text-sm sm:text-base font-medium border-2 transition-all duration-200",
@@ -897,13 +894,13 @@ export default function POS() {
               spellCheck={false}
               data-testid="input-search-scan"
             />
-            {(barcodeInput || searchQuery) && (
+            {searchQuery && (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8"
-                onClick={() => { setBarcodeInput(''); setSearchQuery(''); }}
+                onClick={() => setSearchQuery('')}
               >
                 <X className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
