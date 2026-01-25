@@ -29334,6 +29334,7 @@ Other rules:
       console.error('Error completing manufacturing run:', error);
       res.status(500).json({ message: 'Failed to complete manufacturing run' });
     }
+  });
 
   // Revert a completed manufacturing run
   app.post('/api/manufacturing/runs/:id/revert', isAuthenticated, async (req: any, res) => {
@@ -29353,7 +29354,6 @@ Other rules:
       console.error('Error reverting manufacturing run:', error);
       res.status(500).json({ message: 'Failed to revert manufacturing run' });
     }
-  });
   });
 
   // Archive a completed manufacturing run
