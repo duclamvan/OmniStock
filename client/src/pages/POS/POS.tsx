@@ -166,7 +166,7 @@ function NumPad({ value, onChange, onSubmit, label }: {
 
 export default function POS() {
   usePageTitle('nav.pos', 'Point of Sale');
-  const { t } = useTranslation(['common', 'orders', 'products', 'financial']);
+  const { t } = useTranslation(['pos', 'common', 'orders', 'products', 'financial']);
   const { toast } = useToast();
   const { financialHelpers } = useSettings();
   const [, setLocation] = useLocation();
@@ -737,8 +737,8 @@ export default function POS() {
     const cashAmount = parseDecimal(cashReceived) || 0;
     if (cashAmount < total) {
       toast({
-        title: 'Insufficient Amount',
-        description: `Cash received (${cashAmount.toFixed(2)} ${currencySymbol}) is less than total (${total.toFixed(2)} ${currencySymbol})`,
+        title: t('pos:insufficientAmount'),
+        description: `${t('pos:cash')}: ${cashAmount.toFixed(2)} ${currencySymbol} < ${t('pos:total')}: ${total.toFixed(2)} ${currencySymbol}`,
         variant: 'destructive'
       });
       return;
@@ -753,8 +753,8 @@ export default function POS() {
     if (discountType === 'percentage') {
       if (inputValue > 100) {
         toast({
-          title: 'Invalid Discount',
-          description: 'Percentage cannot be greater than 100%',
+          title: t('pos:invalidDiscount'),
+          description: t('pos:discountMustBePositive'),
           variant: 'destructive'
         });
         return;
@@ -766,8 +766,8 @@ export default function POS() {
     
     if (discountAmount > subtotal) {
       toast({
-        title: 'Invalid Discount',
-        description: 'Discount cannot be greater than subtotal',
+        title: t('pos:invalidDiscount'),
+        description: t('pos:discountCannotExceedTotal'),
         variant: 'destructive'
       });
       return;
@@ -810,13 +810,13 @@ export default function POS() {
   
   const getPaymentMethodLabel = (method: PaymentMethod) => {
     switch (method) {
-      case 'cash': return 'Cash';
-      case 'card': return 'Card';
-      case 'bank_transfer': return 'Bank Transfer';
-      case 'bank_transfer_private': return 'Privat Konto';
-      case 'bank_transfer_invoice': return 'Invoice Transfer';
-      case 'pay_later': return 'Pay Later';
-      case 'qr_czk': return 'QR Code CZK';
+      case 'cash': return t('pos:cash');
+      case 'card': return t('pos:card');
+      case 'bank_transfer': return t('pos:bankTransfer');
+      case 'bank_transfer_private': return t('pos:privatKonto');
+      case 'bank_transfer_invoice': return t('pos:invoiceTransfer');
+      case 'pay_later': return t('pos:payLater');
+      case 'qr_czk': return t('pos:qrCzk');
       default: return method;
     }
   };
