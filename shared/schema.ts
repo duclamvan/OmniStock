@@ -2551,6 +2551,7 @@ export const insertStockAdjustmentHistorySchema = createInsertSchema(
       "receiving",
       "order_fulfillment",
       "manufacturing",
+      "manufacturing_revert",
     ]),
     previousQuantity: z.number().int().min(0),
     adjustedQuantity: z.number().int(),

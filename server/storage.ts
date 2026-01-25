@@ -7404,7 +7404,8 @@ export class DatabaseStorage implements IStorage {
     if (status) {
       return await db.select().from(manufacturingRuns).where(eq(manufacturingRuns.status, status)).orderBy(desc(manufacturingRuns.createdAt));
     }
-    return await db.select().from(manufacturingRuns).orderBy(desc(manufacturingRuns.createdAt));
+    // Exclude reverted runs by default
+    return await db.select().from(manufacturingRuns).where(ne(manufacturingRuns.status, 'reverted')).orderBy(desc(manufacturingRuns.createdAt));
   }
 
   async getManufacturingRun(id: string): Promise<ManufacturingRun | undefined> {
@@ -7768,8 +7769,13 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Delete the manufacturing run
-      await tx.delete(manufacturingRuns).where(eq(manufacturingRuns.id, id));
+      // Mark the manufacturing run as reverted instead of deleting (for audit trail)
+      await tx.update(manufacturingRuns)
+        .set({
+          status: 'reverted',
+          updatedAt: new Date(),
+        })
+        .where(eq(manufacturingRuns.id, id));
     });
 
     return run;
