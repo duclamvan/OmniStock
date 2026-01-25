@@ -351,6 +351,10 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
   };
 
   const toggleSection = (sectionName: string) => {
+    // Save current scroll position before toggling
+    if (desktopNavRef.current) {
+      scrollPosition.current = desktopNavRef.current.scrollTop;
+    }
     setOpenSections(prev => 
       prev.includes(sectionName) 
         ? prev.filter(name => name !== sectionName)
@@ -363,12 +367,12 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
     scrollPosition.current = getLocalStorageNumber('sidebarScrollPosition', 0);
   }, []);
 
-  // Restore scroll position after state changes (location, openItems, isCollapsed)
+  // Restore scroll position after state changes (location, openItems, isCollapsed, openSections)
   useLayoutEffect(() => {
     if (desktopNavRef.current) {
       desktopNavRef.current.scrollTop = scrollPosition.current;
     }
-  }, [openItems, location, isCollapsed]);
+  }, [openItems, location, isCollapsed, openSections]);
 
   const navigation = [
     // Operational Section (Mobile-optimized for warehouse employees)
