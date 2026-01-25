@@ -650,6 +650,7 @@ export default function WarehouseDashboard() {
                         {t('common:cancel')}
                       </Button>
                       <Button
+                        type="button"
                         onClick={() => createTaskMutation.mutate(newTask)}
                         disabled={!newTask.title.trim() || createTaskMutation.isPending}
                         data-testid="button-create-task"
