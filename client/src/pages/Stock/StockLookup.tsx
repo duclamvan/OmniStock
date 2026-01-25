@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, ChevronDown, ChevronUp, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck, MoreVertical, Star, Trash2, Cloud } from "lucide-react";
+import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, ChevronDown, ChevronUp, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck, MoreVertical, Star, Trash2, Cloud, Undo2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -141,6 +141,14 @@ export default function StockLookup() {
   const [newLocationQuantity, setNewLocationQuantity] = useState(0);
   const [newLocationNotes, setNewLocationNotes] = useState("");
   const [newLocationIsPrimary, setNewLocationIsPrimary] = useState(true);
+  
+  // Undo deletion state
+  const [pendingDeletion, setPendingDeletion] = useState<{
+    location: ProductLocation;
+    timeRemaining: number;
+  } | null>(null);
+  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const undoIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Save last adjustment to localStorage when it changes
   useEffect(() => {
@@ -478,17 +486,72 @@ export default function StockLookup() {
     });
   };
 
+  const clearUndoTimers = useCallback(() => {
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+    if (undoIntervalRef.current) {
+      clearInterval(undoIntervalRef.current);
+      undoIntervalRef.current = null;
+    }
+  }, []);
+
+  const executeDeleteLocation = useCallback((location: ProductLocation) => {
+    clearUndoTimers();
+    setDeleteLocationProductId(location.productId);
+    deleteLocationMutation.mutate({
+      productId: location.productId,
+      locationId: location.id,
+    });
+    setPendingDeletion(null);
+  }, [clearUndoTimers, deleteLocationMutation]);
+
   const confirmDeleteLocation = () => {
     if (locationToDelete) {
-      setDeleteLocationProductId(locationToDelete.productId);
-      deleteLocationMutation.mutate({
-        productId: locationToDelete.productId,
-        locationId: locationToDelete.id,
-      });
+      clearUndoTimers();
+      
+      const location = locationToDelete;
+      setPendingDeletion({ location, timeRemaining: 60 });
       setDeleteConfirmDialogOpen(false);
       setLocationToDelete(null);
+      
+      toast({
+        title: t('common:locationMarkedForDeletion'),
+        description: t('common:undoAvailable', { seconds: 60 }),
+      });
+      
+      undoIntervalRef.current = setInterval(() => {
+        setPendingDeletion(prev => {
+          if (!prev) return null;
+          const newTime = prev.timeRemaining - 1;
+          if (newTime <= 0) {
+            return prev;
+          }
+          return { ...prev, timeRemaining: newTime };
+        });
+      }, 1000);
+      
+      undoTimeoutRef.current = setTimeout(() => {
+        executeDeleteLocation(location);
+      }, 60000);
     }
   };
+
+  const handleUndoDelete = useCallback(() => {
+    clearUndoTimers();
+    setPendingDeletion(null);
+    toast({
+      title: t('common:deletionCancelled'),
+      description: t('common:locationRestored'),
+    });
+  }, [clearUndoTimers, toast, t]);
+
+  useEffect(() => {
+    return () => {
+      clearUndoTimers();
+    };
+  }, [clearUndoTimers]);
 
   const resetAddLocationForm = () => {
     setNewLocationType("warehouse");
@@ -2296,6 +2359,50 @@ export default function StockLookup() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Undo Delete Bottom Bar */}
+      {pendingDeletion && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground p-4 shadow-lg animate-in slide-in-from-bottom duration-300">
+          <div className="container mx-auto flex items-center justify-between gap-4 max-w-4xl">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <Trash2 className="h-5 w-5 flex-shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium truncate">
+                  {t('common:deletingLocation', { location: pendingDeletion.location.locationCode })}
+                </span>
+                <span className="text-sm opacity-80">
+                  {t('common:undoCountdown', { seconds: pendingDeletion.timeRemaining })}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleUndoDelete}
+                className="gap-2"
+              >
+                <Undo2 className="h-4 w-4" />
+                {t('common:undo')}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => executeDeleteLocation(pendingDeletion.location)}
+                className="h-8 w-8 hover:bg-destructive-foreground/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 h-1 bg-destructive-foreground/30">
+            <div 
+              className="h-full bg-destructive-foreground transition-all duration-1000 ease-linear"
+              style={{ width: `${(pendingDeletion.timeRemaining / 60) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
