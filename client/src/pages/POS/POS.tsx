@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { usePageTitle } from '@/hooks/use-page-title';
@@ -65,68 +65,6 @@ import { useTranslation } from 'react-i18next';
 import { soundEffects } from '@/utils/soundEffects';
 import { ThermalReceipt, type ReceiptData, type CompanyInfo } from '@/components/orders/ThermalReceipt';
 
-// Stable input component that manages its own state to prevent cursor jumping
-interface StableInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onEnter?: () => void;
-  className?: string;
-  placeholder?: string;
-  autoFocus?: boolean;
-  disabled?: boolean;
-}
-
-const StableInput = memo(function StableInput({ 
-  value, 
-  onChange, 
-  onEnter, 
-  className, 
-  placeholder,
-  autoFocus,
-  disabled
-}: StableInputProps) {
-  const [localValue, setLocalValue] = useState(value);
-  const inputRef = useRef<HTMLInputElement>(null);
-  
-  // Sync from parent only when the dialog opens (value goes from '' to something or vice versa)
-  useEffect(() => {
-    if (value === '' && localValue !== '') {
-      setLocalValue('');
-    } else if (value !== '' && localValue === '') {
-      setLocalValue(value);
-    }
-  }, [value]);
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value;
-    // Convert comma to dot for decimal separator
-    if (val.includes(',')) {
-      val = val.replace(',', '.');
-    }
-    setLocalValue(val);
-    onChange(val);
-  };
-  
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      inputMode="decimal"
-      value={localValue}
-      onChange={handleChange}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && onEnter) {
-          e.preventDefault();
-          onEnter();
-        }
-      }}
-      className={className}
-      placeholder={placeholder}
-      autoFocus={autoFocus}
-      disabled={disabled}
-    />
-  );
-});
 
 interface CartItem {
   id: string;
@@ -280,6 +218,7 @@ export default function POS() {
   
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const cashInputRef = useRef<HTMLInputElement>(null);
   const lastBarcodeTime = useRef<number>(0);
   const barcodeBuffer = useRef<string>('');
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -328,6 +267,16 @@ export default function POS() {
       }, 100);
     }
   }, [focusedCartItemId]);
+
+  // Reset cash input when dialog opens
+  useEffect(() => {
+    if (showCashDialog) {
+      setCashReceived('');
+      if (cashInputRef.current) {
+        cashInputRef.current.value = '';
+      }
+    }
+  }, [showCashDialog]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1672,16 +1621,32 @@ export default function POS() {
                 {t('pos:customerPays', 'Customer Pays')} / Khách đưa
               </Label>
               <div className="relative group">
-                <StableInput
+                <input
+                  ref={cashInputRef}
                   autoFocus
-                  value={cashReceived}
-                  onChange={setCashReceived}
-                  onEnter={() => {
-                    if (parseDecimal(cashReceived || '0') >= total && !createOrderMutation.isPending) {
-                      handleCashPayment();
+                  type="text"
+                  inputMode="decimal"
+                  defaultValue=""
+                  onInput={(e) => {
+                    const input = e.target as HTMLInputElement;
+                    // Replace comma with period for decimal
+                    if (input.value.includes(',')) {
+                      const pos = input.selectionStart || 0;
+                      input.value = input.value.replace(',', '.');
+                      input.setSelectionRange(pos, pos);
+                    }
+                    setCashReceived(input.value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.target as HTMLInputElement).value;
+                      if (parseDecimal(val || '0') >= total && !createOrderMutation.isPending) {
+                        e.preventDefault();
+                        handleCashPayment();
+                      }
                     }
                   }}
-                  className="w-full h-20 text-4xl font-bold text-center border-2 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 border-slate-200 dark:border-slate-700 rounded-xl transition-all bg-white dark:bg-slate-800 outline-none"
+                  className="w-full h-20 text-4xl font-bold text-center border-2 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 border-slate-200 dark:border-slate-700 rounded-xl transition-all bg-white dark:bg-slate-800 outline-none"
                   placeholder="0.00"
                   disabled={createOrderMutation.isPending}
                 />
@@ -1694,7 +1659,11 @@ export default function POS() {
                 <Button 
                   variant="outline" 
                   className="h-12 font-bold border-2 border-emerald-100 hover:bg-emerald-50 text-emerald-700"
-                  onClick={() => setCashReceived(total.toFixed(2))}
+                  onClick={() => {
+                    const val = total.toFixed(2);
+                    setCashReceived(val);
+                    if (cashInputRef.current) cashInputRef.current.value = val;
+                  }}
                 >
                   {t('pos:exact', 'Exact')} {total.toFixed(2)}
                 </Button>
@@ -1705,7 +1674,11 @@ export default function POS() {
                       <Button
                         variant="outline"
                         className="h-12 font-bold border-2"
-                        onClick={() => setCashReceived(roundedUp.toString())}
+                        onClick={() => {
+                          const val = roundedUp.toString();
+                          setCashReceived(val);
+                          if (cashInputRef.current) cashInputRef.current.value = val;
+                        }}
                       >
                         {roundedUp} {currencySymbol}
                       </Button>
