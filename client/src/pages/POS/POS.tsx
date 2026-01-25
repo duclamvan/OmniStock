@@ -2549,9 +2549,15 @@ export default function POS() {
           </div>
           
           {/* Variant list */}
-          <ScrollArea className="flex-1 min-h-0 max-h-[45vh] border rounded-b-md">
+          <ScrollArea className="flex-1 min-h-0 max-h-[50vh] border rounded-b-md overflow-auto">
             <div className="divide-y">
-              {selectedProductForVariant && getProductVariants(selectedProductForVariant.id).map((variant: any) => {
+              {selectedProductForVariant && getProductVariants(selectedProductForVariant.id)
+                .slice()
+                .sort((a: any, b: any) => {
+                  // Natural sort for variant names (handles #1, #2, #10 correctly)
+                  return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+                })
+                .map((variant: any) => {
                 const variantPrice = currency === 'EUR' 
                   ? parseFloat(selectedProductForVariant.priceEur || variant.priceEur || '0') 
                   : parseFloat(selectedProductForVariant.priceCzk || variant.priceCzk || '0');
@@ -2564,8 +2570,8 @@ export default function POS() {
                     className="grid grid-cols-[1fr_50px_120px] md:grid-cols-[1fr_60px_60px_130px] gap-1.5 px-2 py-2 items-center hover:bg-muted/30"
                     data-testid={`variant-row-${variant.id}`}
                   >
-                    <div className="min-w-0">
-                      <p className="font-medium text-xs md:text-sm truncate" title={variant.name}>{variant.name}</p>
+                    <div className="min-w-0 overflow-hidden">
+                      <p className="font-medium text-xs md:text-sm break-words leading-tight" title={variant.name}>{variant.name}</p>
                       {variant.sku && (
                         <p className="text-[10px] text-muted-foreground font-mono truncate">{variant.sku}</p>
                       )}
