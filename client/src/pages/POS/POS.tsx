@@ -1517,8 +1517,8 @@ export default function POS() {
 
       {/* Cash Payment Dialog - Enhanced for older users */}
       <Dialog open={showCashDialog} onOpenChange={setShowCashDialog}>
-        <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-emerald-600 p-6 text-white">
+        <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-emerald-600 p-4 text-white">
             <div className="flex items-center gap-3 mb-1">
               <Banknote className="h-6 w-6" />
               <DialogTitle className="text-xl font-bold">{t('financial:cashPayment')}</DialogTitle>
@@ -1528,15 +1528,64 @@ export default function POS() {
             </DialogDescription>
           </div>
 
-          <div className="p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm flex flex-col items-center justify-center text-center">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                {t('pos:totalDue', 'Total Due')} / Cần thu
-              </p>
-              <p className="text-4xl font-black text-slate-900 dark:text-white">
-                {total.toFixed(2)} {currencySymbol}
-              </p>
+          <div className="flex flex-col md:flex-row">
+            {/* Order Items Summary - Left Side */}
+            <div className="md:w-1/2 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700">
+              <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t('pos:cart', 'Cart')} ({cart.length} {t('common:items', 'items')})
+                </p>
+              </div>
+              <div className="max-h-[280px] overflow-y-auto">
+                {cart.map((item, index) => (
+                  <div key={item.cartId} className={cn(
+                    "flex items-center justify-between px-3 py-2 text-sm",
+                    index % 2 === 0 ? "bg-white dark:bg-slate-800" : "bg-slate-50 dark:bg-slate-850"
+                  )}>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-xs text-muted-foreground w-5 text-right">{index + 1}.</span>
+                      <span className="font-medium truncate flex-1">{item.name}</span>
+                      <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
+                    </div>
+                    <span className="font-semibold ml-3 shrink-0">
+                      {(item.price * item.quantity).toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {/* Order Total Section */}
+              <div className="border-t-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 p-3">
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">{t('pos:subtotal', 'Subtotal')}</span>
+                    <span>{subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}</span>
+                  </div>
+                )}
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-red-600 mb-1">
+                    <span>{t('pos:discount', 'Discount')}</span>
+                    <span>-{discount.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-slate-300 dark:border-slate-600">
+                  <span className="font-bold text-lg">{t('pos:total', 'Total')}</span>
+                  <span className="font-black text-xl text-emerald-600 dark:text-emerald-400">
+                    {total.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}
+                  </span>
+                </div>
+              </div>
             </div>
+
+            {/* Payment Input - Right Side */}
+            <div className="md:w-1/2 p-5 space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm flex flex-col items-center justify-center text-center">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                  {t('pos:totalDue', 'Total Due')} / Cần thu
+                </p>
+                <p className="text-3xl font-black text-slate-900 dark:text-white">
+                  {total.toFixed(2)} {currencySymbol}
+                </p>
+              </div>
 
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
@@ -1633,6 +1682,7 @@ export default function POS() {
                 <RotateCcw className="h-4 w-4 mr-2" />
                 {t('common:back')}
               </Button>
+            </div>
             </div>
           </div>
         </DialogContent>
