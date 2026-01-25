@@ -1517,59 +1517,76 @@ export default function POS() {
 
       {/* Cash Payment Dialog - Enhanced for older users */}
       <Dialog open={showCashDialog} onOpenChange={setShowCashDialog}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-emerald-600 p-4 text-white">
-            <div className="flex items-center gap-3 mb-1">
-              <Banknote className="h-6 w-6" />
-              <DialogTitle className="text-xl font-bold">{t('financial:cashPayment')}</DialogTitle>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4 text-white">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Banknote className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold">{t('financial:cashPayment')}</DialogTitle>
+                <DialogDescription className="text-emerald-50/80 text-xs">
+                  {t('pos:enterAmountReceived', 'Enter amount received from customer')}
+                </DialogDescription>
+              </div>
             </div>
-            <DialogDescription className="text-emerald-50/90 text-sm">
-              {t('pos:enterAmountReceived', 'Enter amount received from customer')}
-            </DialogDescription>
           </div>
 
-          <div className="flex flex-col md:flex-row">
+          <div className="flex flex-col md:flex-row min-h-[400px]">
             {/* Order Items Summary - Left Side */}
-            <div className="md:w-1/2 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700">
-              <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+            <div className="md:w-[55%] flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700">
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t('pos:cart', 'Cart')} ({cart.length} {t('common:items', 'items')})
+                  {t('pos:cart', 'Cart')}
                 </p>
+                <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
+                  {cart.length} {t('common:items', 'items')}
+                </span>
               </div>
-              <div className="max-h-[280px] overflow-y-auto">
-                {cart.map((item, index) => (
-                  <div key={item.cartId} className={cn(
-                    "flex items-center justify-between px-3 py-2 text-sm",
-                    index % 2 === 0 ? "bg-white dark:bg-slate-800" : "bg-slate-50 dark:bg-slate-850"
-                  )}>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-xs text-muted-foreground w-5 text-right">{index + 1}.</span>
-                      <span className="font-medium truncate flex-1">{item.name}</span>
-                      <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
-                    </div>
-                    <span className="font-semibold ml-3 shrink-0">
-                      {(item.price * item.quantity).toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}
-                    </span>
-                  </div>
-                ))}
+              <div className="flex-1 overflow-y-auto max-h-[280px]">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {cart.map((item, index) => (
+                      <tr key={item.cartId} className={cn(
+                        "border-b border-slate-100 dark:border-slate-700",
+                        index % 2 === 0 ? "bg-white dark:bg-slate-800" : "bg-slate-50/50 dark:bg-slate-850"
+                      )}>
+                        <td className="py-2 pl-4 pr-2 w-6 text-xs text-muted-foreground text-right align-top">
+                          {index + 1}.
+                        </td>
+                        <td className="py-2 pr-2 align-top">
+                          <div className="font-medium text-slate-700 dark:text-slate-200 leading-tight" style={{ maxWidth: '180px', wordBreak: 'break-word' }}>
+                            {item.name}
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 text-center text-muted-foreground whitespace-nowrap align-top">
+                          ×{item.quantity}
+                        </td>
+                        <td className="py-2 pl-2 pr-4 text-right font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap align-top">
+                          {(item.price * item.quantity).toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
               {/* Order Total Section */}
-              <div className="border-t-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 p-3">
+              <div className="mt-auto border-t-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-4">
                 {discount > 0 && (
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between text-sm mb-2">
                     <span className="text-muted-foreground">{t('pos:subtotal', 'Subtotal')}</span>
-                    <span>{subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}</span>
+                    <span className="font-medium">{subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}</span>
                   </div>
                 )}
                 {discount > 0 && (
-                  <div className="flex justify-between text-sm text-red-600 mb-1">
+                  <div className="flex justify-between text-sm text-red-600 mb-2">
                     <span>{t('pos:discount', 'Discount')}</span>
-                    <span>-{discount.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}</span>
+                    <span className="font-medium">-{discount.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2 border-t border-slate-300 dark:border-slate-600">
-                  <span className="font-bold text-lg">{t('pos:total', 'Total')}</span>
-                  <span className="font-black text-xl text-emerald-600 dark:text-emerald-400">
+                <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-600">
+                  <span className="font-bold text-base">{t('pos:total', 'Total')}</span>
+                  <span className="font-black text-2xl text-emerald-600 dark:text-emerald-400">
                     {total.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}
                   </span>
                 </div>
@@ -1577,13 +1594,13 @@ export default function POS() {
             </div>
 
             {/* Payment Input - Right Side */}
-            <div className="md:w-1/2 p-5 space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm flex flex-col items-center justify-center text-center">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            <div className="md:w-[45%] p-5 space-y-4 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-2 border-emerald-100 dark:border-emerald-800 shadow-sm">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 text-center">
                   {t('pos:totalDue', 'Total Due')} / Cần thu
                 </p>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">
-                  {total.toFixed(2)} {currencySymbol}
+                <p className="text-4xl font-black text-emerald-600 dark:text-emerald-400 text-center">
+                  {total.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} {currencySymbol}
                 </p>
               </div>
 
