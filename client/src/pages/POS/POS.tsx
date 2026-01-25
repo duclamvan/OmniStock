@@ -1615,13 +1615,12 @@ export default function POS() {
                   inputMode="decimal"
                   value={cashReceived}
                   onChange={(e) => {
-                    // Convert comma to dot for decimal separator and update state
-                    const newValue = e.target.value.replace(',', '.');
-                    setCashReceived(newValue);
+                    // Only convert comma to dot if there's actually a comma
+                    const val = e.target.value;
+                    setCashReceived(val.includes(',') ? val.replace(',', '.') : val);
                   }}
-                  onFocus={(e) => e.target.select()}
                   onKeyDown={(e) => {
-                    // Handle Enter key for form submission - no DOM manipulation
+                    // Handle Enter key for form submission
                     if (e.key === 'Enter' && parseDecimal(cashReceived || '0') >= total && !createOrderMutation.isPending) {
                       e.preventDefault();
                       handleCashPayment();
@@ -2077,7 +2076,10 @@ export default function POS() {
                 type="text"
                 inputMode="decimal"
                 value={discountInput}
-                onChange={(e) => setDiscountInput(e.target.value.replace(',', '.'))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDiscountInput(val.includes(',') ? val.replace(',', '.') : val);
+                }}
                 placeholder={discountType === 'percentage' ? t('financial:enterPercentagePlaceholder') : `${t('common:enterAmount')} (e.g., 5.00)`}
                 className="h-14 text-xl text-center pr-12"
                 autoFocus
@@ -2195,7 +2197,10 @@ export default function POS() {
                   inputMode="decimal"
                   placeholder="0.00"
                   value={customItemPrice}
-                  onChange={(e) => setCustomItemPrice(e.target.value.replace(',', '.'))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomItemPrice(val.includes(',') ? val.replace(',', '.') : val);
+                  }}
                   data-testid="input-custom-item-price"
                 />
               </div>
@@ -2207,7 +2212,10 @@ export default function POS() {
                   inputMode="decimal"
                   placeholder="0.00"
                   value={customItemCost}
-                  onChange={(e) => setCustomItemCost(e.target.value.replace(',', '.'))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomItemCost(val.includes(',') ? val.replace(',', '.') : val);
+                  }}
                   data-testid="input-custom-item-cost"
                 />
               </div>
