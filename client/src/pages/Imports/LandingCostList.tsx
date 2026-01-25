@@ -950,7 +950,7 @@ export default function LandingCostList() {
                 )}
 
                 {/* Action Button - Full width on mobile */}
-                <Link href={`/imports/landing-cost/${shipment.id}`}>
+                <Link href={`/imports/landing-costs/${shipment.id}`}>
                   <Button 
                     variant="outline" 
                     size="sm"
