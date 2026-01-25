@@ -2601,7 +2601,10 @@ export default function POS() {
                           [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
                         }))}
                         onFocus={(e) => e.target.select()}
-                        className="text-center h-8 w-12 text-xs px-1 font-bold"
+                        className={cn(
+                          "text-center h-8 w-12 text-xs px-1 font-bold",
+                          currentQty > 0 && "bg-green-100 dark:bg-green-900/50 border-green-500 text-green-700 dark:text-green-300"
+                        )}
                         data-testid={`input-variant-quantity-${variant.id}`}
                       />
                       <button

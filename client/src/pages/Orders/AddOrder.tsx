@@ -9902,7 +9902,10 @@ export default function AddOrder() {
                               }
                             }
                           }}
-                          className="text-center h-7 w-10 text-xs px-1"
+                          className={cn(
+                            "text-center h-7 w-10 text-xs px-1",
+                            (variantQuantities[variant.id] || 0) > 0 && "bg-green-100 dark:bg-green-900/50 border-green-500 text-green-700 dark:text-green-300"
+                          )}
                           data-testid={`input-variant-quantity-${variant.id}`}
                         />
                         <button
