@@ -64,6 +64,9 @@ import { convertCurrency } from '@/lib/currencyUtils';
 import { useTranslation } from 'react-i18next';
 import { soundEffects } from '@/utils/soundEffects';
 import { ThermalReceipt, type ReceiptData, type CompanyInfo } from '@/components/orders/ThermalReceipt';
+import WarehouseLocationSelector from '@/components/WarehouseLocationSelector';
+import { Checkbox } from '@/components/ui/checkbox';
+import { MapPin } from 'lucide-react';
 
 
 interface VariantSelection {
@@ -226,6 +229,11 @@ export default function POS() {
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
   const [variantQuantities, setVariantQuantities] = useState<Record<string, number>>({});
   const [quickVariantInput, setQuickVariantInput] = useState('');
+  
+  // Variant location modal state
+  const [showVariantLocationModal, setShowVariantLocationModal] = useState(false);
+  const [variantLocationCode, setVariantLocationCode] = useState('');
+  const [variantLocationIsPrimary, setVariantLocationIsPrimary] = useState(true);
   
   // Custom Item state
   const [showCustomItemDialog, setShowCustomItemDialog] = useState(false);
@@ -835,6 +843,54 @@ export default function POS() {
   const customerName = selectedCustomer 
     ? selectedCustomer.name || 'Customer'
     : t('financial:walkInCustomer');
+
+  // Mutation to set primary location for all variants of a product
+  const setVariantLocationsMutation = useMutation({
+    mutationFn: async ({ productId, locationCode, isPrimary }: { productId: string; locationCode: string; isPrimary: boolean }) => {
+      const variants = getProductVariants(productId);
+      const results = [];
+      
+      for (const variant of variants) {
+        // Update each variant's locationCode
+        const response = await apiRequest('PATCH', `/api/products/${productId}/variants/${variant.id}`, {
+          locationCode: locationCode,
+        });
+        results.push(await response.json());
+      }
+      
+      // Also add/update the product location with isPrimary flag for each variant
+      if (isPrimary && variants.length > 0) {
+        for (const variant of variants) {
+          await apiRequest('POST', `/api/products/${productId}/locations`, {
+            variantId: variant.id,
+            locationType: 'warehouse',
+            locationCode: locationCode,
+            quantity: variant.quantity || 0,
+            isPrimary: true,
+          });
+        }
+      }
+      
+      return results;
+    },
+    onSuccess: () => {
+      toast({
+        title: t('common:success'),
+        description: t('warehouse:locationUpdatedSuccessfully', 'Location updated successfully'),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/product-variants'] });
+      setShowVariantLocationModal(false);
+      setVariantLocationCode('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('warehouse:failedToUpdateLocation', 'Failed to update location'),
+        variant: 'destructive',
+      });
+    },
+  });
 
   const createOrderMutation = useMutation({
     mutationFn: async () => {
@@ -2727,6 +2783,14 @@ export default function POS() {
               {t('common:cancel', 'Cancel')}
             </Button>
             <Button
+              variant="outline"
+              className="w-full sm:w-auto min-h-[44px]"
+              onClick={() => setShowVariantLocationModal(true)}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              {t('warehouse:setLocation', 'Set Location')}
+            </Button>
+            <Button
               className="w-full sm:w-auto min-h-[44px]"
               onClick={addSelectedVariantsToCart}
               disabled={!Object.values(variantQuantities).some(q => q > 0)}
@@ -2734,6 +2798,74 @@ export default function POS() {
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
               {t('pos:addToCart', 'Add to Cart')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Variant Location Modal */}
+      <Dialog open={showVariantLocationModal} onOpenChange={setShowVariantLocationModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              {t('warehouse:setVariantLocation', 'Set Variant Location')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('warehouse:setLocationForAllVariants', 'Set the primary warehouse location for all variants of this product.')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t('warehouse:warehouseLocation', 'Warehouse Location')}</Label>
+              <WarehouseLocationSelector
+                value={variantLocationCode}
+                onChange={setVariantLocationCode}
+                showTypeSelector={false}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isPrimary"
+                checked={variantLocationIsPrimary}
+                onCheckedChange={(checked) => setVariantLocationIsPrimary(checked as boolean)}
+              />
+              <Label htmlFor="isPrimary" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                {t('warehouse:setAsPrimaryLocation', 'Set as primary location for all variants')}
+              </Label>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowVariantLocationModal(false);
+                setVariantLocationCode('');
+              }}
+            >
+              {t('common:cancel', 'Cancel')}
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedProductForVariant && variantLocationCode) {
+                  setVariantLocationsMutation.mutate({
+                    productId: selectedProductForVariant.id,
+                    locationCode: variantLocationCode,
+                    isPrimary: variantLocationIsPrimary,
+                  });
+                }
+              }}
+              disabled={!variantLocationCode || setVariantLocationsMutation.isPending}
+            >
+              {setVariantLocationsMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              {t('common:save', 'Save')}
             </Button>
           </DialogFooter>
         </DialogContent>

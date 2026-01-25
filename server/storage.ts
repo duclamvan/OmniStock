@@ -2850,12 +2850,22 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Location code already exists for this product/variant');
       }
 
-      // If this is marked as primary, unset other primary locations
+      // If this is marked as primary, unset other primary locations for the SAME variant only
+      // Each variant can have its own independent primary location
       if (location.isPrimary) {
+        const variantCondition = variantId 
+          ? eq(productLocations.variantId, variantId)
+          : isNull(productLocations.variantId);
+        
         await db
           .update(productLocations)
           .set({ isPrimary: false })
-          .where(eq(productLocations.productId, location.productId));
+          .where(
+            and(
+              eq(productLocations.productId, location.productId),
+              variantCondition
+            )
+          );
       }
 
       const [newLocation] = await db
