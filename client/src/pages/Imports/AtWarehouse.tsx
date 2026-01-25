@@ -274,43 +274,43 @@ const ItemCard = memo(({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`border-2 rounded-xl p-4 lg:p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing transition-all min-h-[72px] ${
+          className={`border rounded-lg p-2.5 bg-background hover:shadow-sm cursor-grab active:cursor-grabbing transition-all ${
             selectedItemsForAI.has(item.id) 
               ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-400' 
               : 'border-border hover:border-purple-200'
           }`}
           onClick={handleClick}
         >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-start gap-3">
-                <div className="flex items-center mt-0.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-2">
+                <div className="flex items-center flex-shrink-0">
                   <div 
                     data-drag-handle
                     className="hover:bg-muted/50 rounded p-0.5 transition-colors"
                     title={itemSortBy === 'custom' ? t('dragToReorder') : t('dragToConsolidation')}
                   >
-                    <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors" />
+                    <Grip className="h-3.5 w-3.5 text-muted-foreground hover:text-primary transition-colors" />
                   </div>
                 </div>
                 {item.imageUrl ? (
                   <img 
                     src={item.imageUrl} 
                     alt={item.name}
-                    className="w-12 h-12 object-cover rounded-md border"
+                    className="w-10 h-10 object-cover rounded border flex-shrink-0"
                   />
                 ) : (
-                  <Package className="w-12 h-12 text-muted-foreground p-2" />
+                  <Package className="w-10 h-10 text-muted-foreground p-1.5 flex-shrink-0" />
                 )}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-base">{item.name}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-medium text-sm truncate">{item.name}</span>
                     {getClassificationIcon(item.classification)}
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300 flex-wrap">
-                    <span>{t('qty')}: {item.quantity}</span>
-                    {item.weight && <span>• {item.weight} {t('kg')}</span>}
+                  <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                    <span className="font-medium">×{item.quantity}</span>
+                    {item.weight && <span>• {item.weight}kg</span>}
                     {item.source && (
                       <>
                         <span>•</span>
@@ -2839,36 +2839,37 @@ export default function AtWarehouse() {
                         </Badge>
                       </div>
                       
-                      {/* Mobile Sticky Search/Scan Bar (56px height for older employees) */}
-                      <div className="lg:hidden sticky top-0 z-10 bg-background pb-3 -mx-4 px-4 pt-3 border-b border-border/50">
+                      {/* Mobile Search Bar - Compact */}
+                      <div className="lg:hidden">
                         <div className="flex gap-2 items-center">
                           <div className="relative flex-1">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                               placeholder={t('searchOrScan')}
                               value={itemSearchTerm}
                               onChange={(e) => setItemSearchTerm(e.target.value)}
-                              className="pl-12 pr-4 h-14 text-base rounded-xl border-2"
+                              className="pl-9 pr-9 h-10 text-sm"
                               data-testid="mobile-search-input"
                             />
                             {itemSearchTerm && (
                               <Button
                                 variant="ghost"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 h-12 w-12 p-0 rounded-lg active:scale-95"
+                                size="sm"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
                                 onClick={() => setItemSearchTerm('')}
                                 data-testid="clear-search-button"
                               >
-                                <X className="h-5 w-5" />
+                                <X className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
-                          {/* Barcode scanner button - 56px touch target */}
                           <Button
                             variant="outline"
-                            className="h-14 w-14 p-0 rounded-xl border-2 shrink-0"
+                            size="sm"
+                            className="h-10 w-10 p-0 flex-shrink-0"
                             data-testid="scan-barcode-button"
                           >
-                            <Barcode className="h-6 w-6" />
+                            <Barcode className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -2970,53 +2971,57 @@ export default function AtWarehouse() {
                         </Select>
                       </div>
                       
-                      {/* Quick Filter Chips - Mobile optimized horizontal scroll (56px touch targets for older employees) */}
-                      <div className="lg:hidden -mx-4 px-4 overflow-x-auto pb-2">
-                        <div className="flex gap-3 min-w-max">
+                      {/* Quick Filter Chips - Mobile Compact */}
+                      <div className="lg:hidden -mx-3 px-3 overflow-x-auto pb-1">
+                        <div className="flex gap-2 min-w-max">
                           <Button
                             variant={itemClassificationFilter === 'all' ? 'default' : 'outline'}
-                            className="h-14 px-5 text-base rounded-full whitespace-nowrap font-medium"
+                            size="sm"
+                            className="h-8 px-3 text-xs rounded-full whitespace-nowrap"
                             onClick={() => setItemClassificationFilter('all')}
                             data-testid="filter-chip-all"
                           >
                             {t('allClassificationsMobile')}
-                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                            <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 px-1.5 rounded-full text-xs">
                               {sortedAndFilteredItems.length}
                             </Badge>
                           </Button>
                           <Button
                             variant={itemClassificationFilter === 'sensitive' ? 'default' : 'outline'}
-                            className={`h-14 px-5 text-base rounded-full whitespace-nowrap font-medium ${itemClassificationFilter === 'sensitive' ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                            size="sm"
+                            className={`h-8 px-3 text-xs rounded-full whitespace-nowrap ${itemClassificationFilter === 'sensitive' ? 'bg-red-600 hover:bg-red-700' : ''}`}
                             onClick={() => setItemClassificationFilter('sensitive')}
                             data-testid="filter-chip-sensitive"
                           >
-                            <Flag className="h-4 w-4 mr-2 fill-current" />
+                            <Flag className="h-3 w-3 mr-1 fill-current" />
                             {t('filterSensitive')}
-                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                            <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 px-1.5 rounded-full text-xs">
                               {allItems.filter(i => i.classification === 'sensitive').length}
                             </Badge>
                           </Button>
                           <Button
                             variant={itemClassificationFilter === 'general' ? 'default' : 'outline'}
-                            className={`h-14 px-5 text-base rounded-full whitespace-nowrap font-medium ${itemClassificationFilter === 'general' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                            size="sm"
+                            className={`h-8 px-3 text-xs rounded-full whitespace-nowrap ${itemClassificationFilter === 'general' ? 'bg-green-600 hover:bg-green-700' : ''}`}
                             onClick={() => setItemClassificationFilter('general')}
                             data-testid="filter-chip-general"
                           >
-                            <Flag className="h-4 w-4 mr-2 fill-current" />
+                            <Flag className="h-3 w-3 mr-1 fill-current" />
                             {t('filterGeneral')}
-                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                            <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 px-1.5 rounded-full text-xs">
                               {allItems.filter(i => i.classification === 'general').length}
                             </Badge>
                           </Button>
                           <Button
                             variant={itemClassificationFilter === 'unclassified' ? 'default' : 'outline'}
-                            className="h-14 px-5 text-base rounded-full whitespace-nowrap font-medium"
+                            size="sm"
+                            className="h-8 px-3 text-xs rounded-full whitespace-nowrap"
                             onClick={() => setItemClassificationFilter('unclassified')}
                             data-testid="filter-chip-unclassified"
                           >
-                            <div className="h-4 w-4 mr-2 border-2 border-dashed border-current rounded" />
+                            <div className="h-3 w-3 mr-1 border border-dashed border-current rounded" />
                             {t('filterUnclassified')}
-                            <Badge variant="secondary" className="ml-2 h-6 min-w-6 px-2 rounded-full text-sm">
+                            <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 px-1.5 rounded-full text-xs">
                               {allItems.filter(i => !i.classification).length}
                             </Badge>
                           </Button>
