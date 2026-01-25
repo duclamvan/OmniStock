@@ -28374,21 +28374,21 @@ Other rules:
           receipt: 'SALES RECEIPT',
           date: 'Date',
           time: 'Time',
-          receiptNo: 'Receipt No.',
-          customer: 'Customer',
+          receiptNo: 'No.',
+          customer: 'Cust.',
           walkIn: 'Walk-in Customer',
           items: 'Items',
-          subtotal: 'Subtotal',
+          subtotal: 'Subtot.',
           discount: 'Discount',
           total: 'TOTAL',
-          vatIncluded: 'VAT included in price',
+          vatIncluded: 'incl. VAT',
           payment: 'Payment',
           cash: 'Cash',
           card: 'Card',
           transfer: 'Bank Transfer',
           payLater: 'Pay Later',
           qrCode: 'QR Code',
-          cashReceived: 'Cash Received',
+          cashReceived: 'Received',
           change: 'Change',
           thankYou: 'Thank you for your purchase!',
           companyId: 'ID',
@@ -28399,21 +28399,21 @@ Other rules:
           receipt: 'HÓA ĐƠN BÁN HÀNG',
           date: 'Ngày',
           time: 'Giờ',
-          receiptNo: 'Số HĐ',
-          customer: 'Khách hàng',
+          receiptNo: 'Số',
+          customer: 'KH',
           walkIn: 'Khách lẻ',
           items: 'Sản phẩm',
           subtotal: 'Tạm tính',
           discount: 'Giảm giá',
           total: 'TỔNG CỘNG',
-          vatIncluded: 'Đã bao gồm VAT',
+          vatIncluded: 'Gồm VAT',
           payment: 'Thanh toán',
           cash: 'Tiền mặt',
           card: 'Thẻ',
           transfer: 'Chuyển khoản',
           payLater: 'Trả sau',
           qrCode: 'Mã QR',
-          cashReceived: 'Tiền nhận',
+          cashReceived: 'Nhận',
           change: 'Tiền thối',
           thankYou: 'Cảm ơn quý khách!',
           companyId: 'MST',
@@ -28424,14 +28424,14 @@ Other rules:
           receipt: 'PRODEJNÍ DOKLAD',
           date: 'Datum',
           time: 'Čas',
-          receiptNo: 'Číslo účtenky',
-          customer: 'Zákazník',
+          receiptNo: 'Č.',
+          customer: 'Zák.',
           walkIn: 'Běžný zákazník',
           items: 'Položky',
-          subtotal: 'Mezisoučet',
+          subtotal: 'Mezis.',
           discount: 'Sleva',
           total: 'CELKEM',
-          vatIncluded: 'Cena včetně DPH',
+          vatIncluded: 'Vč. DPH',
           payment: 'Platba',
           cash: 'Hotovost',
           card: 'Karta',
@@ -28449,7 +28449,7 @@ Other rules:
           receipt: 'KASSENBELEG',
           date: 'Datum',
           time: 'Uhrzeit',
-          receiptNo: 'Beleg-Nr.',
+          receiptNo: 'Nr.',
           customer: 'Kunde',
           walkIn: 'Laufkunde',
           items: 'Artikel',
@@ -28557,7 +28557,7 @@ Other rules:
       // Currency symbol helper
       const currencySymbol = currency === 'EUR' ? '€' : currency === 'CZK' ? 'Kč' : currency;
       const formatMoney = (amount: number) => {
-        const formatted = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        const formatted = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
         return `${formatted} ${currencySymbol}`;
       };
 
@@ -28611,7 +28611,7 @@ Other rules:
       yPos += smallLineHeight;
 
       // Transaction Details with comfortable spacing
-      const labelColumnWidth = 55; // Wide enough for Czech "Číslo účtenky:"
+      const labelColumnWidth = 62; // Wide enough for Czech "Číslo účtenky:"
       const valueColumnWidth = contentWidth - labelColumnWidth;
       
       const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
@@ -28682,7 +28682,7 @@ Other rules:
       };
 
       doc.fontSize(8).font('Receipt');
-      const priceColumnWidth = 68; // Wider to fit prices with spacing
+      const priceColumnWidth = 75; // Wider to fit prices with spacing
       for (const item of items) {
         if (!item || typeof item !== 'object') continue;
         
@@ -28709,7 +28709,7 @@ Other rules:
       yPos += smallLineHeight;
 
       // Totals Section with clear hierarchy
-      const totalsValueWidth = 70; // Wide enough for large totals like "27 615.00 Kč"
+      const totalsValueWidth = 78; // Wide enough for large totals like "27 615.00 Kč"
       doc.fontSize(8).font('Receipt').fillColor('#000000');
       doc.text(`${t.subtotal}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
       doc.text(formatMoney(subtotal), sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
