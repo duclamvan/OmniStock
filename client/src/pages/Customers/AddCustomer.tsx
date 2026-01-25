@@ -1747,31 +1747,49 @@ export default function AddCustomer() {
 
   // Facebook profile fetch mutation
   const fetchFacebookProfileMutation = useMutation({
-    mutationFn: async (facebookUrl: string) => {
-      const res = await apiRequest('POST', '/api/facebook/profile', { facebookUrl });
+    mutationFn: async ({ facebookUrl, forceRefresh = false }: { facebookUrl: string; forceRefresh?: boolean }) => {
+      const res = await apiRequest('POST', '/api/facebook/profile', { facebookUrl, forceRefresh });
       return res.json();
     },
     onSuccess: (data: { name: string | null; profilePictureUrl: string | null; facebookId: string | null; facebookNumericId: string | null; username: string }) => {
+      let hasData = false;
       if (data.name) {
         form.setValue('facebookName', data.name);
         // Also set the customer name to match Facebook name
         form.setValue('name', data.name);
+        hasData = true;
       }
       if (data.profilePictureUrl) {
         form.setValue('profilePictureUrl', data.profilePictureUrl);
+        hasData = true;
       }
       if (data.facebookNumericId) {
         form.setValue('facebookNumericId', data.facebookNumericId);
+        hasData = true;
       }
       setIsFetchingFacebookProfile(false);
-      toast({
-        title: t('customers:facebookProfileFetched'),
-        description: data.name ? t('customers:fetchedProfileFor', { name: data.name }) : t('customers:profileDataFetched'),
-      });
+      
+      if (hasData) {
+        toast({
+          title: t('customers:facebookProfileFetched'),
+          description: data.name ? t('customers:fetchedProfileFor', { name: data.name }) : t('customers:profileDataFetched'),
+        });
+      } else {
+        toast({
+          title: t('customers:facebookFetchFailed'),
+          description: t('customers:noProfileDataFound'),
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Facebook profile fetch error:', error);
       setIsFetchingFacebookProfile(false);
+      toast({
+        title: t('customers:facebookFetchFailed'),
+        description: t('customers:couldNotFetchFacebookProfile'),
+        variant: "destructive",
+      });
     },
   });
 
@@ -1780,7 +1798,7 @@ export default function AddCustomer() {
     // Guard against concurrent fetches - don't fetch if already fetching or mutation in progress
     if (url && url.includes('facebook.com') && !isFetchingFacebookProfile && !fetchFacebookProfileMutation.isPending) {
       setIsFetchingFacebookProfile(true);
-      fetchFacebookProfileMutation.mutate(url);
+      fetchFacebookProfileMutation.mutate({ facebookUrl: url, forceRefresh: false });
     }
   };
 
@@ -1823,7 +1841,7 @@ export default function AddCustomer() {
     const url = form.getValues('facebookUrl');
     if (url && url.includes('facebook.com') && !isFetchingFacebookProfile && !fetchFacebookProfileMutation.isPending) {
       setIsFetchingFacebookProfile(true);
-      fetchFacebookProfileMutation.mutate(url);
+      fetchFacebookProfileMutation.mutate({ facebookUrl: url, forceRefresh: true });
     }
   };
 
