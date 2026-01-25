@@ -3804,6 +3804,10 @@ export const manufacturingRuns = pgTable("manufacturing_runs", {
     yieldQuantity: number; // snapshot at time of run
   }[]>(),
   notes: text("notes"),
+  // Cost tracking for revert functionality
+  unitCostEur: decimal("unit_cost_eur", { precision: 12, scale: 4 }), // Cost per finished unit from this run
+  priorLandingCostEur: decimal("prior_landing_cost_eur", { precision: 12, scale: 4 }), // Product's landing cost before this run
+  priorQuantity: integer("prior_quantity"), // Product's quantity before this run
   createdBy: varchar("created_by").references(() => users.id),
   completedBy: varchar("completed_by").references(() => users.id),
   completedAt: timestamp("completed_at"),

@@ -7647,6 +7647,17 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // Get prior cost info for revert functionality
+      let priorLandingCostEur: string | null = null;
+      let priorQuantity: number | null = null;
+      if (run.finishedProductId) {
+        const [priorProduct] = await tx.select().from(products).where(eq(products.id, run.finishedProductId));
+        if (priorProduct) {
+          priorLandingCostEur = priorProduct.landingCostEur || null;
+          priorQuantity = priorProduct.quantity || 0;
+        }
+      }
+
       await tx.update(manufacturingRuns)
         .set({
           status: 'completed',
@@ -7654,6 +7665,9 @@ export class DatabaseStorage implements IStorage {
           completedAt: new Date(),
           updatedAt: new Date(),
           componentsConsumed: componentsConsumed.length > 0 ? componentsConsumed : undefined,
+          unitCostEur: perUnitCostEur > 0 ? perUnitCostEur.toFixed(4) : null,
+          priorLandingCostEur: priorLandingCostEur,
+          priorQuantity: priorQuantity,
         })
         .where(eq(manufacturingRuns.id, id));
 
@@ -7757,14 +7771,50 @@ export class DatabaseStorage implements IStorage {
           });
         }
 
-        // Update the main product quantity
+        // Update the main product quantity and restore prior landing cost
         const [finishedProduct] = await tx.select().from(products).where(eq(products.id, run.finishedProductId));
         if (finishedProduct) {
+          const newQuantity = Math.max(0, (finishedProduct.quantity || 0) - run.quantityProduced);
+          
+          // Fetch exchange rates for cost reversal
+          let exchangeRates: Record<string, number> = { EUR: 1, CZK: 25.2, USD: 1.08, VND: 27000, CNY: 7.8 };
+          try {
+            const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+            if (exchangeRateResponse.ok) {
+              const ratesData = await exchangeRateResponse.json();
+              if (ratesData.rates) {
+                exchangeRates = { EUR: 1, ...ratesData.rates };
+              }
+            }
+          } catch (e) {
+            console.warn('[Manufacturing Revert] Failed to fetch exchange rates, using defaults');
+          }
+          
+          // Restore prior landing cost if available, otherwise recalculate
+          let restoredCostEur: number | null = null;
+          if (run.priorLandingCostEur !== null && run.priorLandingCostEur !== undefined) {
+            restoredCostEur = Number(run.priorLandingCostEur);
+          } else if (newQuantity === 0) {
+            // If no stock left, reset cost to 0
+            restoredCostEur = 0;
+          }
+          // If priorLandingCostEur is not stored (legacy runs), leave cost unchanged
+          
+          const updateData: any = {
+            quantity: newQuantity,
+            updatedAt: new Date(),
+          };
+          
+          if (restoredCostEur !== null) {
+            updateData.landingCostEur = restoredCostEur > 0 ? restoredCostEur.toFixed(4) : '0';
+            updateData.landingCostCzk = (restoredCostEur * (exchangeRates.CZK || 25)).toFixed(2);
+            updateData.landingCostUsd = (restoredCostEur * (exchangeRates.USD || 1.08)).toFixed(4);
+            updateData.landingCostVnd = (restoredCostEur * (exchangeRates.VND || 27000)).toFixed(0);
+            updateData.landingCostCny = (restoredCostEur * (exchangeRates.CNY || 7.8)).toFixed(4);
+          }
+          
           await tx.update(products)
-            .set({
-              quantity: Math.max(0, (finishedProduct.quantity || 0) - run.quantityProduced),
-              updatedAt: new Date(),
-            })
+            .set(updateData)
             .where(eq(products.id, run.finishedProductId));
         }
       }
