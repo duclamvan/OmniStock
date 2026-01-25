@@ -203,8 +203,12 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
   const [openItems, setOpenItems] = useState<string[]>(() => 
     getLocalStorageArray<string>('sidebarOpenItems', [])
   );
-  // No localStorage persistence for expanded sections - always start collapsed
-  const [openSections, setOpenSections] = useState<string[]>([]);
+  // Sections start expanded by default
+  const [openSections, setOpenSections] = useState<string[]>(() => {
+    // Initialize with common section names - will be updated on mount
+    return ['warehouseOperations', 'administration'];
+  });
+  const [sectionsInitialized, setSectionsInitialized] = useState(false);
   
   // Language toggle mutation
   const languageMutation = useMutation({
@@ -601,6 +605,17 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
   const filteredNavigation = isWarehouseOperator 
     ? navigation.filter(section => section.name === "Warehouse Operations")
     : navigation; // Admins see everything
+
+  // Initialize all sections as expanded on first render
+  useEffect(() => {
+    if (!sectionsInitialized) {
+      const allSectionNames = navigation
+        .filter(section => section.type === 'section')
+        .map(section => section.name);
+      setOpenSections(allSectionNames);
+      setSectionsInitialized(true);
+    }
+  }, [navigation, sectionsInitialized]);
 
   // Automatically open parent menus when location changes (without scrolling)
   useEffect(() => {
