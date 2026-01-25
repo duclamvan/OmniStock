@@ -15772,6 +15772,20 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         };
       });
 
+      // Convert orderItems unitPrices to EUR for consistent display
+      const orderItemsEur = orderItemsArray.map(oi => {
+        const oiPrice = parseFloat(String(oi.unitPrice || 0));
+        // Use item's payment currency or source PO's payment currency
+        const oiCurrency = oi.unitPriceCurrency || itemPaymentCurrency;
+        const oiCurrencyRate = exchangeRates[oiCurrency] || 1;
+        const oiPriceEur = oiCurrency === 'EUR' ? oiPrice : oiPrice / oiCurrencyRate;
+        return {
+          ...oi,
+          unitPrice: oiPriceEur.toFixed(2),  // Now in EUR, as string for frontend
+          unitPriceCurrency: 'EUR'
+        };
+      });
+
       items.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
@@ -15793,7 +15807,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         totalAllocated,
         landingCostPerUnit,
         warnings: [],
-        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined,
+        orderItems: orderItemsEur.length > 0 ? orderItemsEur : undefined,
         variantAllocations: variantAllocationsEur.length > 0 ? variantAllocationsEur : undefined
       });
     }
@@ -15821,6 +15835,18 @@ async function getItemAllocationBreakdownWithMethod(
 
     if (!shipment?.consolidationId) {
       return [];
+    }
+
+    // Build exchange rates map (same logic as getItemAllocationBreakdown)
+    let exchangeRates: Record<string, number> = { 
+      EUR: 1, USD: 1.08, CZK: 25, VND: 26500, CNY: 7.8,
+      GBP: 0.86, JPY: 162, CHF: 0.95, AUD: 1.65, CAD: 1.48
+    };
+    if (shipment.exchangeRates) {
+      const rates = typeof shipment.exchangeRates === 'string'
+        ? JSON.parse(shipment.exchangeRates)
+        : shipment.exchangeRates;
+      exchangeRates = { ...exchangeRates, ...rates };
     }
 
     // Get shipment items through consolidation items (same as original)
@@ -16004,18 +16030,52 @@ async function getItemAllocationBreakdownWithMethod(
       }
 
       // Parse variantAllocations from the customItem
-      let variantAllocations: any[] = [];
+      let variantAllocationsArray: any[] = [];
       if (item.variantAllocations) {
         if (typeof item.variantAllocations === 'string') {
           try {
-            variantAllocations = JSON.parse(item.variantAllocations);
+            variantAllocationsArray = JSON.parse(item.variantAllocations);
           } catch (e) {
             console.warn('Failed to parse variantAllocations JSON:', e);
           }
         } else if (Array.isArray(item.variantAllocations)) {
-          variantAllocations = item.variantAllocations;
+          variantAllocationsArray = item.variantAllocations;
         }
       }
+
+      // Get item payment currency for conversion
+      const itemPaymentCurrency = item.paymentCurrency || 'USD';
+      const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
+
+      // Convert unitPrice to EUR
+      const rawUnitPrice = parseFloat(String(itemAllocation.unitPrice || 0));
+      const unitPriceEur = itemPaymentCurrency === 'EUR' ? rawUnitPrice : rawUnitPrice / itemCurrencyRate;
+
+      // Convert orderItems unitPrices to EUR
+      const orderItemsEur = orderItemsArray.map(oi => {
+        const oiPrice = parseFloat(String(oi.unitPrice || 0));
+        const oiCurrency = oi.unitPriceCurrency || itemPaymentCurrency;
+        const oiCurrencyRate = exchangeRates[oiCurrency] || 1;
+        const oiPriceEur = oiCurrency === 'EUR' ? oiPrice : oiPrice / oiCurrencyRate;
+        return {
+          ...oi,
+          unitPrice: oiPriceEur.toFixed(2),
+          unitPriceCurrency: 'EUR'
+        };
+      });
+
+      // Convert variantAllocations unitPrices to EUR
+      const variantAllocationsEur = variantAllocationsArray.map(va => {
+        const vaPrice = parseFloat(String(va.unitPrice || 0));
+        const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
+        const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
+        const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
+        return {
+          ...va,
+          unitPrice: vaPriceEur,
+          unitPriceCurrency: 'EUR'
+        };
+      });
 
       results.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
@@ -16024,8 +16084,8 @@ async function getItemAllocationBreakdownWithMethod(
         sku,
         imageUrl,
         quantity: item.quantity,
-        unitPrice: itemAllocation.unitPrice,  // Changed from unitValue to unitPrice for consistency
-        totalValue: itemAllocation.totalValue,
+        unitPrice: unitPriceEur,  // Now in EUR
+        totalValue: unitPriceEur * item.quantity,
         actualWeightKg: itemAllocation.actualWeight,
         volumetricWeightKg: itemAllocation.volumetricWeight,
         chargeableWeightKg: itemAllocation.chargeableWeight,
@@ -16039,8 +16099,8 @@ async function getItemAllocationBreakdownWithMethod(
         landingCostPerUnit,
         allocationMethod: method,
         warnings: [],
-        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined,
-        variantAllocations: variantAllocations.length > 0 ? variantAllocations : undefined
+        orderItems: orderItemsEur.length > 0 ? orderItemsEur : undefined,
+        variantAllocations: variantAllocationsEur.length > 0 ? variantAllocationsEur : undefined
       });
     }
 
