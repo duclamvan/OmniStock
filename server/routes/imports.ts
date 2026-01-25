@@ -15352,36 +15352,87 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
             
             // Calculate totals for allocation
             let totalChargeableWeight = 0;
-            let totalShipmentValue = 0;
+            let totalShipmentValueEur = 0;
             let totalUnits = 0;
             
+            // Get purchase currency for value conversion
+            const purchaseCurrency = purchase.purchaseCurrency || 'USD';
+            const purchaseCurrencyRate = exchangeRates[purchaseCurrency] || 1;
+            
             for (const item of purchaseItemsList) {
-              // Handle items with variant allocations
+              // Handle items with variant allocations - parse if string JSON
               let itemQuantity = item.quantity;
-              if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
-                itemQuantity = (item.variantAllocations as any[]).reduce((sum, v) => sum + (v.quantity || 0), 0);
+              let variantAllocationsArray: any[] = [];
+              if (item.variantAllocations) {
+                if (typeof item.variantAllocations === 'string') {
+                  try {
+                    variantAllocationsArray = JSON.parse(item.variantAllocations);
+                  } catch (e) {
+                    console.warn('Failed to parse variantAllocations in totals calculation:', e);
+                    variantAllocationsArray = [];
+                  }
+                } else if (Array.isArray(item.variantAllocations)) {
+                  variantAllocationsArray = item.variantAllocations;
+                }
+              }
+              if (variantAllocationsArray.length > 0) {
+                itemQuantity = variantAllocationsArray.reduce((sum: number, v: any) => sum + (v.quantity || 0), 0);
               }
               
               const weight = parseFloat(item.weight || '0') * itemQuantity;
               const volumetricWeight = weight * 0.8;
               const chargeableWeight = landingCostService.calculateChargeableWeight(weight, volumetricWeight);
               
-              totalChargeableWeight += chargeableWeight;
-              totalShipmentValue += parseFloat(item.unitPrice || '0') * itemQuantity;
+              // Calculate item value in EUR using per-variant currencies for accurate totals
+              let itemValueEur = 0;
+              if (variantAllocationsArray.length > 0) {
+                for (const va of variantAllocationsArray) {
+                  const vaQty = va.quantity || 0;
+                  const vaPrice = parseFloat(String(va.unitPrice || 0));
+                  const vaCurrency = va.unitPriceCurrency || purchaseCurrency;
+                  const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
+                  const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
+                  if (!isNaN(vaPriceEur) && !isNaN(vaQty)) {
+                    itemValueEur += vaPriceEur * vaQty;
+                  }
+                }
+              } else {
+                const itemUnitPrice = parseFloat(item.unitPrice || '0');
+                const itemUnitPriceEur = purchaseCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / purchaseCurrencyRate;
+                if (!isNaN(itemUnitPriceEur) && !isNaN(itemQuantity)) {
+                  itemValueEur = itemUnitPriceEur * itemQuantity;
+                }
+              }
+              
+              // NaN check for chargeableWeight before adding to total
+              const safeChargeableWeight = isNaN(chargeableWeight) ? 0 : chargeableWeight;
+              totalChargeableWeight += safeChargeableWeight;
+              totalShipmentValueEur += itemValueEur;
               totalUnits += itemQuantity;
             }
             
             const useWeightAllocation = totalChargeableWeight > 0;
-            const useValueAllocation = !useWeightAllocation && totalShipmentValue > 0;
+            const useValueAllocation = !useWeightAllocation && totalShipmentValueEur > 0;
             
             for (const item of purchaseItemsList) {
-              // Handle items with variant allocations
+              // Handle items with variant allocations - parse if string JSON
               let itemQuantity = item.quantity;
               let variantAllocationsArray: any[] = [];
               
-              if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
-                variantAllocationsArray = item.variantAllocations as any[];
-                itemQuantity = variantAllocationsArray.reduce((sum, v) => sum + (v.quantity || 0), 0);
+              if (item.variantAllocations) {
+                if (typeof item.variantAllocations === 'string') {
+                  try {
+                    variantAllocationsArray = JSON.parse(item.variantAllocations);
+                  } catch (e) {
+                    console.warn('Failed to parse variantAllocations:', e);
+                    variantAllocationsArray = [];
+                  }
+                } else if (Array.isArray(item.variantAllocations)) {
+                  variantAllocationsArray = item.variantAllocations;
+                }
+              }
+              if (variantAllocationsArray.length > 0) {
+                itemQuantity = variantAllocationsArray.reduce((sum: number, v: any) => sum + (v.quantity || 0), 0);
               }
               
               const weight = parseFloat(item.weight || '0') * itemQuantity;
@@ -15389,14 +15440,53 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
               const chargeableWeight = landingCostService.calculateChargeableWeight(weight, volumetricWeight);
               
               // Calculate allocation ratio
+              // Convert item unitPrice to EUR for consistent value-based allocation
+              // If variants have per-variant currencies, calculate weighted EUR value from variants
+              let itemValueEur = 0;
+              if (variantAllocationsArray.length > 0) {
+                // Use per-variant currencies for more accurate allocation
+                for (const va of variantAllocationsArray) {
+                  const vaQty = va.quantity || 0;
+                  const vaPrice = parseFloat(String(va.unitPrice || 0));
+                  const vaCurrency = va.unitPriceCurrency || purchaseCurrency;
+                  const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
+                  const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
+                  // NaN check
+                  if (!isNaN(vaPriceEur) && !isNaN(vaQty)) {
+                    itemValueEur += vaPriceEur * vaQty;
+                  }
+                }
+              } else {
+                const itemUnitPrice = parseFloat(item.unitPrice || '0');
+                const itemUnitPriceEur = purchaseCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / purchaseCurrencyRate;
+                // NaN check
+                if (!isNaN(itemUnitPriceEur) && !isNaN(itemQuantity)) {
+                  itemValueEur = itemUnitPriceEur * itemQuantity;
+                }
+              }
+              
               let allocationRatio = 0;
+              // NaN check for chargeableWeight
+              const safeChargeableWeight = isNaN(chargeableWeight) ? 0 : chargeableWeight;
+              
               if (useWeightAllocation && totalChargeableWeight > 0) {
-                allocationRatio = chargeableWeight / totalChargeableWeight;
-              } else if (useValueAllocation && totalShipmentValue > 0) {
-                const itemValue = parseFloat(item.unitPrice || '0') * itemQuantity;
-                allocationRatio = itemValue / totalShipmentValue;
+                allocationRatio = safeChargeableWeight / totalChargeableWeight;
+              } else if (useValueAllocation && totalShipmentValueEur > 0 && !isNaN(itemValueEur)) {
+                allocationRatio = itemValueEur / totalShipmentValueEur;
               } else if (totalUnits > 0) {
                 allocationRatio = itemQuantity / totalUnits;
+              }
+              
+              // NaN check for allocation ratio
+              if (isNaN(allocationRatio)) {
+                console.warn(`[LandingCost] NaN allocation for item ${item.id} in direct PO, falling back to equal distribution`);
+                allocationRatio = purchaseItemsList.length > 0 ? 1 / purchaseItemsList.length : 0;
+              }
+              
+              // Fallback to equal allocation if all totals are zero (with warning)
+              if (allocationRatio === 0 && purchaseItemsList.length > 0) {
+                console.warn(`[LandingCost] Zero allocation for item ${item.id} in direct PO, falling back to equal distribution`);
+                allocationRatio = 1 / purchaseItemsList.length;
               }
               
               const freightAllocated = (costsByType['FREIGHT'] || 0) * allocationRatio;
@@ -15586,16 +15676,25 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       return sum + chargeableWeight;
     }, 0);
     
-    // Calculate total value and total units for fallback allocation methods
-    const totalShipmentValue = itemsWithCartons.reduce((sum, row) => {
-      return sum + (parseFloat(row.item.unitPrice || '0') * row.item.quantity);
+    // Calculate total value (in EUR) and total units for fallback allocation methods
+    // We need to convert item values to EUR for consistent value-based allocation
+    // Also add NaN checks to prevent invalid totals
+    const totalShipmentValueEur = itemsWithCartons.reduce((sum, row) => {
+      const item = row.item;
+      const itemPaymentCurrency = item.paymentCurrency || 'USD';
+      const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
+      const itemUnitPrice = parseFloat(item.unitPrice || '0');
+      const itemUnitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
+      // NaN check before adding to total
+      const safeValue = isNaN(itemUnitPriceEur) ? 0 : itemUnitPriceEur * item.quantity;
+      return sum + safeValue;
     }, 0);
     
     const totalUnits = itemsWithCartons.reduce((sum, row) => sum + row.item.quantity, 0);
     
     // Determine allocation method: weight-based if weight data exists, otherwise value-based or unit-based
     const useWeightAllocation = totalChargeableWeight > 0;
-    const useValueAllocation = !useWeightAllocation && totalShipmentValue > 0;
+    const useValueAllocation = !useWeightAllocation && totalShipmentValueEur > 0;
     const useUnitAllocation = !useWeightAllocation && !useValueAllocation && totalUnits > 0;
     
     for (const row of itemsWithCartons) {
@@ -15624,18 +15723,38 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       const chargeableWeight = landingCostService.calculateChargeableWeight(actualWeight, volumetricWeight);
 
       // Calculate allocation ratio based on available data
+      // Convert item value to EUR for consistent value-based allocation
+      const itemPaymentCurrency = item.paymentCurrency || 'USD';
+      const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
+      const itemUnitPriceRaw = parseFloat(item.unitPrice || '0');
+      const itemUnitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPriceRaw : itemUnitPriceRaw / itemCurrencyRate;
+      // NaN checks for converted values
+      const safeItemValueEur = (isNaN(itemUnitPriceEur) ? 0 : itemUnitPriceEur) * item.quantity;
+      const safeChargeableWeight = isNaN(chargeableWeight) ? 0 : chargeableWeight;
+      
       let allocationRatio = 0;
       
-      if (useWeightAllocation) {
+      if (useWeightAllocation && totalChargeableWeight > 0) {
         // Weight-based allocation (preferred)
-        allocationRatio = chargeableWeight / totalChargeableWeight;
-      } else if (useValueAllocation) {
-        // Value-based allocation fallback
-        const itemValue = parseFloat(item.unitPrice || '0') * item.quantity;
-        allocationRatio = itemValue / totalShipmentValue;
-      } else if (useUnitAllocation) {
+        allocationRatio = safeChargeableWeight / totalChargeableWeight;
+      } else if (useValueAllocation && totalShipmentValueEur > 0 && !isNaN(safeItemValueEur)) {
+        // Value-based allocation fallback - use EUR-converted values
+        allocationRatio = safeItemValueEur / totalShipmentValueEur;
+      } else if (useUnitAllocation && totalUnits > 0) {
         // Unit-based allocation fallback (last resort)
         allocationRatio = item.quantity / totalUnits;
+      }
+      
+      // NaN check for allocation ratio
+      if (isNaN(allocationRatio)) {
+        console.warn(`[LandingCost] NaN allocation for item ${item.id}, falling back to equal distribution`);
+        allocationRatio = itemsWithCartons.length > 0 ? 1 / itemsWithCartons.length : 0;
+      }
+      
+      // Fallback to equal allocation if all totals are zero (with warning)
+      if (allocationRatio === 0 && itemsWithCartons.length > 0) {
+        console.warn(`[LandingCost] Zero allocation for item ${item.id}, falling back to equal distribution`);
+        allocationRatio = 1 / itemsWithCartons.length;
       }
 
       const freightAllocated = (costsByType['FREIGHT'] || 0) * allocationRatio;
