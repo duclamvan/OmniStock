@@ -378,10 +378,13 @@ async function getLandedCostForItem(
   
   // Default exchange rates from EUR (base) to target currencies
   // These are reasonable defaults used when actual rates are not available
-  let eurToUsd = 1.08;
-  let eurToCzk = 25.2;
-  let eurToVnd = 27000;
-  let eurToCny = 7.8;
+  let exchangeRates: Record<string, number> = {
+    USD: 1.08,
+    CZK: 25.2,
+    VND: 27000,
+    CNY: 7.8,
+    EUR: 1
+  };
   
   // Priority 1: Try to get exchange rates from the shipment's stored exchangeRates
   // The LandingCostService stores exchange rates at calculation time in the shipment
@@ -399,10 +402,10 @@ async function getLandedCostForItem(
           ? JSON.parse(shipment.exchangeRates) 
           : shipment.exchangeRates;
         
-        if (rates.USD && rates.USD > 0) eurToUsd = rates.USD;
-        if (rates.CZK && rates.CZK > 0) eurToCzk = rates.CZK;
-        if (rates.VND && rates.VND > 0) eurToVnd = rates.VND;
-        if (rates.CNY && rates.CNY > 0) eurToCny = rates.CNY;
+        if (rates.USD && rates.USD > 0) exchangeRates.USD = rates.USD;
+        if (rates.CZK && rates.CZK > 0) exchangeRates.CZK = rates.CZK;
+        if (rates.VND && rates.VND > 0) exchangeRates.VND = rates.VND;
+        if (rates.CNY && rates.CNY > 0) exchangeRates.CNY = rates.CNY;
       }
     } catch (error) {
       console.warn('Failed to fetch shipment exchange rates:', error);
@@ -478,18 +481,13 @@ async function getLandedCostForItem(
         // Convert shipping cost to EUR
         let shippingCostEur = shippingCost;
         if (shippingCurrency !== 'EUR') {
-          // Try to get rate from shipment's stored rates or use default
-          let fxRate = 0.92; // Default USD->EUR
-          if (shipment.exchangeRates) {
-            const rates = typeof shipment.exchangeRates === 'string' 
-              ? JSON.parse(shipment.exchangeRates) 
-              : shipment.exchangeRates;
-            // Stored rates are EUR->X, so we need 1/rate for X->EUR
-            if (rates[shippingCurrency]) {
-              fxRate = 1 / rates[shippingCurrency];
-            }
-          }
-          shippingCostEur = shippingCost * fxRate;
+          // Use fxConversionService for currency conversion
+          const rates = shipment.exchangeRates 
+            ? (typeof shipment.exchangeRates === 'string' 
+                ? JSON.parse(shipment.exchangeRates) 
+                : shipment.exchangeRates)
+            : { USD: 1.08, CZK: 25.2, VND: 27000, CNY: 7.8 }; // Default rates
+          shippingCostEur = fxConversionService.convertToEur(shippingCost, shippingCurrency, rates);
         }
         
         // Get total units in this shipment for proportional allocation
@@ -519,19 +517,13 @@ async function getLandedCostForItem(
           const unitPriceInPaymentCurrency = parseFloat(thisItem.unitPrice || '0');
           const paymentCurrency = thisItem.paymentCurrency || 'USD';
           
-          // Convert unit price to EUR
-          let itemUnitPriceEur = unitPriceInPaymentCurrency;
-          if (paymentCurrency !== 'EUR' && shipment.exchangeRates) {
-            const rates = typeof shipment.exchangeRates === 'string' 
-              ? JSON.parse(shipment.exchangeRates) 
-              : shipment.exchangeRates;
-            if (rates[paymentCurrency]) {
-              itemUnitPriceEur = unitPriceInPaymentCurrency / rates[paymentCurrency];
-            }
-          } else if (paymentCurrency !== 'EUR') {
-            // Fallback rate for USD->EUR
-            itemUnitPriceEur = unitPriceInPaymentCurrency * 0.92;
-          }
+          // Convert unit price to EUR using fxConversionService
+          const paymentRates = shipment.exchangeRates 
+            ? (typeof shipment.exchangeRates === 'string' 
+                ? JSON.parse(shipment.exchangeRates) 
+                : shipment.exchangeRates)
+            : { USD: 1.08, CZK: 25.2, VND: 27000, CNY: 7.8 }; // Default rates
+          const itemUnitPriceEur = fxConversionService.convertToEur(unitPriceInPaymentCurrency, paymentCurrency, paymentRates);
           
           // Calculate freight allocation per unit (simple equal distribution)
           const freightPerUnit = shippingCostEur / totalUnits;
@@ -539,7 +531,7 @@ async function getLandedCostForItem(
           // Add insurance if available
           let insurancePerUnit = 0;
           if (shipment.insuranceValue) {
-            const insuranceEur = parseFloat(String(shipment.insuranceValue)) * (shippingCurrency !== 'EUR' ? (1 / eurToUsd) : 1);
+            const insuranceEur = fxConversionService.convertToEur(parseFloat(String(shipment.insuranceValue)), shippingCurrency, paymentRates);
             insurancePerUnit = insuranceEur / totalUnits;
           }
           
@@ -555,10 +547,10 @@ async function getLandedCostForItem(
                   .set({
                     latestLandingCost: landingCostPerUnit.toString(),
                     landingCostEur: landingCostPerUnit.toString(),
-                    landingCostCzk: (landingCostPerUnit * eurToCzk).toString(),
-                    landingCostVnd: (landingCostPerUnit * eurToVnd).toString(),
-                    landingCostCny: (landingCostPerUnit * eurToCny).toString(),
-                    landingCostUsd: (landingCostPerUnit * eurToUsd).toString(),
+                    landingCostCzk: fxConversionService.convertFromEur(landingCostPerUnit, 'CZK', exchangeRates).toString(),
+                    landingCostVnd: fxConversionService.convertFromEur(landingCostPerUnit, 'VND', exchangeRates).toString(),
+                    landingCostCny: fxConversionService.convertFromEur(landingCostPerUnit, 'CNY', exchangeRates).toString(),
+                    landingCostUsd: fxConversionService.convertFromEur(landingCostPerUnit, 'USD', exchangeRates).toString(),
                     updatedAt: new Date()
                   })
                   .where(eq(productVariants.id, alloc.variantId));
@@ -610,10 +602,10 @@ async function getLandedCostForItem(
                 .set({
                   latestLandingCost: landingCostPerUnit.toString(),
                   landingCostEur: landingCostPerUnit.toString(),
-                  landingCostCzk: (landingCostPerUnit * eurToCzk).toString(),
-                  landingCostVnd: (landingCostPerUnit * eurToVnd).toString(),
-                  landingCostCny: (landingCostPerUnit * eurToCny).toString(),
-                  landingCostUsd: (landingCostPerUnit * eurToUsd).toString(),
+                  landingCostCzk: fxConversionService.convertFromEur(landingCostPerUnit, 'CZK', exchangeRates).toString(),
+                  landingCostVnd: fxConversionService.convertFromEur(landingCostPerUnit, 'VND', exchangeRates).toString(),
+                  landingCostCny: fxConversionService.convertFromEur(landingCostPerUnit, 'CNY', exchangeRates).toString(),
+                  landingCostUsd: fxConversionService.convertFromEur(landingCostPerUnit, 'USD', exchangeRates).toString(),
                   updatedAt: new Date()
                 })
                 .where(eq(productVariants.id, alloc.variantId));
@@ -645,13 +637,12 @@ async function getLandedCostForItem(
     });
   }
   
-  // Calculate currency-specific landed costs from EUR base
-  // Using actual or default exchange rates
+  // Calculate currency-specific landed costs from EUR base using fxConversionService
   const landingCostEur = landingCostPerUnit;
-  const landingCostUsd = landingCostPerUnit * eurToUsd;
-  const landingCostCzk = landingCostPerUnit * eurToCzk;
-  const landingCostVnd = landingCostPerUnit * eurToVnd;
-  const landingCostCny = landingCostPerUnit * eurToCny;
+  const landingCostUsd = fxConversionService.convertFromEur(landingCostPerUnit, 'USD', exchangeRates);
+  const landingCostCzk = fxConversionService.convertFromEur(landingCostPerUnit, 'CZK', exchangeRates);
+  const landingCostVnd = fxConversionService.convertFromEur(landingCostPerUnit, 'VND', exchangeRates);
+  const landingCostCny = fxConversionService.convertFromEur(landingCostPerUnit, 'CNY', exchangeRates);
   
   return {
     landingCostPerUnit,
@@ -668,6 +659,7 @@ async function getLandedCostForItem(
  * Derive missing historical import costs from any available currency value.
  * Falls back through all currencies to find the best source for derivation.
  * This preserves historical valuation for legacy data with incomplete currency coverage.
+ * Uses fxConversionService for all currency conversions.
  */
 function deriveHistoricalImportCosts(
   oldCostUsd: number,
@@ -675,14 +667,7 @@ function deriveHistoricalImportCosts(
   oldCostCzk: number,
   oldCostVnd: number,
   oldCostCny: number,
-  eurToUsd: number,
-  usdToEur: number,
-  eurToCzk: number,
-  eurToVnd: number,
-  eurToCny: number,
-  usdToCzk: number,
-  usdToVnd: number,
-  usdToCny: number
+  exchangeRates: Record<string, number>
 ): {
   derivedUsd: number;
   derivedEur: number;
@@ -698,42 +683,42 @@ function deriveHistoricalImportCosts(
   
   // Derive USD: prefer USD > EUR > CZK > VND > CNY
   const derivedUsd = hasUsd ? oldCostUsd 
-    : hasEur ? oldCostEur * eurToUsd 
-    : hasCzk ? oldCostCzk / eurToCzk * eurToUsd 
-    : hasVnd ? oldCostVnd / eurToVnd * eurToUsd 
-    : hasCny ? oldCostCny / eurToCny * eurToUsd 
+    : hasEur ? fxConversionService.convertFromEur(oldCostEur, 'USD', exchangeRates)
+    : hasCzk ? fxConversionService.convert(oldCostCzk, 'CZK', 'USD', exchangeRates)
+    : hasVnd ? fxConversionService.convert(oldCostVnd, 'VND', 'USD', exchangeRates)
+    : hasCny ? fxConversionService.convert(oldCostCny, 'CNY', 'USD', exchangeRates)
     : 0;
   
   // Derive EUR: prefer EUR > USD > CZK > VND > CNY
   const derivedEur = hasEur ? oldCostEur 
-    : hasUsd ? oldCostUsd * usdToEur 
-    : hasCzk ? oldCostCzk / eurToCzk 
-    : hasVnd ? oldCostVnd / eurToVnd 
-    : hasCny ? oldCostCny / eurToCny 
+    : hasUsd ? fxConversionService.convertToEur(oldCostUsd, 'USD', exchangeRates)
+    : hasCzk ? fxConversionService.convertToEur(oldCostCzk, 'CZK', exchangeRates)
+    : hasVnd ? fxConversionService.convertToEur(oldCostVnd, 'VND', exchangeRates)
+    : hasCny ? fxConversionService.convertToEur(oldCostCny, 'CNY', exchangeRates)
     : 0;
   
   // Derive CZK: prefer CZK > EUR > USD > VND > CNY
   const derivedCzk = hasCzk ? oldCostCzk 
-    : hasEur ? oldCostEur * eurToCzk 
-    : hasUsd ? oldCostUsd * usdToCzk 
-    : hasVnd ? oldCostVnd / eurToVnd * eurToCzk 
-    : hasCny ? oldCostCny / eurToCny * eurToCzk 
+    : hasEur ? fxConversionService.convertFromEur(oldCostEur, 'CZK', exchangeRates)
+    : hasUsd ? fxConversionService.convert(oldCostUsd, 'USD', 'CZK', exchangeRates)
+    : hasVnd ? fxConversionService.convert(oldCostVnd, 'VND', 'CZK', exchangeRates)
+    : hasCny ? fxConversionService.convert(oldCostCny, 'CNY', 'CZK', exchangeRates)
     : 0;
   
   // Derive VND: prefer VND > EUR > USD > CZK > CNY
   const derivedVnd = hasVnd ? oldCostVnd 
-    : hasEur ? oldCostEur * eurToVnd 
-    : hasUsd ? oldCostUsd * usdToVnd 
-    : hasCzk ? oldCostCzk / eurToCzk * eurToVnd 
-    : hasCny ? oldCostCny / eurToCny * eurToVnd 
+    : hasEur ? fxConversionService.convertFromEur(oldCostEur, 'VND', exchangeRates)
+    : hasUsd ? fxConversionService.convert(oldCostUsd, 'USD', 'VND', exchangeRates)
+    : hasCzk ? fxConversionService.convert(oldCostCzk, 'CZK', 'VND', exchangeRates)
+    : hasCny ? fxConversionService.convert(oldCostCny, 'CNY', 'VND', exchangeRates)
     : 0;
   
   // Derive CNY: prefer CNY > EUR > USD > CZK > VND
   const derivedCny = hasCny ? oldCostCny 
-    : hasEur ? oldCostEur * eurToCny 
-    : hasUsd ? oldCostUsd * usdToCny 
-    : hasCzk ? oldCostCzk / eurToCzk * eurToCny 
-    : hasVnd ? oldCostVnd / eurToVnd * eurToCny 
+    : hasEur ? fxConversionService.convertFromEur(oldCostEur, 'CNY', exchangeRates)
+    : hasUsd ? fxConversionService.convert(oldCostUsd, 'USD', 'CNY', exchangeRates)
+    : hasCzk ? fxConversionService.convert(oldCostCzk, 'CZK', 'CNY', exchangeRates)
+    : hasVnd ? fxConversionService.convert(oldCostVnd, 'VND', 'CNY', exchangeRates)
     : 0;
   
   return { derivedUsd, derivedEur, derivedCzk, derivedVnd, derivedCny };
@@ -892,12 +877,16 @@ async function finalizeReceivingInventory(
     
     // ================================================================
     // EXCHANGE RATE SETUP
-    // Get exchange rates from shipment or use defaults
+    // Get exchange rates from shipment or use defaults (EUR→X format)
+    // All conversions use fxConversionService with this exchangeRates object
     // ================================================================
-    let eurToUsd = 1.08;
-    let eurToCzk = 25.2;
-    let eurToVnd = 27000;
-    let eurToCny = 7.8;
+    let exchangeRates: Record<string, number> = {
+      USD: 1.08,
+      CZK: 25.2,
+      VND: 27000,
+      CNY: 7.8,
+      EUR: 1
+    };
     
     if (shipmentId) {
       const [shipment] = await tx
@@ -909,17 +898,12 @@ async function finalizeReceivingInventory(
         const rates = typeof shipment.exchangeRates === 'string' 
           ? JSON.parse(shipment.exchangeRates) 
           : shipment.exchangeRates;
-        if (rates.USD && rates.USD > 0) eurToUsd = rates.USD;
-        if (rates.CZK && rates.CZK > 0) eurToCzk = rates.CZK;
-        if (rates.VND && rates.VND > 0) eurToVnd = rates.VND;
-        if (rates.CNY && rates.CNY > 0) eurToCny = rates.CNY;
+        if (rates.USD && rates.USD > 0) exchangeRates.USD = rates.USD;
+        if (rates.CZK && rates.CZK > 0) exchangeRates.CZK = rates.CZK;
+        if (rates.VND && rates.VND > 0) exchangeRates.VND = rates.VND;
+        if (rates.CNY && rates.CNY > 0) exchangeRates.CNY = rates.CNY;
       }
     }
-    
-    const usdToEur = 1 / eurToUsd;
-    const usdToCzk = eurToCzk / eurToUsd;
-    const usdToVnd = eurToVnd / eurToUsd;
-    const usdToCny = eurToCny / eurToUsd;
     
     // Aggregate quantities by productId
     const productQuantities = new Map<string, { quantity: number; items: typeof allReceiptItems }>();
@@ -1043,7 +1027,7 @@ async function finalizeReceivingInventory(
               }
             }
             
-            // Also convert to EUR for backwards compatibility
+            // Also convert to EUR for backwards compatibility using fxConversionService
             if (itemPaymentCurrency === 'EUR') {
               itemUnitPriceEur = itemUnitPriceOriginal;
             } else {
@@ -1053,18 +1037,16 @@ async function finalizeReceivingInventory(
                 .from(shipments)
                 .where(eq(shipments.id, shipmentId));
               
-              let eurToPaymentRate = 1.08; // Default EUR->USD rate
+              let localRates: Record<string, number> = { EUR: 1, USD: 1.08, CZK: 25, VND: 27000, CNY: 7.8 };
               if (shipmentForRates?.exchangeRates) {
                 const rates = typeof shipmentForRates.exchangeRates === 'string'
                   ? JSON.parse(shipmentForRates.exchangeRates)
                   : shipmentForRates.exchangeRates;
-                if (rates[itemPaymentCurrency]) {
-                  eurToPaymentRate = rates[itemPaymentCurrency];
-                }
+                localRates = { ...localRates, ...rates };
               }
               
-              // Convert payment currency to EUR: divide by EUR->Payment rate
-              itemUnitPriceEur = itemUnitPriceOriginal / eurToPaymentRate;
+              // Convert payment currency to EUR using fxConversionService
+              itemUnitPriceEur = fxConversionService.convertToEur(itemUnitPriceOriginal, itemPaymentCurrency, localRates);
             }
             
             console.log(`[Currency] Custom item ${item.itemId}: unitPrice=${itemUnitPriceOriginal} ${itemPaymentCurrency} (${itemUnitPriceEur.toFixed(4)} EUR)`);
@@ -1098,7 +1080,7 @@ async function finalizeReceivingInventory(
             itemUnitPriceOriginal = unitPriceInPurchaseCurrency;
             itemPaymentCurrency = purchaseCurrency;
             
-            // Also convert to EUR
+            // Also convert to EUR using fxConversionService
             if (purchaseCurrency === 'EUR') {
               itemUnitPriceEur = unitPriceInPurchaseCurrency;
             } else {
@@ -1108,18 +1090,16 @@ async function finalizeReceivingInventory(
                 .from(shipments)
                 .where(eq(shipments.id, shipmentId));
               
-              let eurToPaymentRate = 1.08; // Default EUR->USD rate
+              let localRates: Record<string, number> = { EUR: 1, USD: 1.08, CZK: 25, VND: 27000, CNY: 7.8 };
               if (shipmentForRates?.exchangeRates) {
                 const rates = typeof shipmentForRates.exchangeRates === 'string'
                   ? JSON.parse(shipmentForRates.exchangeRates)
                   : shipmentForRates.exchangeRates;
-                if (rates[purchaseCurrency]) {
-                  eurToPaymentRate = rates[purchaseCurrency];
-                }
+                localRates = { ...localRates, ...rates };
               }
               
-              // Convert payment currency to EUR: divide by EUR->Payment rate
-              itemUnitPriceEur = unitPriceInPurchaseCurrency / eurToPaymentRate;
+              // Convert payment currency to EUR using fxConversionService
+              itemUnitPriceEur = fxConversionService.convertToEur(unitPriceInPurchaseCurrency, purchaseCurrency, localRates);
             }
             
             console.log(`[Currency] Purchase item ${item.itemId}: unitPrice=${itemUnitPriceOriginal} ${itemPaymentCurrency} (${itemUnitPriceEur.toFixed(4)} EUR)`);
@@ -1226,13 +1206,12 @@ async function finalizeReceivingInventory(
           exchangeRates = { ...exchangeRates, ...rates };
         }
         // Use merged exchange rates for parent currency (includes both defaults and shipment-specific rates)
-        const eurToPaymentRate = exchangeRates[itemPaymentCurrency] || 1;
         if (!exchangeRates[itemPaymentCurrency]) {
           console.warn(`[Currency] No exchange rate for item payment currency ${itemPaymentCurrency}, using 1 (EUR equivalent)`);
         }
         
-        // Convert landing cost to payment currency
-        const landingCostPerUnitOriginal = landingCostPerUnitEur * eurToPaymentRate;
+        // Convert landing cost to payment currency using fxConversionService
+        const landingCostPerUnitOriginal = fxConversionService.convertFromEur(landingCostPerUnitEur, itemPaymentCurrency, exchangeRates);
         
         console.log(`[Landing Costs] ${item.itemType} item ${item.id}: ` +
           `landingCost=${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} (EUR: ${landingCostPerUnitEur.toFixed(4)})`);
@@ -1454,9 +1433,8 @@ async function finalizeReceivingInventory(
           // otherwise fall back to parent item's paymentCurrency (for legacy data)
           const variantCurrency = vaExt3.unitPriceCurrency || itemPaymentCurrency;
           
-          // Get variant's currency rate for conversions
-          const variantCurrencyRateForConversion = exchangeRates[variantCurrency] || 1;
-          if (!exchangeRates[variantCurrency]) {
+          // Warn if no exchange rate available for variant currency
+          if (!exchangeRates[variantCurrency] && variantCurrency !== 'EUR') {
             console.warn(`[Currency] No exchange rate for variant currency ${variantCurrency}, using 1 (EUR equivalent)`);
           }
           
@@ -1469,9 +1447,8 @@ async function finalizeReceivingInventory(
             // Same currency - use parent's price directly
             variantUnitPriceOriginal = itemUnitPriceOriginal;
           } else {
-            // Different currencies - convert parent's price to variant's currency via EUR
-            const parentPriceEur = itemUnitPriceOriginal / eurToPaymentRate;
-            variantUnitPriceOriginal = parentPriceEur * variantCurrencyRateForConversion;
+            // Different currencies - convert parent's price to variant's currency via EUR using fxConversionService
+            variantUnitPriceOriginal = fxConversionService.convert(itemUnitPriceOriginal, itemPaymentCurrency, variantCurrency, exchangeRates);
             console.log(`[Currency Conversion] Fallback price: ${itemUnitPriceOriginal.toFixed(4)} ${itemPaymentCurrency} → ${variantUnitPriceOriginal.toFixed(4)} ${variantCurrency}`);
           }
           
@@ -1479,10 +1456,8 @@ async function finalizeReceivingInventory(
           // landing cost (which is in itemPaymentCurrency) to variant's currency
           let landingCostInVariantCurrency = landingCostPerUnitOriginal;
           if (variantCurrency !== itemPaymentCurrency) {
-            // Convert landing cost from item's currency to variant's currency via EUR
-            // First convert to EUR, then to variant's currency
-            const landingCostEur = landingCostPerUnitOriginal / eurToPaymentRate;
-            landingCostInVariantCurrency = landingCostEur * variantCurrencyRateForConversion;
+            // Convert landing cost from item's currency to variant's currency via EUR using fxConversionService
+            landingCostInVariantCurrency = fxConversionService.convert(landingCostPerUnitOriginal, itemPaymentCurrency, variantCurrency, exchangeRates);
             console.log(`[Currency Conversion] Landing cost: ${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} → ${landingCostInVariantCurrency.toFixed(4)} ${variantCurrency}`);
           }
           
@@ -1490,22 +1465,20 @@ async function finalizeReceivingInventory(
           // Both should now be in the same currency (variant's currency)
           const totalLandedCostOriginal = variantUnitPriceOriginal + landingCostInVariantCurrency;
           
-          // Convert total landed cost to EUR for storage
+          // Convert total landed cost to EUR for storage using fxConversionService
           // Use variant's currency for conversion, not item's currency
-          const variantLandedCostEur = variantCurrency === 'EUR' 
-            ? totalLandedCostOriginal 
-            : totalLandedCostOriginal / variantCurrencyRateForConversion;
+          const variantLandedCostEur = fxConversionService.convertToEur(totalLandedCostOriginal, variantCurrency, exchangeRates);
           
           console.log(`[Variant Costs] ${va.variantName}: ` +
             `unitPrice=${variantUnitPriceOriginal.toFixed(4)} ${variantCurrency} (variant=${variantUnitPriceRaw.toFixed(4)}, fallback=${itemUnitPriceOriginal.toFixed(4)}) + ` +
             `landingCost=${landingCostInVariantCurrency.toFixed(4)} ${variantCurrency} = ` +
             `total=${totalLandedCostOriginal.toFixed(4)} ${variantCurrency} (EUR: ${variantLandedCostEur.toFixed(4)})`);
           
-          // Convert to ALL currencies (VND and CNY added per requirements)
-          const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
-          const variantLandedCostCzk = variantLandedCostEur * eurToCzk;
-          const variantLandedCostVnd = variantLandedCostEur * eurToVnd;
-          const variantLandedCostCny = variantLandedCostEur * eurToCny;
+          // Convert to ALL currencies using fxConversionService
+          const variantLandedCostUsd = fxConversionService.convertFromEur(variantLandedCostEur, 'USD', exchangeRates);
+          const variantLandedCostCzk = fxConversionService.convertFromEur(variantLandedCostEur, 'CZK', exchangeRates);
+          const variantLandedCostVnd = fxConversionService.convertFromEur(variantLandedCostEur, 'VND', exchangeRates);
+          const variantLandedCostCny = fxConversionService.convertFromEur(variantLandedCostEur, 'CNY', exchangeRates);
           
           // Calculate weighted average cost for this variant
           // CRITICAL: Only include existing inventory in weighted average if it has a valid cost
@@ -1537,7 +1510,7 @@ async function finalizeReceivingInventory(
           console.log(`[Weighted Avg] ${va.variantName}: ` +
             `existing=${effectiveExistingQty}×$${(existingCostUsd || 0).toFixed(2)} (valid=${hasValidExistingCost}) + ` +
             `new=${va.quantity}×$${variantLandedCostUsd.toFixed(2)} = avg $${avgCostUsd.toFixed(2)} ` +
-            `(EUR rates: eurToUsd=${eurToUsd.toFixed(4)})`);
+            `(EUR rates: USD=${exchangeRates.USD.toFixed(4)})`);
           
           // Get location code from receipt item (warehouseLocation field)
           const variantLocationCode = item.warehouseLocation || null;
@@ -1763,58 +1736,42 @@ async function finalizeReceivingInventory(
             const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
             console.log(`[finalizeReceivingInventory] Found purchase order ${purchaseOrderId}, currency: ${currency}, unitCost: ${unitCost}`);
             
-            if (currency === 'CZK') {
-              newCostCzk = unitCost;
-              newCostUsd = unitCost / eurToCzk * eurToUsd;
-              newCostEur = unitCost / eurToCzk;
-              newCostVnd = unitCost / eurToCzk * eurToVnd;
-              newCostCny = unitCost / eurToCzk * eurToCny;
-            } else if (currency === 'EUR') {
-              newCostEur = unitCost;
-              newCostUsd = unitCost * eurToUsd;
-              newCostCzk = unitCost * eurToCzk;
-              newCostVnd = unitCost * eurToVnd;
-              newCostCny = unitCost * eurToCny;
-            } else if (currency === 'VND') {
-              newCostVnd = unitCost;
-              newCostUsd = unitCost / eurToVnd * eurToUsd;
-              newCostEur = unitCost / eurToVnd;
-              newCostCzk = unitCost / eurToVnd * eurToCzk;
-              newCostCny = unitCost / eurToVnd * eurToCny;
-            } else if (currency === 'CNY') {
-              newCostCny = unitCost;
-              newCostUsd = unitCost / eurToCny * eurToUsd;
-              newCostEur = unitCost / eurToCny;
-              newCostCzk = unitCost / eurToCny * eurToCzk;
-              newCostVnd = unitCost / eurToCny * eurToVnd;
-            } else {
-              newCostUsd = unitCost;
-              newCostEur = unitCost * usdToEur;
-              newCostCzk = unitCost * usdToCzk;
-              newCostVnd = unitCost * usdToVnd;
-              newCostCny = unitCost * usdToCny;
-            }
+            // Use fxConversionService for all currency conversions
+            // First convert to EUR, then from EUR to all other currencies
+            const costInEur = fxConversionService.convertToEur(unitCost, currency, exchangeRates);
+            newCostEur = costInEur;
+            newCostUsd = fxConversionService.convertFromEur(costInEur, 'USD', exchangeRates);
+            newCostCzk = fxConversionService.convertFromEur(costInEur, 'CZK', exchangeRates);
+            newCostVnd = fxConversionService.convertFromEur(costInEur, 'VND', exchangeRates);
+            newCostCny = fxConversionService.convertFromEur(costInEur, 'CNY', exchangeRates);
+            
+            // Keep original currency value exact
+            if (currency === 'CZK') newCostCzk = unitCost;
+            else if (currency === 'EUR') newCostEur = unitCost;
+            else if (currency === 'VND') newCostVnd = unitCost;
+            else if (currency === 'CNY') newCostCny = unitCost;
+            else if (currency === 'USD') newCostUsd = unitCost;
           } else {
             console.warn(`[finalizeReceivingInventory] Purchase order ${purchaseOrderId} not found, using USD default`);
             newCostUsd = unitCost;
-            newCostEur = unitCost * usdToEur;
-            newCostCzk = unitCost * usdToCzk;
-            newCostVnd = unitCost * usdToVnd;
-            newCostCny = unitCost * usdToCny;
+            newCostEur = fxConversionService.convertToEur(unitCost, 'USD', exchangeRates);
+            newCostCzk = fxConversionService.convert(unitCost, 'USD', 'CZK', exchangeRates);
+            newCostVnd = fxConversionService.convert(unitCost, 'USD', 'VND', exchangeRates);
+            newCostCny = fxConversionService.convert(unitCost, 'USD', 'CNY', exchangeRates);
           }
         } else {
           console.log(`[finalizeReceivingInventory] No purchase order link found, using USD default for unitCost: ${unitCost}`);
           newCostUsd = unitCost;
-          newCostEur = unitCost * usdToEur;
-          newCostCzk = unitCost * usdToCzk;
-          newCostVnd = unitCost * usdToVnd;
-          newCostCny = unitCost * usdToCny;
+          newCostEur = fxConversionService.convertToEur(unitCost, 'USD', exchangeRates);
+          newCostCzk = fxConversionService.convert(unitCost, 'USD', 'CZK', exchangeRates);
+          newCostVnd = fxConversionService.convert(unitCost, 'USD', 'VND', exchangeRates);
+          newCostCny = fxConversionService.convert(unitCost, 'USD', 'CNY', exchangeRates);
         }
         
-        // Derive missing historical costs
+        // Derive missing historical costs using fxConversionService
         const derivedOldCosts = deriveHistoricalImportCosts(
           oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
-          eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
+          exchangeRates
         );
         
         // Calculate weighted averages
@@ -2023,9 +1980,9 @@ async function finalizeReceivingInventory(
         const avgCostUsd = totalVariantQuantity > 0 ? totalCostValueUsd / totalVariantQuantity : 0;
         const avgCostCzk = totalVariantQuantity > 0 ? totalCostValueCzk / totalVariantQuantity : 0;
         
-        // Derive VND and CNY from EUR using exchange rates
-        const avgCostVnd = avgCostEur * eurToVnd;
-        const avgCostCny = avgCostEur * eurToCny;
+        // Derive VND and CNY from EUR using fxConversionService
+        const avgCostVnd = fxConversionService.convertFromEur(avgCostEur, 'VND', exchangeRates);
+        const avgCostCny = fxConversionService.convertFromEur(avgCostEur, 'CNY', exchangeRates);
         
         // Update parent product costs ONLY (quantity already synced with unassigned stock)
         await tx
@@ -10471,15 +10428,14 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             let newCostVnd = 0;
             let newCostCny = 0;
             
-            // Get exchange rates for conversion
-            const eurToUsd = 1.1;
-            const eurToCzk = 25;
-            const eurToVnd = 27000;
-            const eurToCny = 7.5;
-            const usdToEur = 1 / eurToUsd;
-            const usdToCzk = eurToCzk / eurToUsd;
-            const usdToVnd = eurToVnd / eurToUsd;
-            const usdToCny = eurToCny / eurToUsd;
+            // Get exchange rates for conversion using fxConversionService
+            const exchangeRates: Record<string, number> = {
+              USD: 1.1,
+              CZK: 25,
+              VND: 27000,
+              CNY: 7.5,
+              EUR: 1
+            };
             
             // Get purchase order ID - either from purchase items or from custom items (unpacked)
             let purchaseOrderId: string | null = null;
@@ -10499,52 +10455,34 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               if (purchase) {
                 const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
                 
-                if (currency === 'CZK') {
-                  newCostCzk = unitCost;
-                  newCostUsd = unitCost / eurToCzk * eurToUsd;
-                  newCostEur = unitCost / eurToCzk;
-                  newCostVnd = unitCost / eurToCzk * eurToVnd;
-                  newCostCny = unitCost / eurToCzk * eurToCny;
-                } else if (currency === 'EUR') {
-                  newCostEur = unitCost;
-                  newCostUsd = unitCost * eurToUsd;
-                  newCostCzk = unitCost * eurToCzk;
-                  newCostVnd = unitCost * eurToVnd;
-                  newCostCny = unitCost * eurToCny;
-                } else if (currency === 'VND') {
-                  newCostVnd = unitCost;
-                  newCostUsd = unitCost / eurToVnd * eurToUsd;
-                  newCostEur = unitCost / eurToVnd;
-                  newCostCzk = unitCost / eurToVnd * eurToCzk;
-                  newCostCny = unitCost / eurToVnd * eurToCny;
-                } else if (currency === 'CNY') {
-                  newCostCny = unitCost;
-                  newCostUsd = unitCost / eurToCny * eurToUsd;
-                  newCostEur = unitCost / eurToCny;
-                  newCostCzk = unitCost / eurToCny * eurToCzk;
-                  newCostVnd = unitCost / eurToCny * eurToVnd;
-                } else {
-                  // Default: USD
-                  newCostUsd = unitCost;
-                  newCostEur = unitCost * usdToEur;
-                  newCostCzk = unitCost * usdToCzk;
-                  newCostVnd = unitCost * usdToVnd;
-                  newCostCny = unitCost * usdToCny;
-                }
+                // Use fxConversionService for all currency conversions
+                const costInEur = fxConversionService.convertToEur(unitCost, currency, exchangeRates);
+                newCostEur = costInEur;
+                newCostUsd = fxConversionService.convertFromEur(costInEur, 'USD', exchangeRates);
+                newCostCzk = fxConversionService.convertFromEur(costInEur, 'CZK', exchangeRates);
+                newCostVnd = fxConversionService.convertFromEur(costInEur, 'VND', exchangeRates);
+                newCostCny = fxConversionService.convertFromEur(costInEur, 'CNY', exchangeRates);
+                
+                // Keep original currency value exact
+                if (currency === 'CZK') newCostCzk = unitCost;
+                else if (currency === 'EUR') newCostEur = unitCost;
+                else if (currency === 'VND') newCostVnd = unitCost;
+                else if (currency === 'CNY') newCostCny = unitCost;
+                else if (currency === 'USD') newCostUsd = unitCost;
               }
             } else {
               // Default conversion from USD for non-purchase items
               newCostUsd = unitCost;
-              newCostEur = unitCost * usdToEur;
-              newCostCzk = unitCost * usdToCzk;
-              newCostVnd = unitCost * usdToVnd;
-              newCostCny = unitCost * usdToCny;
+              newCostEur = fxConversionService.convertToEur(unitCost, 'USD', exchangeRates);
+              newCostCzk = fxConversionService.convert(unitCost, 'USD', 'CZK', exchangeRates);
+              newCostVnd = fxConversionService.convert(unitCost, 'USD', 'VND', exchangeRates);
+              newCostCny = fxConversionService.convert(unitCost, 'USD', 'CNY', exchangeRates);
             }
             
-            // Derive missing historical costs from ANY available currency value
+            // Derive missing historical costs using fxConversionService
             const derivedOldCosts = deriveHistoricalImportCosts(
               oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
-              eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
+              exchangeRates
             );
             
             // Calculate weighted averages for ALL import costs using derived historical values
@@ -10633,22 +10571,21 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             
           } else {
             // Product doesn't exist - create new with ALL currency import costs
-            // Get exchange rates for conversion
-            const eurToUsd = 1.1;
-            const eurToCzk = 25;
-            const eurToVnd = 27000;
-            const eurToCny = 7.5;
-            const usdToEur = 1 / eurToUsd;
-            const usdToCzk = eurToCzk / eurToUsd;
-            const usdToVnd = eurToVnd / eurToUsd;
-            const usdToCny = eurToCny / eurToUsd;
+            // Get exchange rates for conversion using fxConversionService
+            const exchangeRates: Record<string, number> = {
+              USD: 1.1,
+              CZK: 25,
+              VND: 27000,
+              CNY: 7.5,
+              EUR: 1
+            };
             
             // Default to USD-based costs (will be overridden if different currency)
             let importCostUsd = unitCost;
-            let importCostCzk = unitCost * usdToCzk;
-            let importCostEur = unitCost * usdToEur;
-            let importCostVnd = unitCost * usdToVnd;
-            let importCostCny = unitCost * usdToCny;
+            let importCostCzk = fxConversionService.convert(unitCost, 'USD', 'CZK', exchangeRates);
+            let importCostEur = fxConversionService.convertToEur(unitCost, 'USD', exchangeRates);
+            let importCostVnd = fxConversionService.convert(unitCost, 'USD', 'VND', exchangeRates);
+            let importCostCny = fxConversionService.convert(unitCost, 'USD', 'CNY', exchangeRates);
             
             const newProduct: any = {
               id: crypto.randomUUID(),
@@ -10690,31 +10627,20 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               if (purchase) {
                 const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
                 
-                if (currency === 'CZK') {
-                  importCostCzk = unitCost;
-                  importCostUsd = unitCost / eurToCzk * eurToUsd;
-                  importCostEur = unitCost / eurToCzk;
-                  importCostVnd = unitCost / eurToCzk * eurToVnd;
-                  importCostCny = unitCost / eurToCzk * eurToCny;
-                } else if (currency === 'EUR') {
-                  importCostEur = unitCost;
-                  importCostUsd = unitCost * eurToUsd;
-                  importCostCzk = unitCost * eurToCzk;
-                  importCostVnd = unitCost * eurToVnd;
-                  importCostCny = unitCost * eurToCny;
-                } else if (currency === 'VND') {
-                  importCostVnd = unitCost;
-                  importCostUsd = unitCost / eurToVnd * eurToUsd;
-                  importCostEur = unitCost / eurToVnd;
-                  importCostCzk = unitCost / eurToVnd * eurToCzk;
-                  importCostCny = unitCost / eurToVnd * eurToCny;
-                } else if (currency === 'CNY') {
-                  importCostCny = unitCost;
-                  importCostUsd = unitCost / eurToCny * eurToUsd;
-                  importCostEur = unitCost / eurToCny;
-                  importCostCzk = unitCost / eurToCny * eurToCzk;
-                  importCostVnd = unitCost / eurToCny * eurToVnd;
-                }
+                // Use fxConversionService for all currency conversions
+                const costInEur = fxConversionService.convertToEur(unitCost, currency, exchangeRates);
+                importCostEur = costInEur;
+                importCostUsd = fxConversionService.convertFromEur(costInEur, 'USD', exchangeRates);
+                importCostCzk = fxConversionService.convertFromEur(costInEur, 'CZK', exchangeRates);
+                importCostVnd = fxConversionService.convertFromEur(costInEur, 'VND', exchangeRates);
+                importCostCny = fxConversionService.convertFromEur(costInEur, 'CNY', exchangeRates);
+                
+                // Keep original currency value exact
+                if (currency === 'CZK') importCostCzk = unitCost;
+                else if (currency === 'EUR') importCostEur = unitCost;
+                else if (currency === 'VND') importCostVnd = unitCost;
+                else if (currency === 'CNY') importCostCny = unitCost;
+                else if (currency === 'USD') importCostUsd = unitCost;
                 
                 // Update the product with recalculated costs
                 newProduct.importCostUsd = importCostUsd.toFixed(2);
@@ -11036,15 +10962,14 @@ router.post("/receipts/approve/:id", async (req, res) => {
           let newCostVnd = 0;
           let newCostCny = 0;
           
-          // Get exchange rates for conversion
-          const eurToUsd = 1.1;
-          const eurToCzk = 25;
-          const eurToVnd = 27000;
-          const eurToCny = 7.5;
-          const usdToEur = 1 / eurToUsd;
-          const usdToCzk = eurToCzk / eurToUsd;
-          const usdToVnd = eurToVnd / eurToUsd;
-          const usdToCny = eurToCny / eurToUsd;
+          // Get exchange rates for conversion using fxConversionService
+          const exchangeRates: Record<string, number> = {
+            USD: 1.1,
+            CZK: 25,
+            VND: 27000,
+            CNY: 7.5,
+            EUR: 1
+          };
           
           // Get purchase order ID - either from purchase items or from custom items (unpacked)
           let purchaseOrderId: string | null = null;
@@ -11064,52 +10989,34 @@ router.post("/receipts/approve/:id", async (req, res) => {
             if (purchase) {
               const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
               
-              if (currency === 'CZK') {
-                newCostCzk = unitCost;
-                newCostUsd = unitCost / eurToCzk * eurToUsd;
-                newCostEur = unitCost / eurToCzk;
-                newCostVnd = unitCost / eurToCzk * eurToVnd;
-                newCostCny = unitCost / eurToCzk * eurToCny;
-              } else if (currency === 'EUR') {
-                newCostEur = unitCost;
-                newCostUsd = unitCost * eurToUsd;
-                newCostCzk = unitCost * eurToCzk;
-                newCostVnd = unitCost * eurToVnd;
-                newCostCny = unitCost * eurToCny;
-              } else if (currency === 'VND') {
-                newCostVnd = unitCost;
-                newCostUsd = unitCost / eurToVnd * eurToUsd;
-                newCostEur = unitCost / eurToVnd;
-                newCostCzk = unitCost / eurToVnd * eurToCzk;
-                newCostCny = unitCost / eurToVnd * eurToCny;
-              } else if (currency === 'CNY') {
-                newCostCny = unitCost;
-                newCostUsd = unitCost / eurToCny * eurToUsd;
-                newCostEur = unitCost / eurToCny;
-                newCostCzk = unitCost / eurToCny * eurToCzk;
-                newCostVnd = unitCost / eurToCny * eurToVnd;
-              } else {
-                // Default: USD
-                newCostUsd = unitCost;
-                newCostEur = unitCost * usdToEur;
-                newCostCzk = unitCost * usdToCzk;
-                newCostVnd = unitCost * usdToVnd;
-                newCostCny = unitCost * usdToCny;
-              }
+              // Use fxConversionService for all currency conversions
+              const costInEur = fxConversionService.convertToEur(unitCost, currency, exchangeRates);
+              newCostEur = costInEur;
+              newCostUsd = fxConversionService.convertFromEur(costInEur, 'USD', exchangeRates);
+              newCostCzk = fxConversionService.convertFromEur(costInEur, 'CZK', exchangeRates);
+              newCostVnd = fxConversionService.convertFromEur(costInEur, 'VND', exchangeRates);
+              newCostCny = fxConversionService.convertFromEur(costInEur, 'CNY', exchangeRates);
+              
+              // Keep original currency value exact
+              if (currency === 'CZK') newCostCzk = unitCost;
+              else if (currency === 'EUR') newCostEur = unitCost;
+              else if (currency === 'VND') newCostVnd = unitCost;
+              else if (currency === 'CNY') newCostCny = unitCost;
+              else if (currency === 'USD') newCostUsd = unitCost;
             }
           } else {
             // Default conversion from USD for non-purchase items
             newCostUsd = unitCost;
-            newCostEur = unitCost * usdToEur;
-            newCostCzk = unitCost * usdToCzk;
-            newCostVnd = unitCost * usdToVnd;
-            newCostCny = unitCost * usdToCny;
+            newCostEur = fxConversionService.convertToEur(unitCost, 'USD', exchangeRates);
+            newCostCzk = fxConversionService.convert(unitCost, 'USD', 'CZK', exchangeRates);
+            newCostVnd = fxConversionService.convert(unitCost, 'USD', 'VND', exchangeRates);
+            newCostCny = fxConversionService.convert(unitCost, 'USD', 'CNY', exchangeRates);
           }
           
-          // Derive missing historical costs from ANY available currency value
+          // Derive missing historical costs using fxConversionService
           const derivedOldCosts = deriveHistoricalImportCosts(
             oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
-            eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
+            exchangeRates
           );
           
           // Calculate weighted averages for ALL import costs using derived historical values
@@ -11187,22 +11094,21 @@ router.post("/receipts/approve/:id", async (req, res) => {
           
         } else {
           // Product doesn't exist - create new with ALL currency import costs
-          // Get exchange rates for conversion
-          const eurToUsd = 1.1;
-          const eurToCzk = 25;
-          const eurToVnd = 27000;
-          const eurToCny = 7.5;
-          const usdToEur = 1 / eurToUsd;
-          const usdToCzk = eurToCzk / eurToUsd;
-          const usdToVnd = eurToVnd / eurToUsd;
-          const usdToCny = eurToCny / eurToUsd;
+          // Get exchange rates for conversion using fxConversionService
+          const exchangeRates: Record<string, number> = {
+            USD: 1.1,
+            CZK: 25,
+            VND: 27000,
+            CNY: 7.5,
+            EUR: 1
+          };
           
           // Default to USD-based costs (will be overridden if different currency)
           let importCostUsd = unitCost;
-          let importCostCzk = unitCost * usdToCzk;
-          let importCostEur = unitCost * usdToEur;
-          let importCostVnd = unitCost * usdToVnd;
-          let importCostCny = unitCost * usdToCny;
+          let importCostCzk = fxConversionService.convert(unitCost, 'USD', 'CZK', exchangeRates);
+          let importCostEur = fxConversionService.convertToEur(unitCost, 'USD', exchangeRates);
+          let importCostVnd = fxConversionService.convert(unitCost, 'USD', 'VND', exchangeRates);
+          let importCostCny = fxConversionService.convert(unitCost, 'USD', 'CNY', exchangeRates);
           
           const newProduct: any = {
             id: crypto.randomUUID(),
@@ -11245,31 +11151,20 @@ router.post("/receipts/approve/:id", async (req, res) => {
             if (purchase) {
               const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
               
-              if (currency === 'CZK') {
-                importCostCzk = unitCost;
-                importCostUsd = unitCost / eurToCzk * eurToUsd;
-                importCostEur = unitCost / eurToCzk;
-                importCostVnd = unitCost / eurToCzk * eurToVnd;
-                importCostCny = unitCost / eurToCzk * eurToCny;
-              } else if (currency === 'EUR') {
-                importCostEur = unitCost;
-                importCostUsd = unitCost * eurToUsd;
-                importCostCzk = unitCost * eurToCzk;
-                importCostVnd = unitCost * eurToVnd;
-                importCostCny = unitCost * eurToCny;
-              } else if (currency === 'VND') {
-                importCostVnd = unitCost;
-                importCostUsd = unitCost / eurToVnd * eurToUsd;
-                importCostEur = unitCost / eurToVnd;
-                importCostCzk = unitCost / eurToVnd * eurToCzk;
-                importCostCny = unitCost / eurToVnd * eurToCny;
-              } else if (currency === 'CNY') {
-                importCostCny = unitCost;
-                importCostUsd = unitCost / eurToCny * eurToUsd;
-                importCostEur = unitCost / eurToCny;
-                importCostCzk = unitCost / eurToCny * eurToCzk;
-                importCostVnd = unitCost / eurToCny * eurToVnd;
-              }
+              // Use fxConversionService for all currency conversions
+              const costInEur = fxConversionService.convertToEur(unitCost, currency, exchangeRates);
+              importCostEur = costInEur;
+              importCostUsd = fxConversionService.convertFromEur(costInEur, 'USD', exchangeRates);
+              importCostCzk = fxConversionService.convertFromEur(costInEur, 'CZK', exchangeRates);
+              importCostVnd = fxConversionService.convertFromEur(costInEur, 'VND', exchangeRates);
+              importCostCny = fxConversionService.convertFromEur(costInEur, 'CNY', exchangeRates);
+              
+              // Keep original currency value exact
+              if (currency === 'CZK') importCostCzk = unitCost;
+              else if (currency === 'EUR') importCostEur = unitCost;
+              else if (currency === 'VND') importCostVnd = unitCost;
+              else if (currency === 'CNY') importCostCny = unitCost;
+              else if (currency === 'USD') importCostUsd = unitCost;
               
               // Update the product with recalculated costs
               newProduct.importCostUsd = importCostUsd.toFixed(2);
