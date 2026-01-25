@@ -110,7 +110,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink, Gift, Percent, Tag, TrendingDown } from "lucide-react";
+import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink, Gift, Percent, Tag, TrendingDown, Store, HandHeart } from "lucide-react";
 import { getCarrierTrackingUrl } from "@/lib/carrierTracking";
 import { toPng } from "html-to-image";
 import logoPath from '@assets/logo_1754349267160.png';
@@ -1784,8 +1784,32 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Shipping Address - Only show if shippingAddressId exists */}
-              {order.shippingAddressId && order.shippingAddress ? (
+              {/* Shipping Address - Show special UI for Pickup/Hand Delivery */}
+              {order.shippingMethod?.toUpperCase() === 'PICKUP' ? (
+                <div className="border-2 border-green-500 dark:border-green-600 rounded-lg p-4 bg-green-50 dark:bg-green-900/20" data-testid="section-pickup-delivery">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                      <Store className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-green-800 dark:text-green-200">{t('orders:pickup')}</h3>
+                      <p className="text-sm text-green-600 dark:text-green-400">{t('orders:pickupFromStore')}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : order.shippingMethod?.toUpperCase() === 'HAND-DELIVERY' ? (
+                <div className="border-2 border-purple-500 dark:border-purple-600 rounded-lg p-4 bg-purple-50 dark:bg-purple-900/20" data-testid="section-hand-delivery">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-purple-100 dark:bg-purple-800 rounded-full flex items-center justify-center">
+                      <HandHeart className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200">{t('orders:handDelivery')}</h3>
+                      <p className="text-sm text-purple-600 dark:text-purple-400">{t('orders:handDeliveryInfo')}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : order.shippingAddressId && order.shippingAddress ? (
                 <div className="border-2 border-blue-500 dark:border-blue-600 rounded-lg p-4" data-testid="section-shipping-address">
                   <div className="flex items-center gap-2 mb-3">
                     <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -1855,11 +1879,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('orders:shippingAddress')}</h3>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-500">
-                    {order.shippingMethod?.toUpperCase() === 'PICKUP' 
-                      ? t('orders:pickupFromStore')
-                      : order.shippingMethod?.toUpperCase() === 'HAND-DELIVERY'
-                      ? t('orders:handDeliveryInfo')
-                      : t('orders:noShippingAddress')}
+                    {t('orders:noShippingAddress')}
                   </p>
                 </div>
               )}
