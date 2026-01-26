@@ -106,7 +106,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PPLSmartPopup } from "@/components/PPLSmartPopup";
 import { useRealTimeOrder } from "@/hooks/useSocket";
-import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
+import { RealTimeViewers } from "@/components/RealTimeViewers";
 import { normalizeFirstName, normalizeLastName, normalizeFullName } from '@shared/utils/nameNormalizer';
 import { parseAddressLine, shouldFetchAddressDetails, mergeAddressData } from '@shared/utils/addressParser';
 import { normalizeCountryForStorage, getLocalizedCountryName, countryToIso, getCountryFlag } from '@shared/utils/countryNormalizer';
@@ -4717,10 +4717,6 @@ export default function AddOrder() {
           </div>
         </div>
         
-        {/* Lock overlay when another user is editing */}
-        {isEditMode && isLocked && lockInfo && (
-          <LockOverlay lockInfo={lockInfo} />
-        )}
 
         <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
           console.error('Order form validation errors:', errors);

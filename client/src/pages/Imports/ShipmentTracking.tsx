@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useRealTimeShipment } from "@/hooks/useSocket";
-import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
+import { RealTimeViewers } from "@/components/RealTimeViewers";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -385,8 +385,6 @@ export default function ShipmentTracking() {
              onClick={() => setSelectedShipment(null)}>
           <div className="bg-background w-full md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl md:rounded-xl p-4 md:p-6 relative"
                onClick={(e) => e.stopPropagation()}>
-            {/* Lock overlay for when another user has the edit lock */}
-            {isLocked && <LockOverlay lockInfo={lockInfo} />}
             
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
