@@ -476,6 +476,14 @@ export default function SimpleConversion() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="text-center text-lg">
+                <span className="font-semibold">{quantity}x</span>{" "}
+                <span className="text-muted-foreground">{selectedChild.parentName}</span>{" "}
+                <span className="text-muted-foreground">→</span>{" "}
+                <span className="font-semibold text-green-600">{finishedItemsProduced} pcs</span>{" "}
+                <span className="text-muted-foreground">{selectedChild.name}</span>
+              </div>
+
               <div className="flex items-center justify-center gap-4">
                 <Button
                   variant="outline"
@@ -501,14 +509,6 @@ export default function SimpleConversion() {
                 >
                   <Plus className="h-5 w-5" />
                 </Button>
-              </div>
-              
-              <div className="text-center text-lg">
-                <span className="font-semibold">{quantity}x</span>{" "}
-                <span className="text-muted-foreground">{selectedChild.parentName}</span>{" "}
-                <span className="text-muted-foreground">→</span>{" "}
-                <span className="font-semibold text-green-600">{finishedItemsProduced} pcs</span>{" "}
-                <span className="text-muted-foreground">{selectedChild.name}</span>
               </div>
 
               <div className="border-t pt-4">
