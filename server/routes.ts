@@ -15057,7 +15057,11 @@ Important:
                 const pickedQty = Number(qty) || 0;
                 if (pickedQty <= 0) continue;
                 
+                // Match by locationCode AND variantId for proper variant-specific restoration
                 const targetLocation = locations.find(loc => 
+                  loc.locationCode.toUpperCase() === locationCode.toUpperCase() &&
+                  (loc.variantId || null) === (item.variantId || null)
+                ) || locations.find(loc => 
                   loc.locationCode.toUpperCase() === locationCode.toUpperCase()
                 );
                 
