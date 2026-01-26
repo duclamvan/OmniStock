@@ -892,8 +892,11 @@ export default function AddOrder() {
     if (!existingOrder || !isEditMode) return;
     const order = existingOrder as any;
 
-    // Valid currency options to validate against
+    // Valid options to validate against
     const validCurrencies = ['CZK', 'EUR', 'USD', 'VND', 'CNY'];
+    const validOrderStatuses = ['pending', 'awaiting_stock', 'to_fulfill', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+    const validPaymentStatuses = ['pending', 'partial', 'paid', 'pay_later', 'refunded', 'failed'];
+    const validPriorities = ['low', 'medium', 'high', 'urgent'];
     
     // Normalize currency - ensure it's uppercase and valid
     const rawCurrency = order.currency?.toUpperCase() || 'CZK';
@@ -902,6 +905,15 @@ export default function AddOrder() {
     // Normalize shipping method
     const normalizedShipping = order.shippingMethod ? normalizeCarrier(order.shippingMethod) : 'GLS DE';
     
+    // Normalize order status - if the existing status is not in the list, default to 'pending'
+    const normalizedOrderStatus = validOrderStatuses.includes(order.orderStatus) ? order.orderStatus : 'pending';
+    
+    // Normalize payment status - if the existing status is not in the list, default to 'pending'
+    const normalizedPaymentStatus = validPaymentStatuses.includes(order.paymentStatus) ? order.paymentStatus : 'pending';
+    
+    // Normalize priority
+    const normalizedPriority = validPriorities.includes(order.priority) ? order.priority : 'medium';
+    
     // Debug logging for edit mode form population
     console.log('✅ Loading existing order data into form:', {
       orderId: order.id,
@@ -909,6 +921,10 @@ export default function AddOrder() {
       normalizedCurrency,
       shippingMethod: order.shippingMethod,
       normalizedShipping,
+      orderStatus: order.orderStatus,
+      normalizedOrderStatus,
+      paymentStatus: order.paymentStatus,
+      normalizedPaymentStatus,
     });
 
     form.reset({
@@ -916,9 +932,9 @@ export default function AddOrder() {
       orderType: order.orderType || 'ord',
       saleType: order.saleType || 'retail',
       currency: normalizedCurrency,
-      priority: order.priority || 'medium',
-      orderStatus: order.orderStatus || 'pending',
-      paymentStatus: order.paymentStatus || 'pending',
+      priority: normalizedPriority,
+      orderStatus: normalizedOrderStatus,
+      paymentStatus: normalizedPaymentStatus,
       shippingMethod: normalizedShipping,
       paymentMethod: order.paymentMethod || 'Bank Transfer',
       discountType: order.discountType || 'flat',
