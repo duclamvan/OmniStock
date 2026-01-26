@@ -210,18 +210,17 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
   });
   const [sectionsInitialized, setSectionsInitialized] = useState(false);
   
-  // Language toggle mutation
+  // Language toggle mutation - updates the CURRENT USER's preferred language only (not global)
   const languageMutation = useMutation({
     mutationFn: async (newLang: 'en' | 'vi') => {
       await i18n.changeLanguage(newLang);
-      // Use PATCH to update existing setting (upsert behavior)
-      await apiRequest('PATCH', '/api/settings/default_language', {
-        value: newLang,
-        category: 'general'
+      // Update the current user's preferred language (per-user, not global)
+      await apiRequest('PATCH', '/api/users/me', {
+        preferredLanguage: newLang
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
       toast({
         title: t('common:success'),
         description: t('common:languageChanged'),
