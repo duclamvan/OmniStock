@@ -12555,6 +12555,36 @@ Important:
         }
       }
 
+      // OPTIMIZATION 8: Batch fetch all product locations for stock counts
+      const stockLocationsMap = new Map<string, any[]>();
+      if (productIds.size > 0) {
+        try {
+          const productIdArray = Array.from(productIds);
+          const allLocations = await db
+            .select()
+            .from(productLocations)
+            .where(inArray(productLocations.productId, productIdArray));
+          
+          // Group locations by productId-variantId key
+          for (const location of allLocations) {
+            const key = location.variantId 
+              ? `${location.productId}-${location.variantId}` 
+              : location.productId;
+            if (!stockLocationsMap.has(key)) {
+              stockLocationsMap.set(key, []);
+            }
+            stockLocationsMap.get(key)!.push({
+              locationCode: location.locationCode,
+              quantity: location.quantity,
+              isPrimary: location.isPrimary,
+              locationType: location.locationType,
+            });
+          }
+        } catch (e) {
+          console.error('[pick-pack] Error fetching stock locations:', e);
+        }
+      }
+
       // OPTIMIZATION 7: Assemble response using lookup maps (O(1) access)
       const ordersWithItems = orders.map((order, orderIndex) => {
         const items = allOrderItemsArrays[orderIndex];
@@ -12636,11 +12666,22 @@ Important:
             }
           }
 
+          // Get stock locations for this item
+          const stockKey = item.variantId && item.productId
+            ? `${item.productId}-${item.variantId}`
+            : item.productId;
+          const stockLocations = stockKey ? stockLocationsMap.get(stockKey) || [] : [];
+          
+          // Calculate total stock across all locations
+          const totalStock = stockLocations.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
+
           return {
             ...item,
             image: imageUrl,
             variantQuantity,  // Add variant's own stock quantity for picking
-            variantLocationCode  // Add variant's location if it has one
+            variantLocationCode,  // Add variant's location if it has one
+            stockLocations,  // All stock locations for this product/variant
+            totalStock  // Total stock across all locations
           };
         });
 
