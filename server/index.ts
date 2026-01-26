@@ -164,6 +164,14 @@ app.use((req, res, next) => {
   server.listen(port, "0.0.0.0", async () => {
     log(`serving on port ${port}`);
 
+    // Seed default roles and permissions if needed
+    try {
+      const { seedDefaultRolesAndPermissions } = await import("./services/seedRolesPermissions");
+      await seedDefaultRolesAndPermissions();
+    } catch (error) {
+      console.error("Failed to seed roles and permissions:", error);
+    }
+
     // Start automatic backup scheduler
     try {
       const { startBackupScheduler } = await import("./services/backupService");

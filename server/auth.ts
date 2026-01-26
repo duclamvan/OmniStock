@@ -544,7 +544,6 @@ export function requireRole(allowedRoles: string[]): RequestHandler {
     const user = req.user as User | undefined;
 
     if (!req.isAuthenticated() || !user) {
-      console.log(`[requireRole] Auth failed for ${req.path}: isAuthenticated=${req.isAuthenticated()}, hasUser=${!!user}`);
       return res.status(401).json({ message: "Unauthorized" });
     }
 
