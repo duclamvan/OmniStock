@@ -3079,11 +3079,27 @@ function MultiLocationPicker({
   const [selectedLocationCode, setSelectedLocationCode] = useState<string>('');
 
   // Fetch product locations (from parent product)
-  const { data: productLocations = [], isLoading: locationsLoading } = useQuery<ProductLocation[]>({
+  const { data: productLocations = [], isLoading: locationsLoading, error: locationsError } = useQuery<ProductLocation[]>({
     queryKey: ['/api/products', productIdForLocations, 'locations'],
     enabled: !!productIdForLocations,
     staleTime: 5000,
   });
+
+  // Debug logging for location issues
+  useEffect(() => {
+    if (!locationsLoading && productIdForLocations) {
+      console.log('[MultiLocationPicker] Debug:', {
+        productId: productIdForLocations,
+        productName: currentItem.productName,
+        isVariant,
+        isVirtual,
+        variantId: currentItem.variantId,
+        locationsCount: productLocations.length,
+        locations: productLocations,
+        error: locationsError
+      });
+    }
+  }, [locationsLoading, productIdForLocations, productLocations, locationsError, currentItem.productName, isVariant, isVirtual, currentItem.variantId]);
 
   // No need to fetch variant data separately - it's included in the pick-pack response
   const isLoading = locationsLoading;
