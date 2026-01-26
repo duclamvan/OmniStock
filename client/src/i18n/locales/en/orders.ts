@@ -121,6 +121,10 @@ const orders = {
   carrier: 'Carrier',
   fulfillmentLocation: 'Fulfillment Location',
   
+  // Shipping Address Validation
+  shippingAddressRequired: 'Shipping Address Required',
+  pleaseSelectShippingAddress: 'Please select or add a shipping address before changing to this status.',
+  
   // Communication
   communicationChannel: 'Communication Channel',
   viber: 'Viber',

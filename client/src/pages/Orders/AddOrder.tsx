@@ -3860,6 +3860,33 @@ export default function AddOrder() {
     });
   };
 
+  // Handle order status change with shipping address validation
+  const handleOrderStatusChange = (newStatus: string) => {
+    form.setValue('orderStatus', newStatus as any);
+    
+    // Statuses that require shipping address
+    const statusesRequiringAddress = ['to_fulfill', 'ready_to_ship', 'shipped', 'delivered'];
+    
+    if (statusesRequiringAddress.includes(newStatus)) {
+      // Check if shipping address is filled
+      const hasShippingAddress = selectedShippingAddress || 
+        (selectedCustomer && (selectedCustomer.address || selectedCustomer.shippingAddresses?.length > 0));
+      
+      if (!hasShippingAddress) {
+        toast({
+          title: t('orders:shippingAddressRequired'),
+          description: t('orders:pleaseSelectShippingAddress'),
+          variant: 'destructive',
+          duration: 5000,
+        });
+        // Open shipping modal to prompt user to add address
+        if (selectedCustomer) {
+          setShowShippingModal(true);
+        }
+      }
+    }
+  };
+
   // Calculate totals using shared financial helpers
   const totals = useMemo(() => {
     const rawSubtotal = orderItems.reduce((sum, item) => sum + item.total, 0);
@@ -4847,7 +4874,7 @@ export default function AddOrder() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label htmlFor="orderStatus-mobile" className="text-xs">{t('orders:orderStatus')}</Label>
-                      <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                      <Select value={form.watch('orderStatus')} onValueChange={handleOrderStatusChange}>
                         <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
                         </SelectTrigger>
@@ -9108,7 +9135,7 @@ export default function AddOrder() {
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label htmlFor="orderStatus" className="text-xs">{t('orders:orderStatus')}</Label>
-                          <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                          <Select value={form.watch('orderStatus')} onValueChange={handleOrderStatusChange}>
                             <SelectTrigger className="mt-1 h-9">
                               <SelectValue />
                             </SelectTrigger>

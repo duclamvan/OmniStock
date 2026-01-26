@@ -121,6 +121,10 @@ const orders = {
   carrier: 'Đơn vị vận chuyển',
   fulfillmentLocation: 'Vị trí xử lý',
   
+  // Shipping Address Validation
+  shippingAddressRequired: 'Yêu cầu địa chỉ giao hàng',
+  pleaseSelectShippingAddress: 'Vui lòng chọn hoặc thêm địa chỉ giao hàng trước khi thay đổi trạng thái.',
+  
   // Communication
   communicationChannel: 'Kênh liên lạc',
   viber: 'Viber',
