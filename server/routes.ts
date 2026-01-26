@@ -15205,12 +15205,9 @@ Important:
               
               const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
               
-              // For variants, filter locations by variantId (like POS deduction does)
-              const relevantLocations = item.variantId 
-                ? locations.filter(loc => loc.variantId === item.variantId)
-                : locations.filter(loc => !loc.variantId);
-              
-              const targetLocation = relevantLocations.find(loc => loc.isPrimary) || relevantLocations[0] || locations.find(loc => loc.isPrimary) || locations[0];
+              // Restore to ANY product location - same pattern as POS deduction
+              // Priority: primary location > any location with stock
+              const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
               
               if (targetLocation) {
                 const currentQty = targetLocation.quantity || 0;
