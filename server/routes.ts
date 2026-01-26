@@ -931,6 +931,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  // Admin endpoint to fix POS orders that didnt deduct inventory
+  // This re-runs the inventory deduction for POS orders that have fulfillmentStage=completed but pickStatus != completed
+  app.post("/api/admin/fix-pos-inventory", requireRole(["administrator"]), async (req: any, res) => {
+    try {
+      const { dryRun = true, orderIds } = req.body;
+      
+      // Find POS orders that may not have deducted inventory properly
+      let ordersToFix;
+      if (orderIds && Array.isArray(orderIds) && orderIds.length > 0) {
+        ordersToFix = await db
+          .select()
+          .from(orders)
+          .where(
+            and(
+              eq(orders.orderType, "pos"),
+              eq(orders.fulfillmentStage, "completed"),
+              inArray(orders.id, orderIds)
+            )
+          );
+      } else {
+        ordersToFix = await db
+          .select()
+          .from(orders)
+          .where(
+            and(
+              eq(orders.orderType, "pos"),
+              eq(orders.fulfillmentStage, "completed"),
+              or(
+                ne(orders.pickStatus, "completed"),
+                isNull(orders.pickStatus)
+              )
+            )
+          )
+          .orderBy(desc(orders.createdAt));
+      }
+      
+      console.log(`[POS Fix] Found ${ordersToFix.length} POS orders to check`);
+      
+      const results: any[] = [];
+      
+      for (const order of ordersToFix) {
+        const orderItems = await storage.getOrderItems(order.id);
+        const itemsDeducted: any[] = [];
+        
+        for (const item of orderItems) {
+          if (!item.productId) continue;
+          
+          const quantity = item.quantity || 1;
+          const product = await storage.getProductById(item.productId);
+          if (!product) continue;
+          
+          let targetProductId = item.productId;
+          let deductionQty = quantity;
+          if (product.isVirtual && product.masterProductId) {
+            targetProductId = product.masterProductId;
+            const ratio = parseFloat(product.inventoryDeductionRatio || "1");
+            deductionQty = quantity * ratio;
+          }
+          
+          const locations = await storage.getProductLocations(targetProductId);
+          const primaryLoc = locations.find(loc => loc.isPrimary) || locations[0];
+          
+          if (!dryRun && primaryLoc) {
+            const currentQty = primaryLoc.quantity || 0;
+            let remainingToDeduct = deductionQty;
+            
+            const fromPrimary = Math.min(currentQty, remainingToDeduct);
+            if (fromPrimary > 0) {
+              await storage.updateProductLocation(primaryLoc.id, { quantity: currentQty - fromPrimary });
+              remainingToDeduct -= fromPrimary;
+            }
+            
+            if (remainingToDeduct > 0) {
+              const otherLocs = locations.filter(l => l.id !== primaryLoc.id && (l.quantity || 0) > 0);
+              for (const otherLoc of otherLocs) {
+                if (remainingToDeduct <= 0) break;
+                const otherQty = otherLoc.quantity || 0;
+                const fromOther = Math.min(otherQty, remainingToDeduct);
+                if (fromOther > 0) {
+                  await storage.updateProductLocation(otherLoc.id, { quantity: otherQty - fromOther });
+                  remainingToDeduct -= fromOther;
+                }
+              }
+            }
+            
+            const targetProduct = await storage.getProductById(targetProductId);
+            if (targetProduct) {
+              const newProductQty = Math.max(0, (targetProduct.quantity || 0) - deductionQty);
+              await storage.updateProduct(targetProductId, { quantity: newProductQty });
+            }
+            
+            if (item.variantId) {
+              const variant = await storage.getProductVariant(item.variantId);
+              if (variant) {
+                const newVariantQty = Math.max(0, (variant.quantity || 0) - quantity);
+                await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+              }
+            }
+          }
+          
+          itemsDeducted.push({
+            productId: item.productId,
+            productName: product.name,
+            sku: item.sku,
+            quantity: quantity,
+            deductionQty: deductionQty,
+            locationCode: primaryLoc?.locationCode,
+            locationQty: primaryLoc?.quantity
+          });
+        }
+        
+        if (!dryRun) {
+          await storage.updateOrder(order.id, { pickStatus: "completed", packStatus: "completed" });
+        }
+        
+        results.push({
+          orderId: order.orderId,
+          orderDate: order.createdAt,
+          itemCount: orderItems.length,
+          wasFixed: !dryRun,
+          items: itemsDeducted
+        });
+      }
+      
+      res.json({
+        dryRun,
+        totalOrders: ordersToFix.length,
+        message: dryRun
+          ? `Found ${ordersToFix.length} POS orders that need fixing. Run with dryRun=false to apply changes.`
+          : `Fixed ${ordersToFix.length} POS orders. Inventory has been deducted.`,
+        orders: results
+      });
+    } catch (error) {
+      console.error("Error fixing POS inventory:", error);
+      res.status(500).json({ message: "Failed to fix POS inventory", error: String(error) });
+    }
+  });
   // =====================================================
   // ROLES & PERMISSIONS MANAGEMENT API ENDPOINTS
   // =====================================================
