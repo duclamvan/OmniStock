@@ -4176,6 +4176,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
+      // Fetch recent 30 orders with customer names via single join query
+      const recentOrders = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          customerName: customers.name,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      const ordersData = recentOrders.map((order) => ({
+        id: order.id,
+        orderId: order.orderId || 'N/A',
+        customerName: order.customerName || 'Walk-in Customer',
+        grandTotal: order.grandTotal || '0',
+        currency: order.currency || 'CZK',
+        orderStatus: order.orderStatus || 'pending',
+        createdAt: order.createdAt
+      }));
+
       const result = {
         inventoryItems,
         shipmentItems,
@@ -4259,11 +4286,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recentOrders: []
       }));
 
+      // Fetch recent 30 orders with customer names via single join query
+      const recentOrders = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          customerName: customers.name,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      const ordersData = recentOrders.map((order) => ({
+        id: order.id,
+        orderId: order.orderId || 'N/A',
+        customerName: order.customerName || 'Walk-in Customer',
+        grandTotal: order.grandTotal || '0',
+        currency: order.currency || 'CZK',
+        orderStatus: order.orderStatus || 'pending',
+        createdAt: order.createdAt
+      }));
+
       const result = {
         inventoryItems,
         shipmentItems: [],
         customers: customersData,
-        orders: []
+        orders: ordersData
       };
 
       // Cache the preload result
@@ -23236,7 +23290,34 @@ Important:
                   const place = detailsData.result;
                   const addressComponents = place.address_components || [];
                   console.log('[Geocode Fill] Formatted address:', place.formatted_address);
-                  const result = { ...fields };
+                  // Fetch recent 30 orders with customer names via single join query
+      const recentOrders = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          customerName: customers.name,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      const ordersData = recentOrders.map((order) => ({
+        id: order.id,
+        orderId: order.orderId || 'N/A',
+        customerName: order.customerName || 'Walk-in Customer',
+        grandTotal: order.grandTotal || '0',
+        currency: order.currency || 'CZK',
+        orderStatus: order.orderStatus || 'pending',
+        createdAt: order.createdAt
+      }));
+
+      const result = { ...fields };
                   
                   console.log('[Geocode Fill] Google formatted address:', place.formatted_address);
                   
@@ -23369,6 +23450,33 @@ Important:
       }
 
       const address = data[0].address;
+      // Fetch recent 30 orders with customer names via single join query
+      const recentOrders = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          customerName: customers.name,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      const ordersData = recentOrders.map((order) => ({
+        id: order.id,
+        orderId: order.orderId || 'N/A',
+        customerName: order.customerName || 'Walk-in Customer',
+        grandTotal: order.grandTotal || '0',
+        currency: order.currency || 'CZK',
+        orderStatus: order.orderStatus || 'pending',
+        createdAt: order.createdAt
+      }));
+
       const result = { ...fields };
 
       // Autocorrect street from Nominatim
@@ -23996,6 +24104,33 @@ Other rules:
       const companyName = data.obchodniJmeno || data.nazev || '';
       const address = data.sidlo || {};
 
+      // Fetch recent 30 orders with customer names via single join query
+      const recentOrders = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          customerName: customers.name,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      const ordersData = recentOrders.map((order) => ({
+        id: order.id,
+        orderId: order.orderId || 'N/A',
+        customerName: order.customerName || 'Walk-in Customer',
+        grandTotal: order.grandTotal || '0',
+        currency: order.currency || 'CZK',
+        orderStatus: order.orderStatus || 'pending',
+        createdAt: order.createdAt
+      }));
+
       const result = {
         companyName,
         street: address.nazevUlice || '',
@@ -24063,6 +24198,33 @@ Other rules:
       const addressMatch = xmlText.match(/<address>([^<]+)<\/address>/);
 
       const isValid = validMatch ? validMatch[1] === 'true' : false;
+
+      // Fetch recent 30 orders with customer names via single join query
+      const recentOrders = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          customerName: customers.name,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      const ordersData = recentOrders.map((order) => ({
+        id: order.id,
+        orderId: order.orderId || 'N/A',
+        customerName: order.customerName || 'Walk-in Customer',
+        grandTotal: order.grandTotal || '0',
+        currency: order.currency || 'CZK',
+        orderStatus: order.orderStatus || 'pending',
+        createdAt: order.createdAt
+      }));
 
       const result = {
         valid: isValid,
@@ -29906,6 +30068,33 @@ Other rules:
           console.log(`[Bank Import] Unmatched: ${reason}`);
         }
       }
+
+      // Fetch recent 30 orders with customer names via single join query
+      const recentOrders = await db
+        .select({
+          id: orders.id,
+          orderId: orders.orderId,
+          customerId: orders.customerId,
+          customerName: customers.name,
+          grandTotal: orders.grandTotal,
+          currency: orders.currency,
+          orderStatus: orders.orderStatus,
+          createdAt: orders.createdAt
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      const ordersData = recentOrders.map((order) => ({
+        id: order.id,
+        orderId: order.orderId || 'N/A',
+        customerName: order.customerName || 'Walk-in Customer',
+        grandTotal: order.grandTotal || '0',
+        currency: order.currency || 'CZK',
+        orderStatus: order.orderStatus || 'pending',
+        createdAt: order.createdAt
+      }));
 
       const result = {
         matched,

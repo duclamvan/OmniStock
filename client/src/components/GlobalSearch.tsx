@@ -302,14 +302,6 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     }
   }, [autoFocus]);
 
-  // Fast debounce - 120ms for responsive feel
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   // Preload data on mount
   useEffect(() => {
     if (hasPreloadedSearch) return;
@@ -326,7 +318,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
       .catch(() => {});
   }, [queryClient]);
 
-  // Instant local filtering
+  // Instant local filtering from preloaded data
   const localFilteredResults = useMemo((): SearchResult | null => {
     if (!preloadedData || searchQuery.trim().length < 1) return null;
     const query = searchQuery.trim();
@@ -343,17 +335,44 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
       )
     ).slice(0, 4) || [];
     
-    if (filteredInventory.length === 0 && filteredCustomers.length === 0) return null;
+    // Filter orders from preloaded data
+    const filteredOrders = preloadedData.orders?.filter(order =>
+      matchesQuery(order.orderId || '', query) || 
+      matchesQuery(order.customerName || '', query)
+    ).slice(0, 4) || [];
     
     return {
       inventoryItems: filteredInventory,
       shipmentItems: [],
       customers: filteredCustomers,
-      orders: []
+      orders: filteredOrders
     };
   }, [preloadedData, searchQuery]);
 
-  // Server query
+  // Check if local results are sufficient (has good matches)
+  const hasGoodLocalResults = useMemo(() => {
+    if (!localFilteredResults) return false;
+    const total = (localFilteredResults.inventoryItems?.length || 0) + 
+                  (localFilteredResults.customers?.length || 0) +
+                  (localFilteredResults.orders?.length || 0);
+    return total >= 3; // If we have 3+ local matches, don't hit server
+  }, [localFilteredResults]);
+
+  // Debounce for server query - only fire if local results are insufficient
+  useEffect(() => {
+    // Don't set debounced query if local results are good enough
+    if (hasGoodLocalResults) {
+      setDebouncedQuery('');
+      return;
+    }
+    
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 350); // Longer debounce to reduce server requests
+    return () => clearTimeout(timer);
+  }, [searchQuery, hasGoodLocalResults]);
+
+  // Server query - only fires when local results are insufficient
   const { data: serverResults, isFetching } = useQuery<SearchResult>({
     queryKey: ['/api/search', debouncedQuery],
     queryFn: async ({ signal }) => {
@@ -361,15 +380,13 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
       if (!response.ok) throw new Error('Search failed');
       return response.json();
     },
-    enabled: debouncedQuery.trim().length >= 1,
-    staleTime: 60000,
+    enabled: debouncedQuery.trim().length >= 2 && !hasGoodLocalResults,
+    staleTime: 120000,
     gcTime: 300000,
     refetchOnWindowFocus: false,
     retry: false,
   });
 
-  const hasFreshServerResults = serverResults && debouncedQuery === searchQuery;
-  
   const cleanedServerResults = useMemo((): SearchResult | null => {
     if (!serverResults) return null;
     return {
@@ -380,9 +397,16 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     };
   }, [serverResults]);
 
-  const results = hasFreshServerResults ? cleanedServerResults : localFilteredResults;
-  const isLoading = searchQuery.trim().length >= 1 && !localFilteredResults && (isFetching || !hasFreshServerResults);
-  const isRefining = isFetching && results !== null;
+  // Use local results first, only use server results if local is empty
+  const results = localFilteredResults && 
+    ((localFilteredResults.inventoryItems?.length || 0) + 
+     (localFilteredResults.customers?.length || 0) +
+     (localFilteredResults.orders?.length || 0)) > 0
+    ? localFilteredResults 
+    : cleanedServerResults;
+  
+  const isLoading = searchQuery.trim().length >= 1 && !results && isFetching;
+  const isRefining = false; // Disable refining indicator since we prioritize local
 
   const MAX_ITEMS = 4;
 
