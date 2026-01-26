@@ -36,6 +36,7 @@ export const users = pgTable("users", {
   role: varchar("role"), // 'administrator' or 'warehouse_operator' - nullable for pending users
   // Phone for notifications (not for auth)
   phoneNumber: varchar("phone_number").unique(), // E.164 format: +420123456789
+  preferredLanguage: varchar("preferred_language").default("en"), // User's UI language preference
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -80,20 +80,19 @@ export function MobileHeader({
   const { i18n, t } = useTranslation(['common', 'inventory']);
   const { user } = useAuth();
   
-  // Language toggle mutation
+  // Language toggle mutation - saves to user's profile (per-user setting)
   const languageMutation = useMutation({
     mutationFn: async (newLang: 'en' | 'vi') => {
-      // CRITICAL FIX: Immediately change UI language BEFORE persisting to backend
+      // Immediately change UI language BEFORE persisting to backend
       await i18n.changeLanguage(newLang);
       
-      // Use PATCH to update existing setting (upsert behavior)
-      await apiRequest('PATCH', '/api/settings/default_language', {
-        value: newLang,
-        category: 'general'
+      // Save to user's profile instead of global settings
+      await apiRequest('PATCH', '/api/users/me', {
+        preferredLanguage: newLang
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: t('common:success'),
         description: t('common:languageChanged'),

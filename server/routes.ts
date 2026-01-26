@@ -702,6 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: dbUser.firstName,
         lastName: dbUser.lastName,
         role: dbUser.role,
+        preferredLanguage: dbUser.preferredLanguage,
         createdAt: dbUser.createdAt,
         permissions: userPermissions
       });
@@ -718,11 +719,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
       }
 
-      const { firstName, lastName, email, phoneNumber, profileImageUrl } = req.body;
+      const { firstName, lastName, email, phoneNumber, profileImageUrl, preferredLanguage } = req.body;
       const updates: any = {};
 
       if (firstName !== undefined) updates.firstName = firstName;
       if (lastName !== undefined) updates.lastName = lastName;
+      if (preferredLanguage !== undefined) updates.preferredLanguage = preferredLanguage;
       if (email !== undefined) {
         const normalizedEmail = email.toLowerCase();
         
@@ -776,6 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phoneNumber: updatedUser.phoneNumber,
         profileImageUrl: updatedUser.profileImageUrl,
         role: updatedUser.role,
+        preferredLanguage: updatedUser.preferredLanguage,
         createdAt: updatedUser.createdAt
       });
     } catch (error) {
