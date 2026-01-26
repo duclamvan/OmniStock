@@ -237,51 +237,6 @@ export class ObjectStorageService {
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
   }
-
-  // Upload a buffer directly to Object Storage and return the object path
-  async uploadBuffer(
-    buffer: Buffer,
-    filename: string,
-    contentType: string,
-    subfolder: string = 'order-documents'
-  ): Promise<{ objectPath: string; url: string }> {
-    const privateObjectDir = this.getPrivateObjectDir();
-    if (!privateObjectDir) {
-      throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          "tool and set PRIVATE_OBJECT_DIR env var."
-      );
-    }
-
-    const objectId = randomUUID();
-    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fullPath = `${privateObjectDir}/${subfolder}/${objectId}-${sanitizedFilename}`;
-
-    const { bucketName, objectName } = parseObjectPath(fullPath);
-    const bucket = objectStorageClient.bucket(bucketName);
-    const file = bucket.file(objectName);
-
-    // Upload the buffer
-    await file.save(buffer, {
-      contentType,
-      metadata: {
-        originalFilename: filename,
-        uploadedAt: new Date().toISOString(),
-      },
-    });
-
-    // Set ACL to allow read access (owner is system for uploaded documents)
-    await setObjectAclPolicy(file, {
-      owner: 'system',
-      visibility: 'private',
-    });
-
-    const objectPath = `/objects/${subfolder}/${objectId}-${sanitizedFilename}`;
-    return {
-      objectPath,
-      url: objectPath,
-    };
-  }
 }
 
 function parseObjectPath(path: string): {

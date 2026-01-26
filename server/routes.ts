@@ -22603,10 +22603,6 @@ Important:
   const orderDocUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  // Upload documents for orders (before order creation or for editing)
-  const orderDocUpload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   });
   
   app.post('/api/orders/documents/upload', isAuthenticated, orderDocUpload.array('files', 10), async (req: any, res) => {
@@ -22616,57 +22612,24 @@ Important:
         return res.status(400).json({ message: 'No files uploaded' });
       }
 
+      const uploadDir = 'uploads/order-documents';
+      await fs.promises.mkdir(uploadDir, { recursive: true });
+
       const uploadedFiles: { name: string; url: string; size: number }[] = [];
-      
-      // Check if Object Storage is configured (production) or use local storage (development)
-      const isObjectStorageConfigured = !!process.env.PRIVATE_OBJECT_DIR;
-      
-      if (isObjectStorageConfigured) {
-        // Use Object Storage for production
-        const objectStorageService = new ObjectStorageService();
+
+      for (const file of files) {
+        const timestamp = Date.now();
+        const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filename = `${timestamp}-${sanitizedName}`;
+        const filepath = path.join(uploadDir, filename);
         
-        for (const file of files) {
-          try {
-            const result = await objectStorageService.uploadBuffer(
-              file.buffer,
-              file.originalname,
-              file.mimetype || 'application/octet-stream',
-              'order-documents'
-            );
-            
-            uploadedFiles.push({
-              name: file.originalname,
-              url: result.url,
-              size: file.size
-            });
-          } catch (uploadError) {
-            console.error('Error uploading file to Object Storage:', uploadError);
-            // Continue with other files even if one fails
-          }
-        }
-      } else {
-        // Fall back to local storage for development
-        const uploadDir = 'uploads/order-documents';
-        await fs.promises.mkdir(uploadDir, { recursive: true });
-
-        for (const file of files) {
-          const timestamp = Date.now();
-          const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-          const filename = `${timestamp}-${sanitizedName}`;
-          const filepath = path.join(uploadDir, filename);
-          
-          await fs.promises.writeFile(filepath, file.buffer);
-          
-          uploadedFiles.push({
-            name: file.originalname,
-            url: `/uploads/order-documents/${filename}`,
-            size: file.size
-          });
-        }
-      }
-
-      if (uploadedFiles.length === 0) {
-        return res.status(500).json({ message: 'Failed to upload any files' });
+        await fs.promises.writeFile(filepath, file.buffer);
+        
+        uploadedFiles.push({
+          name: file.originalname,
+          url: `/uploads/order-documents/${filename}`,
+          size: file.size
+        });
       }
 
       res.json({ success: true, uploadedFiles });
