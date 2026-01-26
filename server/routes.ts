@@ -14345,27 +14345,31 @@ Important:
               deductionQty = quantity * ratio;
             }
 
-            // Get locations for the target product (optionally filtered by variantId)
+
+            // Get ALL locations for the target product
             const locations = await storage.getProductLocations(targetProductId);
-            
-            // Find locations for this specific variant (or base product if no variant)
-            const relevantLocations = variantId 
-              ? locations.filter(loc => loc.variantId === variantId)
-              : locations.filter(loc => !loc.variantId);
-            
-            // Priority 1: Primary location
-            let targetLocation = relevantLocations.find(loc => loc.isPrimary);
-            
-            // Priority 2: First location with sufficient stock
+
+            // PRIORITY 1: Primary location with sufficient stock
+            let targetLocation = locations.find(loc => loc.isPrimary && (loc.quantity || 0) >= deductionQty);
+
+            // PRIORITY 2: Primary location (even if partial)
             if (!targetLocation) {
-              targetLocation = relevantLocations.find(loc => (loc.quantity || 0) >= deductionQty);
-            }
-            
-            // Priority 3: Any location (partial deduction if needed)
-            if (!targetLocation && relevantLocations.length > 0) {
-              targetLocation = relevantLocations[0];
+              targetLocation = locations.find(loc => loc.isPrimary);
             }
 
+            // PRIORITY 3: Any location with sufficient stock
+            if (!targetLocation) {
+              targetLocation = locations.find(loc => (loc.quantity || 0) >= deductionQty);
+            }
+
+            // PRIORITY 4: Any location (partial deduction)
+            if (!targetLocation && locations.length > 0) {
+              targetLocation = locations[0];
+            }
+
+            if (targetLocation) {
+              console.log(`[POS Inventory] Selected location ${targetLocation.locationCode} for product ${targetProductId}${variantId ? ` (variant: ${variantId})` : ""}`);
+            }
             if (targetLocation) {
               // Deduct from location
               const currentQty = targetLocation.quantity || 0;
