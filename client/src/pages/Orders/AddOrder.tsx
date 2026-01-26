@@ -830,8 +830,14 @@ export default function AddOrder() {
   // Track if initial reset has happened
   const hasResetRef = useRef(false);
 
-  // Reset form with proper defaults after settings finish loading (once only)
+  // Reset form with proper defaults after settings finish loading (once only, and skip in edit mode)
   useEffect(() => {
+    // Skip default reset in edit mode - existing order data will be loaded instead
+    if (isEditMode) {
+      hasResetRef.current = true;
+      return;
+    }
+    
     if (!hasResetRef.current && defaultCurrency && defaultPaymentMethod && defaultCarrier) {
       if (import.meta.env.DEV) {
         console.log('[AddOrder] Settings loaded, resetting form with defaults:', {
@@ -843,7 +849,7 @@ export default function AddOrder() {
       form.reset(buildDefaultValues());
       hasResetRef.current = true;
     }
-  }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, buildDefaultValues, form]);
+  }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, buildDefaultValues, form, isEditMode]);
 
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
@@ -886,18 +892,28 @@ export default function AddOrder() {
     if (!existingOrder || !isEditMode) return;
     const order = existingOrder as any;
 
-    console.log('✅ Loading existing order data into form');
+    // Debug logging for edit mode form population
+    console.log('✅ Loading existing order data into form:', {
+      orderId: order.id,
+      currency: order.currency,
+      shippingMethod: order.shippingMethod,
+      normalizedShipping: order.shippingMethod ? normalizeCarrier(order.shippingMethod) : order.shippingMethod,
+    });
+
+    // Normalize values to ensure they match SelectItem values
+    const normalizedCurrency = order.currency?.toUpperCase() || 'CZK';
+    const normalizedShipping = order.shippingMethod ? normalizeCarrier(order.shippingMethod) : 'GLS DE';
 
     form.reset({
       customerId: order.customerId,
       orderType: order.orderType || 'ord',
       saleType: order.saleType || 'retail',
-      currency: order.currency,
-      priority: order.priority,
-      orderStatus: order.orderStatus,
-      paymentStatus: order.paymentStatus,
-      shippingMethod: order.shippingMethod ? normalizeCarrier(order.shippingMethod) : order.shippingMethod,
-      paymentMethod: order.paymentMethod,
+      currency: normalizedCurrency,
+      priority: order.priority || 'medium',
+      orderStatus: order.orderStatus || 'pending',
+      paymentStatus: order.paymentStatus || 'pending',
+      shippingMethod: normalizedShipping,
+      paymentMethod: order.paymentMethod || 'Bank Transfer',
       discountType: order.discountType || 'flat',
       discountValue: order.discountValue || 0,
       taxInvoiceEnabled: order.taxInvoiceEnabled || false,
@@ -4748,9 +4764,9 @@ export default function AddOrder() {
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor="currency-mobile" className="text-xs">{t('orders:currency')}</Label>
-                    <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                    <Select value={form.watch('currency') || 'CZK'} onValueChange={(value) => form.setValue('currency', value as any)}>
                       <SelectTrigger className="mt-1 h-9">
-                        <SelectValue />
+                        <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="CZK">CZK</SelectItem>
@@ -8235,7 +8251,7 @@ export default function AddOrder() {
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div>
                 <Label htmlFor="shippingMethod" className="text-xs sm:text-sm">{t('orders:shippingMethod')}</Label>
-                <Select value={watchedShippingMethod} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                <Select value={watchedShippingMethod || 'GLS DE'} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
                   <SelectTrigger className="mt-1 h-10 sm:h-9 text-sm">
                     <SelectValue placeholder={t('orders:selectShipping')} />
                   </SelectTrigger>
@@ -8979,9 +8995,9 @@ export default function AddOrder() {
                     <CardContent className="p-3 space-y-3">
                       <div>
                         <Label htmlFor="currency" className="text-xs">{t('orders:currency')}</Label>
-                        <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                        <Select value={form.watch('currency') || 'CZK'} onValueChange={(value) => form.setValue('currency', value as any)}>
                           <SelectTrigger className="mt-1 h-9" data-testid="select-currency">
-                            <SelectValue />
+                            <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="CZK">CZK</SelectItem>
