@@ -143,7 +143,8 @@ import {
   Camera,
   MapPinCheck,
   Receipt,
-  Cloud
+  Cloud,
+  Loader2
 } from "lucide-react";
 
 interface BundleItem {
@@ -4205,6 +4206,10 @@ export default function PickPack() {
   // Loading states for shipping label operations
   const [isGeneratingAllLabels, setIsGeneratingAllLabels] = useState(false);
   const [isPrintingAllLabels, setIsPrintingAllLabels] = useState(false);
+  
+  // Loading states for action buttons to prevent double-clicks
+  const [isStartingNextOrder, setIsStartingNextOrder] = useState(false);
+  const [isStartingOrder, setIsStartingOrder] = useState<Record<string, boolean>>({});
   const [generatingLabelForCarton, setGeneratingLabelForCarton] = useState<Record<string, boolean>>({});
   const [deletingShipment, setDeletingShipment] = useState<Record<string, boolean>>({});
   const [isAwaitingPPLLabels, setIsAwaitingPPLLabels] = useState(false); // True while creating labels and fetching them
@@ -8105,7 +8110,9 @@ export default function PickPack() {
   };
 
   // Quick Action: Start Next Priority Order
-  const startNextPriorityOrder = () => {
+  const startNextPriorityOrder = async () => {
+    if (isStartingNextOrder) return; // Prevent double-click
+    
     // Find pending orders ready to pick
     const pendingOrders = transformedOrders.filter(o => o.status === 'to_fulfill');
     
@@ -8119,8 +8126,13 @@ export default function PickPack() {
       .map(item => item.order)[0];
 
     if (nextOrder) {
-      console.log('Starting next priority order:', nextOrder, 'Score:', calculateOrderScore(nextOrder));
-      startPicking(nextOrder);
+      setIsStartingNextOrder(true);
+      try {
+        console.log('Starting next priority order:', nextOrder, 'Score:', calculateOrderScore(nextOrder));
+        await startPicking(nextOrder);
+      } finally {
+        setIsStartingNextOrder(false);
+      }
     }
   };
 
@@ -8480,6 +8492,19 @@ export default function PickPack() {
     } catch (error) {
       console.error('Error starting picking:', error);
       playSound('error');
+    }
+  };
+
+  // Wrapper function for starting individual orders with loading state
+  const handleStartPicking = async (order: PickPackOrder, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isStartingOrder[order.id]) return; // Prevent double-click
+    
+    setIsStartingOrder(prev => ({ ...prev, [order.id]: true }));
+    try {
+      await startPicking(order);
+    } finally {
+      setIsStartingOrder(prev => ({ ...prev, [order.id]: false }));
     }
   };
 
@@ -15384,27 +15409,57 @@ export default function PickPack() {
               {/* Pick Next Order - Show if there are pending orders */}
               {pendingOrdersForModal.length > 0 && (
                 <Button 
-                  size="lg" 
-                  onClick={() => {
+                  size="lg"
+                  disabled={(() => {
+                    const nextOrder = pendingOrdersForModal
+                      .map(order => ({ order, score: calculateOrderScore(order) }))
+                      .sort((a, b) => b.score - a.score)
+                      .map(item => item.order)[0];
+                    return nextOrder && isStartingOrder[nextOrder.id];
+                  })()}
+                  onClick={async () => {
                     const nextOrder = pendingOrdersForModal
                       .map(order => ({ order, score: calculateOrderScore(order) }))
                       .sort((a, b) => b.score - a.score)
                       .map(item => item.order)[0];
                     
                     if (nextOrder) {
-                      setShowPackingCompletionModal(false);
-                      window.scrollTo(0, 0);
-                      setActivePackingOrder(null);
-                      setPackingTimer(0);
-                      startPicking(nextOrder);
-                      setSelectedTab('picking');
+                      setIsStartingOrder(prev => ({ ...prev, [nextOrder.id]: true }));
+                      try {
+                        setShowPackingCompletionModal(false);
+                        window.scrollTo(0, 0);
+                        setActivePackingOrder(null);
+                        setPackingTimer(0);
+                        await startPicking(nextOrder);
+                        setSelectedTab('picking');
+                      } finally {
+                        setIsStartingOrder(prev => ({ ...prev, [nextOrder.id]: false }));
+                      }
                     }
                   }}
                   className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
                   data-testid="button-pick-next-order"
                 >
-                  <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
-                  PICK NEXT ORDER ({pendingOrdersForModal.length})
+                  {(() => {
+                    const nextOrder = pendingOrdersForModal
+                      .map(order => ({ order, score: calculateOrderScore(order) }))
+                      .sort((a, b) => b.score - a.score)
+                      .map(item => item.order)[0];
+                    const isLoading = nextOrder && isStartingOrder[nextOrder.id];
+                    return isLoading ? (
+                      <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 mr-2 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                    );
+                  })()}
+                  {(() => {
+                    const nextOrder = pendingOrdersForModal
+                      .map(order => ({ order, score: calculateOrderScore(order) }))
+                      .sort((a, b) => b.score - a.score)
+                      .map(item => item.order)[0];
+                    const isLoading = nextOrder && isStartingOrder[nextOrder.id];
+                    return isLoading ? t('loading') : `PICK NEXT ORDER (${pendingOrdersForModal.length})`;
+                  })()}
                 </Button>
               )}
               
@@ -17359,13 +17414,20 @@ export default function PickPack() {
               <Button 
                 size="lg" 
                 variant="outline"
+                disabled={(() => {
+                  const pendingOrders = transformedOrders.filter(o => 
+                    o.id !== activePickingOrder?.id && 
+                    o.pickStatus === 'not_started' && 
+                    o.status === 'to_fulfill'
+                  );
+                  const nextOrder = pendingOrders
+                    .map(order => ({ order, score: calculateOrderScore(order) }))
+                    .sort((a, b) => b.score - a.score)
+                    .map(item => item.order)[0];
+                  return nextOrder && isStartingOrder[nextOrder.id];
+                })()}
                 onClick={async () => {
                   const justCompletedOrderId = activePickingOrder?.id;
-                  setShowPickingCompletionModal(false);
-                  window.scrollTo(0, 0);
-                  setActivePickingOrder(null);
-                  setPickingTimer(0);
-                  setManualItemIndex(0);
                   
                   const pendingOrders = transformedOrders.filter(o => 
                     o.id !== justCompletedOrderId && 
@@ -17379,10 +17441,25 @@ export default function PickPack() {
                     .map(item => item.order)[0];
                   
                   if (nextOrder) {
-                    startPicking(nextOrder);
-                    completePicking().catch(console.error);
-                    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                    setIsStartingOrder(prev => ({ ...prev, [nextOrder.id]: true }));
+                    try {
+                      setShowPickingCompletionModal(false);
+                      window.scrollTo(0, 0);
+                      setActivePickingOrder(null);
+                      setPickingTimer(0);
+                      setManualItemIndex(0);
+                      await startPicking(nextOrder);
+                      completePicking().catch(console.error);
+                      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                    } finally {
+                      setIsStartingOrder(prev => ({ ...prev, [nextOrder.id]: false }));
+                    }
                   } else {
+                    setShowPickingCompletionModal(false);
+                    window.scrollTo(0, 0);
+                    setActivePickingOrder(null);
+                    setPickingTimer(0);
+                    setManualItemIndex(0);
                     setSelectedTab('pending');
                     completePicking().catch(console.error);
                     queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
@@ -17391,8 +17468,36 @@ export default function PickPack() {
                 className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold border-2 border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                 data-testid="button-pick-next"
               >
-                <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
-                {t('pickNextOrder') || 'PICK NEXT ORDER'}
+                {(() => {
+                  const pendingOrders = transformedOrders.filter(o => 
+                    o.id !== activePickingOrder?.id && 
+                    o.pickStatus === 'not_started' && 
+                    o.status === 'to_fulfill'
+                  );
+                  const nextOrder = pendingOrders
+                    .map(order => ({ order, score: calculateOrderScore(order) }))
+                    .sort((a, b) => b.score - a.score)
+                    .map(item => item.order)[0];
+                  const isLoading = nextOrder && isStartingOrder[nextOrder.id];
+                  return isLoading ? (
+                    <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 mr-2 animate-spin" />
+                  ) : (
+                    <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                  );
+                })()}
+                {(() => {
+                  const pendingOrders = transformedOrders.filter(o => 
+                    o.id !== activePickingOrder?.id && 
+                    o.pickStatus === 'not_started' && 
+                    o.status === 'to_fulfill'
+                  );
+                  const nextOrder = pendingOrders
+                    .map(order => ({ order, score: calculateOrderScore(order) }))
+                    .sort((a, b) => b.score - a.score)
+                    .map(item => item.order)[0];
+                  const isLoading = nextOrder && isStartingOrder[nextOrder.id];
+                  return isLoading ? t('loading') : (t('pickNextOrder') || 'PICK NEXT ORDER');
+                })()}
               </Button>
               
               <Button 
@@ -18115,16 +18220,21 @@ export default function PickPack() {
                               <Button 
                                 className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25" 
                                 size="lg"
+                                disabled={pickingOrders[0] && isStartingOrder[pickingOrders[0].id]}
                                 onClick={() => {
                                   const orderToContinue = pickingOrders[0];
                                   if (orderToContinue) {
-                                    startPicking(orderToContinue);
+                                    handleStartPicking(orderToContinue);
                                   }
                                 }}
                                 data-testid="button-continue-picking"
                               >
-                                <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                                {t('continuePicking', 'Continue Picking')} ({pickingOrders.length})
+                                {pickingOrders[0] && isStartingOrder[pickingOrders[0].id] ? (
+                                  <Loader2 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 animate-spin" />
+                                ) : (
+                                  <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                                )}
+                                {pickingOrders[0] && isStartingOrder[pickingOrders[0].id] ? t('loading') : t('continuePicking', 'Continue Picking')} ({pickingOrders.length})
                               </Button>
                             );
                           }
@@ -18135,11 +18245,15 @@ export default function PickPack() {
                               size="lg"
                               variant={hasOrders ? "default" : "secondary"}
                               onClick={startNextPriorityOrder}
-                              disabled={!hasOrders}
+                              disabled={!hasOrders || isStartingNextOrder}
                               data-testid="button-start-next-priority-order"
                             >
-                              <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                              {t('startNextPriorityOrder')} {hasOrders && `(${ordersToPickCount})`}
+                              {isStartingNextOrder ? (
+                                <Loader2 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 animate-spin" />
+                              ) : (
+                                <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                              )}
+                              {isStartingNextOrder ? t('loading') : t('startNextPriorityOrder')} {hasOrders && !isStartingNextOrder && `(${ordersToPickCount})`}
                             </Button>
                           );
                         })()
@@ -18294,16 +18408,31 @@ export default function PickPack() {
                     <Button 
                       size="sm"
                       className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md shadow-green-500/25 min-w-[140px]"
-                      disabled={selectedBatchItems.size === 0}
+                      disabled={selectedBatchItems.size === 0 || (() => {
+                        const selectedOrders = getOrdersByStatus('pending').filter(o => selectedBatchItems.has(o.id));
+                        return selectedOrders.length > 0 && isStartingOrder[selectedOrders[0].id];
+                      })()}
                       onClick={() => {
                         const selectedOrders = getOrdersByStatus('pending').filter(o => selectedBatchItems.has(o.id));
                         if (selectedOrders.length > 0) {
-                          startPicking(selectedOrders[0]);
+                          handleStartPicking(selectedOrders[0]);
                         }
                       }}
                     >
-                      <PlayCircle className="h-4 w-4 mr-1.5" />
-                      {t('startBatchPick', 'Start Batch')} ({selectedBatchItems.size})
+                      {(() => {
+                        const selectedOrders = getOrdersByStatus('pending').filter(o => selectedBatchItems.has(o.id));
+                        const isLoading = selectedOrders.length > 0 && isStartingOrder[selectedOrders[0].id];
+                        return isLoading ? (
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        ) : (
+                          <PlayCircle className="h-4 w-4 mr-1.5" />
+                        );
+                      })()}
+                      {(() => {
+                        const selectedOrders = getOrdersByStatus('pending').filter(o => selectedBatchItems.has(o.id));
+                        const isLoading = selectedOrders.length > 0 && isStartingOrder[selectedOrders[0].id];
+                        return isLoading ? t('loading') : t('startBatchPick', 'Start Batch');
+                      })()} ({selectedBatchItems.size})
                     </Button>
                   </div>
                 </CardContent>
@@ -18433,13 +18562,15 @@ export default function PickPack() {
                               <Button
                                 size="sm"
                                 className="flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm font-semibold"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startPicking(order);
-                                }}
+                                onClick={(e) => handleStartPicking(order, e)}
+                                disabled={isStartingOrder[order.id]}
                               >
-                                <PlayCircle className="h-4 w-4 mr-2" />
-                                Start
+                                {isStartingOrder[order.id] ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <PlayCircle className="h-4 w-4 mr-2" />
+                                )}
+                                {isStartingOrder[order.id] ? t('loading') : 'Start'}
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -19661,16 +19792,21 @@ export default function PickPack() {
               <Button
                 size="sm"
                 className="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-600 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
-                onClick={() => {
+                disabled={previewOrder && isStartingOrder[previewOrder.id]}
+                onClick={async () => {
                   if (previewOrder) {
-                    startPicking(previewOrder);
+                    await handleStartPicking(previewOrder);
                     setPreviewOrder(null);
                   }
                 }}
               >
-                <PlayCircle className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-                <span className="hidden sm:inline">{t('startPicking')}</span>
-                <span className="sm:hidden">Pick</span>
+                {previewOrder && isStartingOrder[previewOrder.id] ? (
+                  <Loader2 className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2 animate-spin" />
+                ) : (
+                  <PlayCircle className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                )}
+                <span className="hidden sm:inline">{previewOrder && isStartingOrder[previewOrder.id] ? t('loading') : t('startPicking')}</span>
+                <span className="sm:hidden">{previewOrder && isStartingOrder[previewOrder.id] ? '...' : 'Pick'}</span>
               </Button>
             )}
             
