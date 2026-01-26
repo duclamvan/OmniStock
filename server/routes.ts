@@ -14378,9 +14378,36 @@ Important:
             }
           } else if (item.variantId) {
             // Handle variant
-            const variant = variantsMap.get(item.variantId);
+            let variant = variantsMap.get(item.variantId);
+            
+            // Fallback: if variant not found by ID, try to find by SKU
+            if (!variant && item.sku) {
+              for (const [, v] of variantsMap) {
+                if (v.sku === item.sku) {
+                  variant = v;
+                  console.log(`[POS Inventory] Variant not found by ID ${item.variantId}, found by SKU ${item.sku}`);
+                  break;
+                }
+              }
+            }
+            
+            // Another fallback: try to look up variant directly from storage
+            if (!variant) {
+              try {
+                const dbVariant = await storage.getProductVariant(item.variantId);
+                if (dbVariant) {
+                  variant = dbVariant;
+                  console.log(`[POS Inventory] Variant ${item.variantId} found via direct DB lookup`);
+                }
+              } catch (e) {
+                // Ignore lookup errors
+              }
+            }
+            
             if (variant) {
               await deductInventoryForItem(variant.productId, item.variantId, quantity);
+            } else {
+              console.warn(`[POS Inventory] Could not find variant ${item.variantId} (SKU: ${item.sku || 'none'}) - skipping deduction`);
             }
           } else if (item.productId) {
             // Handle regular product
