@@ -892,17 +892,24 @@ export default function AddOrder() {
     if (!existingOrder || !isEditMode) return;
     const order = existingOrder as any;
 
+    // Valid currency options to validate against
+    const validCurrencies = ['CZK', 'EUR', 'USD', 'VND', 'CNY'];
+    
+    // Normalize currency - ensure it's uppercase and valid
+    const rawCurrency = order.currency?.toUpperCase() || 'CZK';
+    const normalizedCurrency = validCurrencies.includes(rawCurrency) ? rawCurrency : 'CZK';
+    
+    // Normalize shipping method
+    const normalizedShipping = order.shippingMethod ? normalizeCarrier(order.shippingMethod) : 'GLS DE';
+    
     // Debug logging for edit mode form population
     console.log('✅ Loading existing order data into form:', {
       orderId: order.id,
       currency: order.currency,
+      normalizedCurrency,
       shippingMethod: order.shippingMethod,
-      normalizedShipping: order.shippingMethod ? normalizeCarrier(order.shippingMethod) : order.shippingMethod,
+      normalizedShipping,
     });
-
-    // Normalize values to ensure they match SelectItem values
-    const normalizedCurrency = order.currency?.toUpperCase() || 'CZK';
-    const normalizedShipping = order.shippingMethod ? normalizeCarrier(order.shippingMethod) : 'GLS DE';
 
     form.reset({
       customerId: order.customerId,
