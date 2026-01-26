@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,6 +114,21 @@ export default function SimpleConversion() {
   const [expandedChildId, setExpandedChildId] = useState<string | null>(null);
   const [stockSearch, setStockSearch] = useState("");
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+  
+  const selectProductRef = useRef<HTMLDivElement>(null);
+  
+  const scrollToSelectProduct = () => {
+    if (selectProductRef.current) {
+      const navbarHeight = 64;
+      const elementPosition = selectProductRef.current.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - navbarHeight;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  };
 
   const { data: manufacturingRuns = [], isLoading: isLoadingRuns, refetch: refetchRuns } = useQuery<ManufacturingRun[]>({
     queryKey: ["/api/manufacturing/runs"],
@@ -351,6 +366,7 @@ export default function SimpleConversion() {
                               setQuantity(1);
                               setSelectedLocationId("");
                               setExpandedChildId(null);
+                              setTimeout(() => scrollToSelectProduct(), 50);
                             }}
                             className="bg-green-600 hover:bg-green-700"
                           >

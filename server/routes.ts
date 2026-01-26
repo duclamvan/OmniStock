@@ -935,6 +935,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH /api/admin/users/:userId - Update a user (admin-only)
+  app.patch('/api/admin/users/:userId', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { email, firstName, lastName, role } = req.body;
+      
+      // Check if user exists
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Validate role if provided
+      if (role) {
+        const [existingRole] = await db.select().from(roles).where(eq(roles.name, role));
+        if (!existingRole) {
+          return res.status(400).json({ message: 'Invalid role specified' });
+        }
+      }
+      
+      // Validate email format if provided
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+      }
+      
+      // Update user profile if any profile fields are provided
+      if (email !== undefined || firstName !== undefined || lastName !== undefined) {
+        await storage.updateUserProfile(userId, {
+          email: email !== undefined ? email : existingUser.email,
+          firstName: firstName !== undefined ? firstName : existingUser.firstName,
+          lastName: lastName !== undefined ? lastName : existingUser.lastName,
+        });
+      }
+      
+      // Update role if provided
+      if (role !== undefined && role !== existingUser.role) {
+        await storage.updateUserRole(userId, role);
+      }
+      
+      // Get updated user
+      const updatedUser = await storage.getUser(userId);
+      
+      res.json({
+        id: updatedUser!.id,
+        email: updatedUser!.email,
+        firstName: updatedUser!.firstName,
+        lastName: updatedUser!.lastName,
+        role: updatedUser!.role,
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: 'Failed to update user' });
+    }
+  });
+  app.delete('/api/admin/users/:userId', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Check if user exists
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Prevent deleting self
+      if ((req as any).user?.id === userId) {
+        return res.status(400).json({ message: 'Cannot delete your own account' });
+      }
+      
+      // Delete user
+      await storage.deleteUser(userId);
+      
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: 'Failed to delete user' });
+    }
+  });
+
 
   // Admin endpoint to fix POS orders that didnt deduct inventory
   // This re-runs the inventory deduction for POS orders that have fulfillmentStage=completed but pickStatus != completed
