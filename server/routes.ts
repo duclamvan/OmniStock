@@ -15103,25 +15103,35 @@ Important:
               }
             } else {
               // Fallback: restore to primary location or first location
-              // CRITICAL: Only restore what was actually picked - do NOT fall back to item.quantity
-              // If pickedQuantity is 0, we restore 0 (nothing was ever deducted)
-              const pickedCount = item.pickedQuantity || 0;
+              // For POS orders (fulfillmentStage='completed'), use item.quantity since they don't go through picking
+              // For picked orders, use pickedQuantity
+              const isPosOrder = order.orderType === 'pos' && order.fulfillmentStage === 'completed';
+              const pickedCount = isPosOrder ? (item.quantity || 0) : (item.pickedQuantity || 0);
               
-              // Skip if nothing was picked
+              // Skip if nothing to restore
               if (pickedCount <= 0) {
+                console.log(`[Order Delete] Skipping item ${item.productId} - no quantity to restore`);
                 continue;
               }
               
               const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
               
-              const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
+              // For variants, filter locations by variantId (like POS deduction does)
+              const relevantLocations = item.variantId 
+                ? locations.filter(loc => loc.variantId === item.variantId)
+                : locations.filter(loc => !loc.variantId);
+              
+              const targetLocation = relevantLocations.find(loc => loc.isPrimary) || relevantLocations[0] || locations.find(loc => loc.isPrimary) || locations[0];
               
               if (targetLocation) {
                 const currentQty = targetLocation.quantity || 0;
                 const newQty = currentQty + restoreQty;
                 await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                console.log(`[Order Delete] Restored ${restoreQty} to location ${targetLocation.locationCode} (was ${currentQty}, now ${newQty})`);
                 
                 totalRestoredLocations++;
+              } else {
+                console.log(`[Order Delete] No location found for product ${targetProductId}, variant ${item.variantId || 'none'}`);
               }
               
               // Always restore main product quantity
@@ -15132,6 +15142,7 @@ Important:
                   quantity: currentProductQty + restoreQty
                 });
                 totalRestoredQuantity += restoreQty;
+                console.log(`[Order Delete] Restored product ${targetProductId} quantity (was ${currentProductQty}, now ${currentProductQty + restoreQty})`);
               }
               
               // Also restore variant quantity if this item has a variant
@@ -15140,9 +15151,10 @@ Important:
                   const variant = await storage.getProductVariant(item.variantId);
                   if (variant) {
                     const currentVariantQty = variant.quantity || 0;
-                    const variantRestoreQty = item.pickedQuantity || 0;
+                    const variantRestoreQty = isPosOrder ? (item.quantity || 0) : (item.pickedQuantity || 0);
                     const newVariantQty = currentVariantQty + variantRestoreQty;
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+                    console.log(`[Order Delete] Restored variant ${item.variantId} quantity (was ${currentVariantQty}, now ${newVariantQty})`);
                   }
                 } catch (variantError) {
                   console.error('Error restoring variant quantity during soft delete:', variantError);
