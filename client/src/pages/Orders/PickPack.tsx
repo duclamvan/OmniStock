@@ -4252,6 +4252,7 @@ export default function PickPack() {
   // Multi-carrier DHL Nachnahme state
   const [glsCartonIds, setGlsCartonIds] = useState<Set<string>>(new Set());
   const [isGlsSectionExpanded, setIsGlsSectionExpanded] = useState(false);
+  const [glsPackageSize, setGlsPackageSize] = useState<'XS' | 'S'>('S');
   
   // Shipping labels state
   const [shippingLabels, setShippingLabels] = useState<Array<{ id: string; labelNumber: number }>>([]);
@@ -11347,7 +11348,7 @@ export default function PickPack() {
                     <GLSAutofillButton
                       recipientData={recipientData}
                       senderData={senderData}
-                      packageSize="S"
+                      packageSize={glsPackageSize}
                       weight={totalWeight > 0 ? totalWeight : undefined}
                       orderId={activePackingOrder.orderId}
                       cartonCount={cartons.length}
@@ -11375,19 +11376,19 @@ export default function PickPack() {
                       
                       {/* Package Size Cards - GLS Style */}
                       <div className="grid grid-cols-2 gap-2">
-                        {['XS', 'S'].map((size) => (
+                        {(['XS', 'S'] as const).map((size) => (
                           <div
                             key={size}
                             className={`p-3 rounded-lg border-2 text-center cursor-pointer transition-all ${
-                              size === 'S'
+                              size === glsPackageSize
                                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg'
-                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-indigo-400 opacity-50'
+                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-400'
                             }`}
-                            onClick={() => copyField(size, 'Paket size')}
+                            onClick={() => { setGlsPackageSize(size); copyField(size, 'Paket size'); }}
                           >
                             <div className="text-2xl font-bold">{size}</div>
-                            <div className={`text-xs mt-0.5 ${size === 'S' ? 'text-indigo-100' : 'text-gray-400'}`}>
-                              {size === 'S' ? 'Selected' : 'Paket'}
+                            <div className={`text-xs mt-0.5 ${size === glsPackageSize ? 'text-indigo-100' : 'text-gray-400'}`}>
+                              {size === glsPackageSize ? 'Selected' : 'Paket'}
                             </div>
                           </div>
                         ))}
@@ -12065,6 +12066,7 @@ export default function PickPack() {
                             <GLSAutofillButton
                               recipientData={recipientData}
                               senderData={senderData}
+                              packageSize={glsPackageSize}
                               cartonCount={glsCartons.length}
                               defaultEmail={shippingSettings?.glsDefaultEmail}
                             />
@@ -12861,7 +12863,7 @@ export default function PickPack() {
                   <GLSAutofillButton
                     recipientData={recipientData}
                     senderData={senderData}
-                    packageSize="S"
+                    packageSize={glsPackageSize}
                     weight={totalGLSWeight > 0 ? totalGLSWeight : undefined}
                     orderId={activePackingOrder.orderId}
                     cartonCount={glsCartons.length}
