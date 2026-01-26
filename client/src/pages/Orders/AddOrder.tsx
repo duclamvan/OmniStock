@@ -9392,18 +9392,18 @@ export default function AddOrder() {
                               type="submit" 
                               className="w-full relative transition-all duration-200 ease-out min-h-[44px] text-sm sm:text-base" 
                               size="lg"
-                              disabled={createOrderMutation.isPending}
+                              disabled={updateOrderMutation.isPending}
                               data-testid="button-update-order"
                             >
-                              {createOrderMutation.isPending ? (
+                              {updateOrderMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               ) : (
                                 <Save className="h-4 w-4 mr-2" />
                               )}
                               <span className="transition-opacity duration-150">
-                                {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                                {updateOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
                               </span>
-                              {!createOrderMutation.isPending && (
+                              {!updateOrderMutation.isPending && (
                                 <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5" aria-hidden="true">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
@@ -9696,18 +9696,18 @@ export default function AddOrder() {
                         type="submit" 
                         className="w-full relative transition-all duration-200 ease-out min-h-[48px] text-base font-medium" 
                         size="lg"
-                        disabled={createOrderMutation.isPending}
+                        disabled={updateOrderMutation.isPending}
                         data-testid="button-update-order-mobile"
                       >
-                        {createOrderMutation.isPending ? (
+                        {updateOrderMutation.isPending ? (
                           <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                         ) : (
                           <Save className="h-5 w-5 mr-2" />
                         )}
                         <span className="transition-opacity duration-150">
-                          {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                          {updateOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
                         </span>
-                        {!createOrderMutation.isPending && (
+                        {!updateOrderMutation.isPending && (
                           <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5" aria-hidden="true">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
