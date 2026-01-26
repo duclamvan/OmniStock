@@ -1011,7 +1011,9 @@ function UnifiedDocumentsList({
     }
   });
 
-  const orderFiles = orderFilesData || [];
+  // Filter to only show uploaded files (source: 'uploaded')
+  // Product files are already shown separately via productFiles array
+  const orderFiles = (orderFilesData || []).filter((f: any) => f.source === 'uploaded' || !f.source);
 
   // Check if packing list is included (only count if explicitly checked in Add Order)
   const shouldIncludePackingListInCount = includedDocuments?.includePackingList === true;
@@ -1163,6 +1165,17 @@ function UnifiedDocumentsList({
   // Check if packing list should be included (only show if explicitly checked in Add Order)
   const shouldIncludePackingList = includedDocuments?.includePackingList === true;
 
+  // Show empty state if no documents
+  const hasAnyDocuments = shouldIncludePackingList || productFiles.length > 0 || orderFiles.length > 0;
+  
+  if (!hasAnyDocuments) {
+    return (
+      <div className="text-sm text-gray-500 dark:text-gray-400 p-4 text-center bg-gray-50 dark:bg-slate-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+        {t('noDocumentsAttached')}
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-2">
       {/* Packing List - Only show if included */}
@@ -5134,38 +5147,6 @@ export default function PickPack() {
     }
   }, [orderCartons, activePackingOrder?.id]);
 
-  // ALWAYS ensure at least 1 carton exists when in packing mode
-  // This runs after orderCartons query loads and creates a default if none exist
-  useEffect(() => {
-    if (!activePackingOrder?.id || isFetchingCartons) return;
-    
-    // Don't create if we already created for this order
-    if (defaultCartonCreatedForOrderRef.current === activePackingOrder.id) return;
-    
-    // Don't create if cartons already exist
-    if (orderCartons && orderCartons.length > 0) {
-      defaultCartonCreatedForOrderRef.current = activePackingOrder.id;
-      return;
-    }
-    
-    // Only create for real orders (not mock)
-    if (activePackingOrder.id.startsWith('mock-')) return;
-    
-    // Mark as creating to prevent duplicate creations
-    defaultCartonCreatedForOrderRef.current = activePackingOrder.id;
-    
-    console.log('📦 Creating default carton for packing mode - no cartons exist');
-    createCartonMutation.mutate({
-      orderId: activePackingOrder.id,
-      cartonNumber: 1,
-      cartonType: 'non-company',
-      cartonId: null,
-      cartonName: 'Package 1',
-      weight: null,
-      trackingNumber: null,
-      labelPrinted: false
-    });
-  }, [activePackingOrder?.id, orderCartons, isFetchingCartons, createCartonMutation]);
 
   // Auto-populate GLS cartons for DHL Nachnahme multi-carton orders
   useEffect(() => {
@@ -5538,6 +5519,40 @@ export default function PickPack() {
       });
     },
   });
+
+
+  // ALWAYS ensure at least 1 carton exists when in packing mode
+  // This runs after orderCartons query loads and creates a default if none exist
+  useEffect(() => {
+    if (!activePackingOrder?.id || isFetchingCartons) return;
+    
+    // Don't create if we already created for this order
+    if (defaultCartonCreatedForOrderRef.current === activePackingOrder.id) return;
+    
+    // Don't create if cartons already exist
+    if (orderCartons && orderCartons.length > 0) {
+      defaultCartonCreatedForOrderRef.current = activePackingOrder.id;
+      return;
+    }
+    
+    // Only create for real orders (not mock)
+    if (activePackingOrder.id.startsWith('mock-')) return;
+    
+    // Mark as creating to prevent duplicate creations
+    defaultCartonCreatedForOrderRef.current = activePackingOrder.id;
+    
+    console.log('📦 Creating default carton for packing mode - no cartons exist');
+    createCartonMutation.mutate({
+      orderId: activePackingOrder.id,
+      cartonNumber: 1,
+      cartonType: 'non-company',
+      cartonId: null,
+      cartonName: 'Package 1',
+      weight: null,
+      trackingNumber: null,
+      labelPrinted: false
+    });
+  }, [activePackingOrder?.id, orderCartons, isFetchingCartons, createCartonMutation]);
 
   // Utility function to calculate volume utilization from stored item data
   const calculateVolumeUtilization = (

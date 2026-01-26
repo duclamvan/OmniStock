@@ -1223,6 +1223,7 @@ const orders = {
   loadingOrder: 'Loading order...',
   generatingLabel: 'Generating label...',
   loadingDocuments: 'Loading documents...',
+  noDocumentsAttached: 'No documents attached to this order',
   loadingFiles: 'Loading files...',
   
   // Empty States

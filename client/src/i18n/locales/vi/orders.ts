@@ -1227,6 +1227,7 @@ const orders = {
   loadingOrder: 'Đang tải đơn hàng...',
   generatingLabel: 'Đang tạo nhãn...',
   loadingDocuments: 'Đang tải tài liệu...',
+  noDocumentsAttached: 'Không có tài liệu đính kèm đơn hàng này',
   loadingFiles: 'Đang tải tệp...',
   
   // Empty States
