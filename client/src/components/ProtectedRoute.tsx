@@ -44,6 +44,13 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     }
   }, [isLoading, isAuthenticated, navigate]);
 
+  // Redirect non-admins from admin-only pages to warehouse dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.role && requireAdmin && !isAdministrator) {
+      navigate('/warehouse-dashboard');
+    }
+  }, [isLoading, isAuthenticated, user?.role, requireAdmin, isAdministrator, navigate]);
+
   // While checking authentication, show a professional loading screen
   if (isLoading) {
     return (
@@ -118,14 +125,6 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
       </div>
     );
   }
-
-  // If admin access is required and user is not an administrator, redirect to warehouse dashboard
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && user?.role && requireAdmin && !isAdministrator) {
-      // Non-admin users trying to access admin pages get redirected to warehouse dashboard
-      navigate('/warehouse-dashboard');
-    }
-  }, [isLoading, isAuthenticated, user?.role, requireAdmin, isAdministrator, navigate]);
 
   // If admin access is required and user is not an administrator
   if (requireAdmin && !isAdministrator) {
