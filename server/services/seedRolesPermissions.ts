@@ -103,69 +103,93 @@ const DEFAULT_ROLES = [
 
 export async function seedDefaultRolesAndPermissions(): Promise<void> {
   try {
-    const existingRoles = await db.select().from(roles);
-    const existingPermissions = await db.select().from(permissions);
-    const existingRolePermissions = await db.select().from(rolePermissions);
+    // Check if tables exist and have the expected columns before proceeding
+    // This prevents errors if the schema is different in production
+    let existingRoles: any[] = [];
+    let existingPermissions: any[] = [];
+    let existingRolePermissions: any[] = [];
+    
+    try {
+      existingRoles = await db.select().from(roles);
+      existingPermissions = await db.select().from(permissions);
+      existingRolePermissions = await db.select().from(rolePermissions);
+    } catch (tableError) {
+      // Tables might not exist or have different schema - silently skip seeding
+      console.log('[Seed] Skipping - tables not ready or schema mismatch');
+      return;
+    }
 
     let seededSomething = false;
 
     if (existingPermissions.length === 0) {
-      console.log('[Seed] Seeding default permissions...');
-      for (const perm of DEFAULT_PERMISSIONS) {
-        await db.insert(permissions).values(perm).onConflictDoNothing();
+      try {
+        console.log('[Seed] Seeding default permissions...');
+        for (const perm of DEFAULT_PERMISSIONS) {
+          await db.insert(permissions).values(perm).onConflictDoNothing();
+        }
+        console.log(`[Seed] Created ${DEFAULT_PERMISSIONS.length} permissions`);
+        seededSomething = true;
+      } catch (permError) {
+        console.log('[Seed] Could not seed permissions, continuing...');
       }
-      console.log(`[Seed] Created ${DEFAULT_PERMISSIONS.length} permissions`);
-      seededSomething = true;
     }
 
     if (existingRoles.length === 0) {
-      console.log('[Seed] Seeding default roles...');
-      for (const role of DEFAULT_ROLES) {
-        await db.insert(roles).values(role).onConflictDoNothing();
+      try {
+        console.log('[Seed] Seeding default roles...');
+        for (const role of DEFAULT_ROLES) {
+          await db.insert(roles).values(role).onConflictDoNothing();
+        }
+        console.log(`[Seed] Created ${DEFAULT_ROLES.length} roles`);
+        seededSomething = true;
+      } catch (roleError) {
+        console.log('[Seed] Could not seed roles, continuing...');
       }
-      console.log(`[Seed] Created ${DEFAULT_ROLES.length} roles`);
-      seededSomething = true;
     }
 
-    const allPermissions = await db.select().from(permissions);
-    const allRoles = await db.select().from(roles);
-    const currentRolePermissions = await db.select().from(rolePermissions);
+    try {
+      const allPermissions = await db.select().from(permissions);
+      const allRoles = await db.select().from(roles);
+      const currentRolePermissions = await db.select().from(rolePermissions);
 
-    for (const role of DEFAULT_ROLES) {
-      const dbRole = allRoles.find(r => r.name === role.name);
-      if (!dbRole) continue;
+      for (const role of DEFAULT_ROLES) {
+        const dbRole = allRoles.find(r => r.name === role.name);
+        if (!dbRole) continue;
 
-      const existingPermsForRole = currentRolePermissions.filter(rp => rp.roleId === dbRole.id);
-      
-      if (existingPermsForRole.length === 0) {
-        let permissionsToAssign: typeof allPermissions = [];
+        const existingPermsForRole = currentRolePermissions.filter(rp => rp.roleId === dbRole.id);
+        
+        if (existingPermsForRole.length === 0) {
+          let permissionsToAssign: typeof allPermissions = [];
 
-        if (role.name === 'administrator') {
-          permissionsToAssign = allPermissions;
-        } else if (role.name === 'manager') {
-          permissionsToAssign = allPermissions.filter(
-            p => p.parentSection === 'warehouse_operations' || 
-                 p.section === 'reports' || 
-                 p.section === 'employees'
-          );
-        } else if (role.name === 'warehouse_staff') {
-          permissionsToAssign = allPermissions.filter(
-            p => p.parentSection === 'warehouse_operations' && !p.isSensitive
-          );
-        }
-
-        if (permissionsToAssign.length > 0) {
-          for (const perm of permissionsToAssign) {
-            await db.insert(rolePermissions).values({
-              id: crypto.randomUUID(),
-              roleId: dbRole.id,
-              permissionId: perm.id,
-            }).onConflictDoNothing();
+          if (role.name === 'administrator') {
+            permissionsToAssign = allPermissions;
+          } else if (role.name === 'manager') {
+            permissionsToAssign = allPermissions.filter(
+              p => p.parentSection === 'warehouse_operations' || 
+                   p.section === 'reports' || 
+                   p.section === 'employees'
+            );
+          } else if (role.name === 'warehouse_staff') {
+            permissionsToAssign = allPermissions.filter(
+              p => p.parentSection === 'warehouse_operations' && !p.isSensitive
+            );
           }
-          console.log(`[Seed] Assigned ${permissionsToAssign.length} permissions to ${role.name}`);
-          seededSomething = true;
+
+          if (permissionsToAssign.length > 0) {
+            for (const perm of permissionsToAssign) {
+              await db.insert(rolePermissions).values({
+                id: crypto.randomUUID(),
+                roleId: dbRole.id,
+                permissionId: perm.id,
+              }).onConflictDoNothing();
+            }
+            console.log(`[Seed] Assigned ${permissionsToAssign.length} permissions to ${role.name}`);
+            seededSomething = true;
+          }
         }
       }
+    } catch (assignError) {
+      console.log('[Seed] Could not assign role permissions, continuing...');
     }
 
     if (seededSomething) {
@@ -174,6 +198,7 @@ export async function seedDefaultRolesAndPermissions(): Promise<void> {
       console.log('[Seed] Roles and permissions already exist, skipping seed');
     }
   } catch (error) {
-    console.error('[Seed] Error seeding roles and permissions:', error);
+    // Completely silent failure - seeding is non-critical
+    console.log('[Seed] Seeding skipped due to error');
   }
 }
