@@ -176,15 +176,15 @@ const extractFacebookId = (input: string): string | null => {
 };
 
 const addOrderSchema = z.object({
-  customerId: z.string().min(1, "Customer is required"),
+  customerId: z.string().nullable().transform(val => val || '').pipe(z.string().min(1, "Customer is required")),
   orderType: z.enum(['pos', 'ord', 'web', 'tel']).default('ord'),
   currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
-  paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  orderStatus: z.enum(['pending', 'awaiting_stock', 'to_fulfill', 'ready_to_ship', 'shipped', 'delivered', 'cancelled', 'completed', 'processing']).default('pending'),
+  paymentStatus: z.enum(['pending', 'partial', 'paid', 'pay_later', 'refunded', 'failed']).default('pending'),
   shippingMethod: z.enum(['PPL', 'PPL CZ', 'PPL CZ SMART', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD', 'Pickup', 'Hand-Delivery']).transform(normalizeCarrier).optional(),
-  paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash', 'Transfer'], {
-    errorMap: () => ({ message: 'Please select a valid payment method: Bank Transfer, PayPal, COD, or Cash' })
+  paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash', 'Transfer', 'Card', 'Credit Card', 'Debit Card', 'Store Credit', 'Mixed'], {
+    errorMap: () => ({ message: 'Please select a valid payment method' })
   }).transform(val => val === 'Transfer' ? 'Bank Transfer' : val).optional(),
   discountType: z.enum(['flat', 'rate']).default('flat'),
   discountValue: z.coerce.number().min(0).default(0),
@@ -892,11 +892,12 @@ export default function AddOrder() {
     if (!existingOrder || !isEditMode) return;
     const order = existingOrder as any;
 
-    // Valid options to validate against
+    // Valid options to validate against (must match schema)
     const validCurrencies = ['CZK', 'EUR', 'USD', 'VND', 'CNY'];
-    const validOrderStatuses = ['pending', 'awaiting_stock', 'to_fulfill', 'ready_to_ship', 'shipped', 'delivered', 'cancelled'];
+    const validOrderStatuses = ['pending', 'awaiting_stock', 'to_fulfill', 'ready_to_ship', 'shipped', 'delivered', 'cancelled', 'completed', 'processing'];
     const validPaymentStatuses = ['pending', 'partial', 'paid', 'pay_later', 'refunded', 'failed'];
     const validPriorities = ['low', 'medium', 'high', 'urgent'];
+    const validPaymentMethods = ['Bank Transfer', 'PayPal', 'COD', 'Cash', 'Transfer', 'Card', 'Credit Card', 'Debit Card', 'Store Credit', 'Mixed'];
     
     // Normalize currency - ensure it's uppercase and valid
     const rawCurrency = order.currency?.toUpperCase() || 'CZK';
@@ -914,6 +915,10 @@ export default function AddOrder() {
     // Normalize priority
     const normalizedPriority = validPriorities.includes(order.priority) ? order.priority : 'medium';
     
+    // Normalize payment method
+    const rawPaymentMethod = order.paymentMethod || 'Bank Transfer';
+    const normalizedPaymentMethod = validPaymentMethods.includes(rawPaymentMethod) ? rawPaymentMethod : 'Bank Transfer';
+    
     // Debug logging for edit mode form population
     console.log('✅ Loading existing order data into form:', {
       orderId: order.id,
@@ -925,10 +930,12 @@ export default function AddOrder() {
       normalizedOrderStatus,
       paymentStatus: order.paymentStatus,
       normalizedPaymentStatus,
+      paymentMethod: order.paymentMethod,
+      normalizedPaymentMethod,
     });
 
     form.reset({
-      customerId: order.customerId,
+      customerId: order.customerId || '',
       orderType: order.orderType || 'ord',
       saleType: order.saleType || 'retail',
       currency: normalizedCurrency,
@@ -936,7 +943,7 @@ export default function AddOrder() {
       orderStatus: normalizedOrderStatus,
       paymentStatus: normalizedPaymentStatus,
       shippingMethod: normalizedShipping,
-      paymentMethod: order.paymentMethod || 'Bank Transfer',
+      paymentMethod: normalizedPaymentMethod,
       discountType: order.discountType || 'flat',
       discountValue: order.discountValue || 0,
       taxInvoiceEnabled: order.taxInvoiceEnabled || false,
@@ -4887,6 +4894,18 @@ export default function AddOrder() {
                               {t('orders:cancelled')}
                             </div>
                           </SelectItem>
+                          <SelectItem value="completed">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-green-600 rounded-full" />
+                              {t('orders:completed')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="processing">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-indigo-500 rounded-full" />
+                              {t('orders:processing')}
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -4914,6 +4933,24 @@ export default function AddOrder() {
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-blue-500 rounded-full" />
                               {t('orders:payLater')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="partial">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                              {t('orders:partial')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="refunded">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                              {t('orders:refunded')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="failed">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-red-500 rounded-full" />
+                              {t('orders:failed')}
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -9118,6 +9155,18 @@ export default function AddOrder() {
                                   {t('orders:cancelled')}
                                 </div>
                               </SelectItem>
+                              <SelectItem value="completed">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-green-600 rounded-full" />
+                                  {t('orders:completed')}
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="processing">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-indigo-500 rounded-full" />
+                                  {t('orders:processing')}
+                                </div>
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -9145,6 +9194,24 @@ export default function AddOrder() {
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 bg-blue-500 rounded-full" />
                                 {t('orders:payLater')}
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="partial">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                                {t('orders:partial')}
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="refunded">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                                {t('orders:refunded')}
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="failed">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-red-500 rounded-full" />
+                                {t('orders:failed')}
                               </div>
                             </SelectItem>
                           </SelectContent>

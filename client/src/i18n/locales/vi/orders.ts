@@ -80,6 +80,7 @@ const orders = {
   unpaid: 'Chưa thanh toán',
   payLater: 'Thanh toán sau',
   refunded: 'Đã hoàn tiền',
+  partial: 'Một phần',
   partiallyPaid: 'Thanh toán một phần',
   
   // Payment Methods

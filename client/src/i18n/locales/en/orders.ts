@@ -80,6 +80,7 @@ const orders = {
   unpaid: 'Unpaid',
   payLater: 'Pay Later',
   refunded: 'Refunded',
+  partial: 'Partial',
   partiallyPaid: 'Partially Paid',
   
   // Payment Methods
