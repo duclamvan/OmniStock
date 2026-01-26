@@ -43,6 +43,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrderUpdates } from "@/hooks/useSocket";
 import { LayoutGrid, List } from "lucide-react";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
@@ -4916,7 +4917,7 @@ export default function PickPack() {
   // Fetch real orders from the API with items and bundle details
   // Real-time data synchronization: refetch every 5 seconds ONLY when not actively picking/packing
   // This prevents background refetches from interfering with local state changes during active picking
-  const { data: allOrders = [], isLoading, isSuccess } = useQuery<PickPackOrder[]>({
+  const { data: allOrders = [], isLoading, isSuccess, refetch: refetchOrders } = useQuery<PickPackOrder[]>({
     queryKey: ['/api/orders/pick-pack'],
     staleTime: 0, // IMPORTANT: Set to 0 to always fetch fresh data (fixes 304 cache issue)
     refetchInterval: activePickingOrder || activePackingOrder ? false : 5000, // Disable polling during active picking/packing
@@ -4924,6 +4925,14 @@ export default function PickPack() {
     refetchOnMount: true, // Always refetch when component mounts
     gcTime: 0, // Don't cache query results
   });
+
+  // Real-time socket updates for multi-device sync
+  // When an order is updated from /orders page, automatically refresh the Pick & Pack data
+  useOrderUpdates(useCallback((payload) => {
+    console.log("[PickPack] Order updated via socket:", payload.orderId, payload.updateType);
+    // Refetch orders data when any order is updated
+    refetchOrders();
+  }, [refetchOrders]));
   
   // Sync activePackingOrder with latest data from query
   // This ensures UI updates automatically when PPL labels are created/cancelled
@@ -7065,7 +7074,9 @@ export default function PickPack() {
       pplLabelData: order.pplLabelData,
       pplStatus: order.pplStatus
     }))
-  )];
+  )
+  // Deduplicate by order ID to prevent duplicate cards
+  .filter((order, index, self) => self.findIndex(o => o.id === order.id) === index)];
   
   // Clean up sent back orders when data refreshes
   useEffect(() => {

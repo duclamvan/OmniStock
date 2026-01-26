@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated, requireRole } from "./auth";
 import { seedMockData } from "./mockData";
 import { cacheMiddleware, invalidateCache } from "./cache";
 import rateLimit from 'express-rate-limit';
+import { getSocketService } from "./socket/SocketService";
 import { downloadAndStoreProfilePicture, getProfilePicturePath } from './services/avatarService';
 import multer from "multer";
 import path from "path";
@@ -13391,6 +13392,17 @@ Important:
         };
       }
       
+      // Broadcast order update for real-time sync across devices
+      const socketService = getSocketService();
+      if (socketService) {
+        socketService.broadcastOrderUpdate({
+          orderId: req.params.id,
+          updateType: 'items',
+          timestamp: new Date().toISOString(),
+          updatedBy: req.user?.username || 'unknown'
+        });
+      }
+      
       res.json(response);
     } catch (error) {
       console.error("Error updating picked quantity:", error);
@@ -13767,6 +13779,18 @@ Important:
     try {
       const { packedQuantity } = req.body;
       const orderItem = await storage.updateOrderItemPackedQuantity(req.params.itemId, packedQuantity);
+      
+      // Broadcast order update for real-time sync across devices
+      const socketService = getSocketService();
+      if (socketService) {
+        socketService.broadcastOrderUpdate({
+          orderId: req.params.id,
+          updateType: 'items',
+          timestamp: new Date().toISOString(),
+          updatedBy: req.user?.username || 'unknown'
+        });
+      }
+      
       res.json(orderItem);
     } catch (error) {
       console.error("Error updating packed quantity:", error);
@@ -14880,6 +14904,18 @@ Important:
         description: `Updated order: ${order.orderId}`,
       });
 
+
+      // Broadcast order update via socket for real-time sync
+      const socketService = getSocketService();
+      if (socketService) {
+        const updateType = items ? 'items' : (updates.shippingAddress ? 'shipping' : (updates.status || updates.orderStatus ? 'status' : 'general'));
+        socketService.broadcastOrderUpdate({
+          orderId: order.id,
+          updateType: updateType as 'status' | 'items' | 'shipping' | 'general',
+          timestamp: new Date().toISOString(),
+          updatedBy: req.user?.username || 'unknown'
+        });
+      }
       res.json(order);
     } catch (error) {
       console.error("Error updating order:", error);

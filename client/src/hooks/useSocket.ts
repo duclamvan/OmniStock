@@ -358,6 +358,41 @@ export function useRealTimeShipment(shipmentId: string | undefined) {
   };
 }
 
+interface OrderUpdatePayload {
+  orderId: string;
+  updateType: 'status' | 'items' | 'shipping' | 'general';
+  timestamp: string;
+  updatedBy?: string;
+}
+
+export function useOrderUpdates(onOrderUpdate?: (payload: OrderUpdatePayload) => void) {
+  const { socket, isConnected } = useSocketConnection();
+  const callbackRef = useRef(onOrderUpdate);
+  
+  useEffect(() => {
+    callbackRef.current = onOrderUpdate;
+  }, [onOrderUpdate]);
+  
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    
+    const handleOrderUpdated = (payload: OrderUpdatePayload) => {
+      console.log("[Socket] Order updated:", payload.orderId, payload.updateType);
+      if (callbackRef.current) {
+        callbackRef.current(payload);
+      }
+    };
+    
+    socket.on("order_updated", handleOrderUpdated);
+    
+    return () => {
+      socket.off("order_updated", handleOrderUpdated);
+    };
+  }, [socket, isConnected]);
+  
+  return { socket, isConnected };
+}
+
 export function useGlobalNotifications() {
   const { socket, isConnected } = useSocketConnection();
   const [notifications, setNotifications] = useState<GlobalNotification[]>([]);

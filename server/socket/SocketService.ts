@@ -7,7 +7,8 @@ import type {
   RealTimeViewer, 
   LockInfo, 
   OrderProgress,
-  SocketServiceConfig 
+  SocketServiceConfig,
+  OrderUpdatePayload
 } from "./types";
 import { db } from "../db";
 import { orders, shipments } from "@shared/schema";
@@ -551,6 +552,11 @@ export class SocketService {
       ...notification,
       timestamp: new Date().toISOString()
     });
+  }
+  
+  public broadcastOrderUpdate(payload: OrderUpdatePayload) {
+    this.io.emit("order_updated", payload);
+    console.log(`[SocketService] Order update broadcast: ${payload.orderId} (${payload.updateType})`);
   }
   
   public shutdown() {

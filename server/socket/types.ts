@@ -78,6 +78,13 @@ export interface SocketEventPayloads {
   };
 }
 
+export interface OrderUpdatePayload {
+  orderId: string;
+  updateType: 'status' | 'items' | 'shipping' | 'general';
+  timestamp: string;
+  updatedBy?: string;
+}
+
 export interface ServerToClientEvents {
   room_state: (state: RoomState) => void;
   viewer_joined: (viewer: RealTimeViewer) => void;
@@ -100,6 +107,7 @@ export interface ServerToClientEvents {
   }) => void;
   force_unlock: (data: { roomId: string; reason: string }) => void;
   error: (data: { message: string; code?: string }) => void;
+  order_updated: (payload: OrderUpdatePayload) => void;
 }
 
 export interface ClientToServerEvents {
