@@ -3200,7 +3200,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
 
       {/* Capture Preview Modal */}
       <Dialog open={showCapturePreview} onOpenChange={setShowCapturePreview}>
-        <DialogContent className="max-w-[520px] max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-[580px] max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="text-center">{t('orders:capturePreview')}</DialogTitle>
             <DialogDescription className="text-center text-sm">
@@ -3227,21 +3227,22 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
           </div>
           
           {/* Invoice Preview - This is what gets captured */}
+          {/* Width optimized for Samsung S25 Ultra screen ratio (~412px) with larger text for social media */}
           <div className="flex justify-center pb-4 px-2 sm:px-4">
             <div 
               ref={capturePreviewRef}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-lg w-full max-w-[460px]"
+              className={`bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-lg w-full ${compactCaptureMode ? 'max-w-[460px]' : 'max-w-[520px]'}`}
             >
               {/* Header */}
-              <div className="p-3 sm:p-5 bg-gradient-to-br from-slate-50 to-slate-100 border-b-2 border-slate-200">
-                <div className="flex justify-center mb-2 sm:mb-4">
-                  <img src={logoPath} alt="Logo" className="h-8 sm:h-12 object-contain" />
+              <div className={`bg-gradient-to-br from-slate-50 to-slate-100 border-b-2 border-slate-200 ${compactCaptureMode ? 'p-3 sm:p-5' : 'p-5 sm:p-6'}`}>
+                <div className={`flex justify-center ${compactCaptureMode ? 'mb-2 sm:mb-4' : 'mb-4'}`}>
+                  <img src={logoPath} alt="Logo" className={compactCaptureMode ? 'h-8 sm:h-12 object-contain' : 'h-12 sm:h-14 object-contain'} />
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  <div className={`font-extrabold text-slate-900 tracking-tight ${compactCaptureMode ? 'text-lg sm:text-2xl' : 'text-2xl sm:text-3xl'}`}>
                     {order?.orderId || order?.id}
                   </div>
-                  <div className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
+                  <div className={`text-slate-500 ${compactCaptureMode ? 'text-xs sm:text-sm mt-0.5 sm:mt-1' : 'text-sm sm:text-base mt-1 sm:mt-2'}`}>
                     {order?.createdAt 
                       ? new Date(order.createdAt).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
                       : ''}
@@ -3250,10 +3251,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               </div>
               
               {/* Table Header */}
-              <div className={`grid px-3 sm:px-4 py-2 bg-slate-50 border-b border-slate-200 ${compactCaptureMode ? 'grid-cols-[48px_1fr_auto]' : 'grid-cols-[1fr_auto]'}`}>
+              <div className={`grid bg-slate-50 border-b border-slate-200 ${compactCaptureMode ? 'grid-cols-[48px_1fr_auto] px-3 sm:px-4 py-2' : 'grid-cols-[1fr_auto] px-4 sm:px-5 py-2.5'}`}>
                 {compactCaptureMode && <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-center">SL</span>}
-                <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">SẢN PHẨM</span>
-                <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">THÀNH TIỀN</span>
+                <span className={`font-semibold text-slate-500 uppercase tracking-wide ${compactCaptureMode ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'}`}>SẢN PHẨM</span>
+                <span className={`font-semibold text-slate-500 uppercase tracking-wide text-right ${compactCaptureMode ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'}`}>THÀNH TIỀN</span>
               </div>
               
               {/* Items - Compact or Normal mode */}
@@ -3401,7 +3402,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   })()}
                 </div>
               ) : (
-              /* Normal Mode - With images */
+              /* Normal Mode - With images, larger text for social media sharing */
               <div className="divide-y divide-slate-100">
                 {(() => {
                   // Separate paid items and free items
@@ -3513,27 +3514,27 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     const discountPercent = rawDiscountPercent % 1 === 0 ? rawDiscountPercent.toFixed(0) : rawDiscountPercent.toFixed(2).replace(/\.?0+$/, '');
                     
                     return (
-                      <div key={`paid-${idx}`} className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3">
-                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div key={`paid-${idx}`} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-4">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {group.image ? (
                             <img src={group.image} alt={group.name} className="w-full h-full object-contain" />
                           ) : group.isService ? (
-                            <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+                            <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500" />
                           ) : (
-                            <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300" />
+                            <Package className="h-5 w-5 sm:h-6 sm:w-6 text-slate-300" />
                           )}
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2">{group.name}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">
+                          <div className="font-semibold text-slate-900 text-base sm:text-lg leading-tight line-clamp-2">{group.name}</div>
+                          <div className="text-sm text-slate-500 mt-0.5">
                             <span className="font-extrabold text-slate-900">{group.totalQty}</span>
                             {group.totalQty > 0 && group.totalPrice > 0 && (
                               <span className="text-slate-500"> × {formatCurrency(group.totalPrice / group.totalQty, order?.currency || 'EUR')}</span>
                             )}
                           </div>
                           {group.variantDetails && group.variantDetails.length > 0 && (
-                            <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
+                            <div className="text-xs sm:text-sm text-black mt-0.5 leading-tight font-medium">
                               {[...group.variantDetails]
                                 .sort((a, b) => (parseInt(a.name) || 999999) - (parseInt(b.name) || 999999))
                                 .map((v: { name: string; qty: number }) => 
@@ -3542,9 +3543,9 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                             </div>
                           )}
                           {group.discountLabel && (
-                            <div className="mt-1">
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
-                                <Gift className="h-3 w-3" />
+                            <div className="mt-1.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                                <Gift className="h-3.5 w-3.5" />
                                 {group.discountLabel}
                               </span>
                             </div>
@@ -3554,15 +3555,15 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         <div className="text-right flex flex-col items-end flex-shrink-0">
                           {group.totalDiscount > 0 ? (
                             <>
-                              <span className="text-xs text-slate-400 relative inline-block whitespace-nowrap">
+                              <span className="text-sm text-slate-400 relative inline-block whitespace-nowrap">
                                 {formatCurrency(group.totalPrice, order?.currency || 'EUR')}
                                 <span className="absolute left-0 right-0 top-1/2 bg-slate-400" style={{ height: '1px', transform: 'translateY(-50%)' }} />
                               </span>
-                              <span className="text-xs text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
-                              <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
+                              <span className="text-sm text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
+                              <span className="text-lg sm:text-xl font-bold text-slate-900 whitespace-nowrap">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
                             </>
                           ) : (
-                            <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(group.totalPrice, order?.currency || 'EUR')}</span>
+                            <span className="text-lg sm:text-xl font-bold text-slate-900 whitespace-nowrap">{formatCurrency(group.totalPrice, order?.currency || 'EUR')}</span>
                           )}
                         </div>
                       </div>
@@ -3573,22 +3574,22 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   const sortedFreeGroups = Object.values(freeGrouped).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
                   
                   const freeRows = sortedFreeGroups.map((group: any, idx: number) => (
-                    <div key={`free-${idx}`} className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-green-50">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg border-2 border-green-300 bg-green-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div key={`free-${idx}`} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-4 bg-green-50">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 border-green-300 bg-green-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {group.image ? (
                           <img src={group.image} alt={group.name} className="w-full h-full object-contain" />
                         ) : (
-                          <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                          <Gift className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                         )}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-green-800 text-sm leading-tight line-clamp-2">{group.name}</div>
-                        <div className="text-xs text-green-600 mt-0.5">
+                        <div className="font-semibold text-green-800 text-base sm:text-lg leading-tight line-clamp-2">{group.name}</div>
+                        <div className="text-sm text-green-600 mt-0.5">
                           <span className="font-extrabold">{group.totalQty}</span>
                         </div>
                         {group.variantDetails && group.variantDetails.length > 0 && (
-                          <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
+                          <div className="text-xs sm:text-sm text-black mt-0.5 leading-tight font-medium">
                             {[...group.variantDetails]
                               .sort((a, b) => (parseInt(a.name) || 999999) - (parseInt(b.name) || 999999))
                               .map((v: { name: string; qty: number }) => 
@@ -3597,13 +3598,13 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           </div>
                         )}
                         {group.discountLabel && (
-                          <div className="text-[10px] text-green-600 mt-0.5">{group.discountLabel}</div>
+                          <div className="text-xs text-green-600 mt-0.5">{group.discountLabel}</div>
                         )}
                       </div>
                       
                       <div className="text-right flex flex-col items-end flex-shrink-0">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-200 text-green-800 border border-green-300">
-                          <Gift className="h-3 w-3" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-bold bg-green-200 text-green-800 border border-green-300">
+                          <Gift className="h-3.5 w-3.5" />
                           FREE
                         </span>
                       </div>
@@ -3615,38 +3616,41 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               </div>
               )}
               
-              {/* Pricing Summary */}
-              <div className="bg-slate-50 border-t-2 border-slate-200 px-3 sm:px-5 py-3 sm:py-4">
+              {/* Pricing Summary - larger text for normal mode (social media sharing) */}
+              <div className={`bg-slate-50 border-t-2 border-slate-200 ${compactCaptureMode ? 'px-3 sm:px-5 py-3 sm:py-4' : 'px-5 sm:px-6 py-4 sm:py-5'}`}>
                 {(() => {
                   const totalItemDiscounts = order?.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.discount) || 0), 0) || 0;
                   const merchandiseTotal = order?.items?.reduce((sum: number, item: any) => {
                     return sum + ((parseFloat(item.unitPrice) || parseFloat(item.price) || 0) * (item.quantity || 0));
                   }, 0) || 0;
+                  const textSize = compactCaptureMode ? 'text-sm' : 'text-base';
+                  const totalTextSize = compactCaptureMode ? 'text-lg' : 'text-xl';
+                  const grandTotalSize = compactCaptureMode ? 'text-xl' : 'text-2xl';
                   
                   return (
                     <>
                       {totalItemDiscounts > 0 && (
                         <>
                           <div className="flex justify-between py-1.5">
-                            <span className="text-sm text-slate-500 font-medium">Tổng hàng hóa</span>
-                            <span className="text-sm font-semibold text-slate-900">{formatCurrency(merchandiseTotal, order?.currency || 'EUR')}</span>
+                            <span className={`${textSize} text-slate-500 font-medium`}>Tổng hàng hóa</span>
+                            <span className={`${textSize} font-semibold text-slate-900`}>{formatCurrency(merchandiseTotal, order?.currency || 'EUR')}</span>
                           </div>
                           <div className="flex justify-between py-1.5">
-                            <span className="text-sm text-green-600 font-medium">Tiết kiệm khuyến mãi</span>
-                            <span className="text-sm font-semibold text-green-600">-{formatCurrency(totalItemDiscounts, order?.currency || 'EUR')}</span>
+                            <span className={`${textSize} text-green-600 font-medium`}>Tiết kiệm khuyến mãi</span>
+                            <span className={`${textSize} font-semibold text-green-600`}>-{formatCurrency(totalItemDiscounts, order?.currency || 'EUR')}</span>
                           </div>
                         </>
                       )}
                       <div className="flex justify-between py-1.5">
-                        <span className="text-sm text-slate-500 font-medium">Tạm tính</span>
-                        <span className="text-sm font-semibold text-slate-900">{formatCurrency(order?.subtotal || 0, order?.currency || 'EUR')}</span>
+                        <span className={`${textSize} text-slate-500 font-medium`}>Tạm tính</span>
+                        <span className={`${textSize} font-semibold text-slate-900`}>{formatCurrency(order?.subtotal || 0, order?.currency || 'EUR')}</span>
                       </div>
                       {order?.discountValue > 0 && (
                         <div className="flex justify-between py-1.5">
-                          <span className="text-sm text-green-600 font-medium">
+                          <span className={`${textSize} text-green-600 font-medium`}>
                             Giảm giá {order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}
                           </span>
-                          <span className="text-sm font-semibold text-green-600">
+                          <span className={`${textSize} font-semibold text-green-600`}>
                             -{formatCurrency(
                               order.discountType === 'rate' 
                                 ? (order.subtotal * order.discountValue / 100) 
@@ -3658,30 +3662,30 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       )}
                       {order?.taxAmount > 0 && (
                         <div className="flex justify-between py-1.5">
-                          <span className="text-sm text-slate-500 font-medium">Thuế ({order.taxRate}%)</span>
-                          <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.taxAmount, order?.currency || 'EUR')}</span>
+                          <span className={`${textSize} text-slate-500 font-medium`}>Thuế ({order.taxRate}%)</span>
+                          <span className={`${textSize} font-semibold text-slate-900`}>{formatCurrency(order.taxAmount, order?.currency || 'EUR')}</span>
                         </div>
                       )}
                       {order?.shippingCost > 0 && (
                         <div className="flex justify-between py-1.5">
-                          <span className="text-sm text-slate-500 font-medium">Phí vận chuyển</span>
-                          <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.shippingCost, order?.currency || 'EUR')}</span>
+                          <span className={`${textSize} text-slate-500 font-medium`}>Phí vận chuyển</span>
+                          <span className={`${textSize} font-semibold text-slate-900`}>{formatCurrency(order.shippingCost, order?.currency || 'EUR')}</span>
                         </div>
                       )}
                       {order?.adjustment != null && Number(order.adjustment) !== 0 && (
                         <div className="flex justify-between py-1.5">
-                          <span className={cn("text-sm font-medium", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
+                          <span className={cn(`${textSize} font-medium`, order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
                             Điều chỉnh
                           </span>
-                          <span className={cn("text-sm font-semibold", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
+                          <span className={cn(`${textSize} font-semibold`, order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
                             {order.adjustment > 0 ? '+' : ''}{formatCurrency(order.adjustment, order?.currency || 'EUR')}
                           </span>
                         </div>
                       )}
-                      <div className="border-t-2 border-slate-300 my-2" />
-                      <div className="flex justify-between py-2">
-                        <span className="text-lg font-bold text-slate-900">Tổng cộng</span>
-                        <span className="text-xl font-extrabold text-slate-900">{formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}</span>
+                      <div className={`border-t-2 border-slate-300 ${compactCaptureMode ? 'my-2' : 'my-3'}`} />
+                      <div className={`flex justify-between ${compactCaptureMode ? 'py-2' : 'py-3'}`}>
+                        <span className={`${totalTextSize} font-bold text-slate-900`}>Tổng cộng</span>
+                        <span className={`${grandTotalSize} font-extrabold text-slate-900`}>{formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}</span>
                       </div>
                     </>
                   );
