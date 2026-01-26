@@ -328,7 +328,7 @@ function MobileOrderCard({
 export default function AllOrders({ filter }: AllOrdersProps) {
   usePageTitle('nav.orders', 'Orders');
   const { toast } = useToast();
-  const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
+  const { canViewProfit, canViewMargin, canViewImportCost, isAdministrator } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;
   const { t } = useTranslation(['orders', 'common']);
   const { formatCurrency, formatDate } = useLocalization();
@@ -360,6 +360,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   } | null>(null);
   const [isReverting, setIsReverting] = useState(false);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const [isFixingPosInventory, setIsFixingPosInventory] = useState(false);
   const [showSuccessfulOrders, setShowSuccessfulOrders] = useState(false);
   
   // Ref to store clearSelection function from DataTable
@@ -1529,6 +1530,52 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     }
   };
 
+  const handleFixPosInventory = async (dryRun: boolean = true) => {
+    setIsFixingPosInventory(true);
+    try {
+      const response = await fetch('/api/admin/fix-pos-inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ dryRun }),
+      });
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.message || 'Failed to fix POS inventory');
+      
+      if (dryRun) {
+        if (data.totalOrders === 0) {
+          toast({
+            title: t('common:success'),
+            description: 'All POS orders have correct inventory. Nothing to fix.',
+          });
+        } else {
+          const confirmed = window.confirm(
+            `Found ${data.totalOrders} POS order(s) that may need fixing.\n\n` +
+            `Orders: ${data.orders.map((o: any) => o.orderId).join(', ')}\n\n` +
+            `Click OK to apply the fix and deduct inventory.`
+          );
+          if (confirmed) {
+            await handleFixPosInventory(false);
+          }
+        }
+      } else {
+        toast({
+          title: t('common:success'),
+          description: `Fixed ${data.totalOrders} POS orders. Inventory has been deducted.`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: t('common:error'),
+        description: error.message || 'Failed to fix POS inventory',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsFixingPosInventory(false);
+    }
+  };
+
   // Centralized order import column definitions - single source of truth
   // This ensures template, UI documentation, and backend parsing stay in sync
   const ORDER_IMPORT_COLUMNS = {
@@ -1826,6 +1873,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 <FileText className="h-4 w-4 mr-2" />
                 {t('orders:exportToPDF')}
               </DropdownMenuItem>
+              {isAdministrator && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Admin Tools</DropdownMenuLabel>
+                  <DropdownMenuItem 
+                    onClick={() => handleFixPosInventory(true)} 
+                    disabled={isFixingPosInventory}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    {isFixingPosInventory ? 'Checking...' : 'Fix POS Inventory'}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           
