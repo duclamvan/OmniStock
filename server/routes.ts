@@ -14389,6 +14389,16 @@ Important:
         }
         
         console.log(`[POS Inventory] Completed inventory deduction for POS order ${order.orderId}`);
+        
+        // CRITICAL: Set pickStatus to 'completed' so inventory is restored when order is deleted
+        // Without this, the delete logic checks pickStatus and won't restore inventory
+        await storage.updateOrder(order.id, { 
+          pickStatus: 'completed',
+          packStatus: 'completed',
+          pickEndTime: new Date(),
+          packEndTime: new Date()
+        });
+        console.log(`[POS Inventory] Set pickStatus/packStatus to 'completed' for order ${order.orderId}`);
       }
       // Deduct store credit from customer if applied
       if (order.customerId && order.storeCreditAdjustment) {
