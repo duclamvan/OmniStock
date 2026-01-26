@@ -673,6 +673,8 @@ const orders = {
   clickToMarkAllItemsAsVerified: 'Nhấp để đánh dấu tất cả là đã xác nhận',
   hideBarcodeScanner: 'Ẩn máy quét mã vạch',
   showBarcodeScanner: 'Hiện máy quét mã vạch',
+  hideItemChecklist: 'Ẩn danh sách kiểm tra',
+  showItemChecklist: 'Hiện danh sách kiểm tra',
   hideBundleItems: 'Ẩn sản phẩm trong combo',
   showBundleItems: 'Hiện sản phẩm trong combo',
   packingInstructions: 'Hướng dẫn đóng gói',

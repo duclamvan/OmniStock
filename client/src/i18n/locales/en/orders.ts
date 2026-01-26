@@ -666,6 +666,8 @@ const orders = {
   clickToMarkAllItemsAsVerified: 'Click to mark all items as verified',
   hideBarcodeScanner: 'Hide barcode scanner',
   showBarcodeScanner: 'Show barcode scanner',
+  hideItemChecklist: 'Hide item checklist',
+  showItemChecklist: 'Show item checklist',
   hideBundleItems: 'Hide bundle items',
   showBundleItems: 'Show bundle items',
   packingInstructions: 'Packing instructions',

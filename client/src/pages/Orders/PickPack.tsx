@@ -4250,6 +4250,7 @@ export default function PickPack() {
     return new Set();
   });
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [showItemChecklist, setShowItemChecklist] = useState(true); // Toggle for manual item verification checklist
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
   
   // State for tracking expanded/collapsed shipping details sections (default all expanded)
@@ -4420,7 +4421,7 @@ export default function PickPack() {
 
   const clearPackingState = (orderId: string) => {
     const keysToRemove = [
-      'verifiedItems', 'expandedBundles', 'bundlePickedItems', 'showBarcodeScanner',
+      'verifiedItems', 'expandedBundles', 'bundlePickedItems', 'showBarcodeScanner', 'showItemChecklist',
       'cartons', 'packingChecklist', 'packingMaterialsApplied', 'printedDocuments',
       'printedProductFiles', 'printedOrderFiles', 'printedPPLLabels'
     ];
@@ -4502,6 +4503,7 @@ export default function PickPack() {
       const loadedExpandedBundles = loadPackingState(orderId, 'expandedBundles', []);
       const loadedBundlePickedItems = loadPackingState(orderId, 'bundlePickedItems', {});
       const loadedShowBarcode = loadPackingState(orderId, 'showBarcodeScanner', false);
+      const loadedShowItemChecklist = loadPackingState(orderId, 'showItemChecklist', true);
       const loadedPackingChecklist = loadPackingState(orderId, 'packingChecklist', {
         itemsVerified: false,
         packingSlipIncluded: false,
@@ -4533,6 +4535,7 @@ export default function PickPack() {
       setBundlePickedItems(bundlePickedItemsWithSets);
       
       setShowBarcodeScanner(loadedShowBarcode);
+      setShowItemChecklist(loadedShowItemChecklist);
       
       // Restore timer state
       setPackingTimer(loadedPackingTimer);
@@ -4586,6 +4589,12 @@ export default function PickPack() {
       savePackingState(activePackingOrder.id, 'showBarcodeScanner', showBarcodeScanner);
     }
   }, [showBarcodeScanner, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'showItemChecklist', showItemChecklist);
+    }
+  }, [showItemChecklist, activePackingOrder?.id]);
 
   useEffect(() => {
     if (activePackingOrder?.id) {
@@ -9880,6 +9889,17 @@ export default function PickPack() {
                     )}
                   </span>
                 </Button>
+                {/* Item Checklist Toggle */}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={`h-8 w-8 lg:h-9 lg:w-9 transition-all duration-200 text-white ${showItemChecklist ? 'bg-sky-500/80 hover:bg-sky-500' : 'bg-white/20 hover:bg-white/30'}`}
+                  onClick={() => setShowItemChecklist(!showItemChecklist)}
+                  title={showItemChecklist ? t('orders:hideItemChecklist') : t('orders:showItemChecklist')}
+                  data-testid="button-toggle-item-checklist"
+                >
+                  <ClipboardList className={`h-4 w-4 ${showItemChecklist ? '' : 'opacity-70'}`} />
+                </Button>
               </div>
             </div>
 
@@ -10014,7 +10034,8 @@ export default function PickPack() {
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-4">
             
-            {/* Item Verification List - Collapsible Accordion */}
+            {/* Item Verification List - Collapsible Accordion (toggleable via settings) */}
+            {showItemChecklist && (
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
               <AccordionItem value="items" className="shadow-sm border-2 border-sky-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
                 <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-sky-700 dark:from-sky-800 to-sky-800 dark:to-sky-900 text-white transition-colors -mt-0.5 rounded-t-lg">
@@ -10932,6 +10953,7 @@ export default function PickPack() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+            )}
 
           {/* Packing Materials Section - Hidden when empty for performance */}
           {orderPackingMaterials.length > 0 && (
