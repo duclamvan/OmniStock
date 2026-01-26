@@ -4287,7 +4287,7 @@ export default function PickPack() {
   
   // Multi-carrier DHL Nachnahme state
   const [glsCartonIds, setGlsCartonIds] = useState<Set<string>>(new Set());
-  const [isGlsSectionExpanded, setIsGlsSectionExpanded] = useState(false);
+  const [isGlsSectionExpanded, setIsGlsSectionExpanded] = useState(true);
   const [glsPackageSize, setGlsPackageSize] = useState<'XS' | 'S'>('S');
   
   // Shipping labels state
@@ -11530,7 +11530,7 @@ export default function PickPack() {
 
                     {/* Sender Details - Collapsible */}
                     {senderData && (
-                      <Collapsible defaultOpen={false} className="mt-3">
+                      <Collapsible defaultOpen={true} className="mt-3">
                         <CollapsibleTrigger asChild>
                           <Button
                             variant="outline"
