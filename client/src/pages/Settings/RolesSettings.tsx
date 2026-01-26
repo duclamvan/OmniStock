@@ -77,7 +77,14 @@ import {
   Wrench,
   Ticket,
   ClipboardList,
+  MoreVertical,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -215,10 +222,19 @@ export default function RolesSettings() {
   const [activeTab, setActiveTab] = useState("users");
   const [userSearch, setUserSearch] = useState("");
   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
+  const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newUserData, setNewUserData] = useState({
     username: "",
     email: "",
     password: "",
+    firstName: "",
+    lastName: "",
+    role: "warehouse_staff"
+  });
+  const [editUserData, setEditUserData] = useState({
+    email: "",
     firstName: "",
     lastName: "",
     role: "warehouse_staff"
@@ -362,6 +378,39 @@ export default function RolesSettings() {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsCreateUserDialogOpen(false);
       setNewUserData({ username: "", email: "", password: "", firstName: "", lastName: "", role: "warehouse_staff" });
+    },
+    onError: (error: Error) => {
+      toast({ title: t('common:error', 'Error'), description: error.message, variant: "destructive" });
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, data }: { userId: string; data: typeof editUserData }) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${userId}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: t('settings:userUpdated', 'User updated successfully') });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/me"] });
+      setIsEditUserDialogOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: t('common:error', 'Error'), description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: t('settings:userDeleted', 'User deleted successfully') });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsDeleteUserDialogOpen(false);
+      setSelectedUser(null);
     },
     onError: (error: Error) => {
       toast({ title: t('common:error', 'Error'), description: error.message, variant: "destructive" });
@@ -570,6 +619,28 @@ export default function RolesSettings() {
     return fullName || user.email || 'Unknown User';
   };
 
+  const openEditUserDialog = (user: User) => {
+    setSelectedUser(user);
+    setEditUserData({
+      email: user.email || "",
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      role: user.role
+    });
+    setIsEditUserDialogOpen(true);
+  };
+
+  const openDeleteUserDialog = (user: User) => {
+    setSelectedUser(user);
+    setIsDeleteUserDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (selectedUser) {
+      updateUserMutation.mutate({ userId: selectedUser.id, data: editUserData });
+    }
+  };
+
   const adminCount = users.filter(u => u.role === 'administrator').length;
   const operatorCount = users.filter(u => u.role === 'warehouse_operator').length;
 
@@ -705,6 +776,7 @@ export default function RolesSettings() {
                         <TableHead>{t('settings:currentRole', 'Current Role')}</TableHead>
                         <TableHead>{t('settings:assignRole', 'Assign Role')}</TableHead>
                         <TableHead className="hidden lg:table-cell">{t('settings:memberSince', 'Member Since')}</TableHead>
+                        <TableHead className="w-[100px]">{t('common:actions', 'Actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -752,6 +824,40 @@ export default function RolesSettings() {
                             </TableCell>
                             <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
                               {formatDate(new Date(user.createdAt))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditUserDialog(user)}
+                                  className="h-8 w-8 p-0"
+                                  data-testid={`button-edit-user-${user.id}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      data-testid={`button-menu-user-${user.id}`}
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => openDeleteUserDialog(user)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {t('settings:deleteUser', 'Delete User')}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -1463,6 +1569,81 @@ export default function RolesSettings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('settings:editUser', 'Edit User')}</DialogTitle>
+            <DialogDescription>{t('settings:editUserDescription', 'Update user account details')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('common:firstName', 'First Name')}</Label>
+                <Input value={editUserData.firstName} onChange={(e) => setEditUserData({...editUserData, firstName: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('common:lastName', 'Last Name')}</Label>
+                <Input value={editUserData.lastName} onChange={(e) => setEditUserData({...editUserData, lastName: e.target.value})} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common:email', 'Email')}</Label>
+              <Input type="email" value={editUserData.email} onChange={(e) => setEditUserData({...editUserData, email: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('settings:role', 'Role')}</Label>
+              <Select value={editUserData.role} onValueChange={(val) => setEditUserData({...editUserData, role: val})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {roles.map(role => (
+                    <SelectItem key={role.name} value={role.name}>{getRoleDisplayName(role)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>{t('common:cancel', 'Cancel')}</Button>
+            <Button onClick={handleUpdateUser} disabled={updateUserMutation.isPending}>
+              {updateUserMutation.isPending ? t('common:saving', 'Saving...') : t('common:save', 'Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('settings:deleteUser', 'Delete User')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings:deleteUserConfirmation', 'Are you sure you want to delete this user?')}
+              {selectedUser && (
+                <span className="block mt-2 font-medium text-foreground">
+                  {formatUserName(selectedUser)} ({selectedUser.email || 'N/A'})
+                </span>
+              )}
+              <br />
+              <span className="text-destructive font-medium">
+                {t('settings:deleteUserWarning', 'This action cannot be undone. The user will lose access to the system.')}
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-[44px]">
+              {t('common:cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedUser && deleteUserMutation.mutate(selectedUser.id)}
+              className="min-h-[44px] bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteUserMutation.isPending}
+              data-testid="button-confirm-delete-user"
+            >
+              {deleteUserMutation.isPending ? t('common:deleting', 'Deleting...') : t('settings:deleteUser', 'Delete User')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
