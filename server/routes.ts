@@ -126,7 +126,7 @@ import { nanoid } from "nanoid";
 import { db } from "./db";
 import { normalizePhone } from '@shared/utils/phoneNormalizer';
 import { normalizeCityName } from '@shared/utils/nameNormalizer';
-import { eq, desc, and, sql, inArray, or, ilike, isNull, isNotNull, lt, gt } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, or, ilike, isNull, isNotNull, lt, gt, ne } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
