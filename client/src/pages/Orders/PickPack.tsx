@@ -5048,6 +5048,64 @@ export default function PickPack() {
     staleTime: 60000, // Cache for 1 minute
   });
 
+  // Query for customer data to get their address as fallback when no shipping address
+  const { data: customerData } = useQuery<any>({
+    queryKey: ['/api/customers', activePackingOrder?.customerId],
+    enabled: !!activePackingOrder?.customerId,
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  // Helper to get effective shipping address (order shipping address or customer's address as fallback)
+  const getEffectiveShippingAddress = (order: PickPackOrder | null, customer: any) => {
+    if (!order) return null;
+    
+    // If order has a shipping address, use it
+    if (order.shippingAddress) {
+      return order.shippingAddress;
+    }
+    
+    // Fallback to customer's shipping address fields
+    if (customer) {
+      const hasShippingAddress = customer.shippingStreet || customer.shippingCity || customer.shippingCountry;
+      if (hasShippingAddress) {
+        return {
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          company: customer.company,
+          street: customer.shippingStreet,
+          streetNumber: customer.shippingStreetNumber,
+          city: customer.shippingCity,
+          zipCode: customer.shippingZipCode,
+          country: customer.shippingCountry,
+          tel: customer.phone,
+        };
+      }
+      
+      // Fallback to billing address if no shipping address
+      const hasBillingAddress = customer.billingStreet || customer.billingCity || customer.billingCountry;
+      if (hasBillingAddress) {
+        return {
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          company: customer.company,
+          street: customer.billingStreet,
+          streetNumber: customer.billingStreetNumber,
+          city: customer.billingCity,
+          zipCode: customer.billingZipCode,
+          country: customer.billingCountry,
+          tel: customer.phone,
+        };
+      }
+      
+      // Fallback to legacy address field if available
+      if (customer.address) {
+        return customer.address;
+      }
+    }
+    
+    return null;
+  };
+
   // Filter cartons based on search
   const filteredCartons = availableCartons.filter((carton: any) => {
     if (!cartonSearchFilter) return true;
@@ -12360,11 +12418,20 @@ export default function PickPack() {
                       <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('shippingAddressLabel')}</span>
                     </div>
                     {(() => {
-                      const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress, t);
+                      const effectiveAddress = getEffectiveShippingAddress(activePackingOrder, customerData);
+                      const formattedAddress = formatShippingAddress(effectiveAddress, t);
+                      const isFromCustomer = !activePackingOrder.shippingAddress && effectiveAddress;
                       return formattedAddress ? (
-                        <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
-                          {formattedAddress}
-                        </p>
+                        <div className="pl-6">
+                          {isFromCustomer && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mb-1 italic">
+                              {t('usingCustomerAddress', 'Using customer address')}
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-900 whitespace-pre-line" data-testid="text-shipping-address">
+                            {formattedAddress}
+                          </p>
+                        </div>
                       ) : (
                         <div className="pl-6">
                           <p className="text-sm text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded px-3 py-2 inline-flex items-center gap-2">
