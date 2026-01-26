@@ -5599,7 +5599,7 @@ export default function AddOrder() {
             )}
 
             {/* Shipping Address Section */}
-            {selectedCustomer && selectedCustomer.id && (
+            {selectedCustomer && (selectedCustomer.id || selectedShippingAddress) && (
               <Card className="mt-4" data-testid="card-shipping-address">
                 <CardHeader className="p-3 border-b">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
@@ -5644,6 +5644,41 @@ export default function AddOrder() {
                           className="mt-1"
                         />
                       </div>
+                    </div>
+                  ) : !selectedCustomer.id && selectedShippingAddress?.isNew ? (
+                    /* Display new customer's address from form */
+                    <div className="space-y-3">
+                      <div className="p-3 border-2 border-green-500 dark:border-green-600 rounded-lg bg-green-50/50 dark:bg-green-900/20">
+                        <div className="flex items-start gap-3">
+                          <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                            <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="flex-1 text-sm text-slate-700 dark:text-slate-300">
+                            <div className="font-medium text-slate-900 dark:text-slate-100">
+                              {selectedShippingAddress.firstName} {selectedShippingAddress.lastName}
+                              {selectedShippingAddress.company && <span className="text-slate-500 ml-1">({selectedShippingAddress.company})</span>}
+                            </div>
+                            <div className="mt-1">{selectedShippingAddress.street}{selectedShippingAddress.streetNumber ? ` ${selectedShippingAddress.streetNumber}` : ''}</div>
+                            <div>{selectedShippingAddress.city}, {selectedShippingAddress.zipCode}</div>
+                            <div>{selectedShippingAddress.country}</div>
+                            {selectedShippingAddress.tel && (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <Phone className="h-3 w-3 text-slate-400" />
+                                <span>{selectedShippingAddress.tel}</span>
+                              </div>
+                            )}
+                            {selectedShippingAddress.email && (
+                              <div className="flex items-center gap-1.5">
+                                <Mail className="h-3 w-3 text-slate-400" />
+                                <span>{selectedShippingAddress.email}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {t('orders:addressWillBeSavedOnOrder', 'This address will be saved when the order is created')}
+                      </p>
                     </div>
                   ) : isLoadingShippingAddresses ? (
                     <div className="text-center py-4 text-slate-500">Loading addresses...</div>
