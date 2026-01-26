@@ -5078,6 +5078,9 @@ export default function PickPack() {
   });
 
   // Query for order cartons
+  // Track if we've already created a default carton for this order to prevent duplicates
+  const defaultCartonCreatedForOrderRef = useRef<string | null>(null);
+  
   const { data: orderCartons = [], refetch: refetchCartons, isFetching: isFetchingCartons } = useQuery<OrderCarton[]>({
     queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'],
     enabled: !!activePackingOrder?.id,
@@ -5130,6 +5133,39 @@ export default function PickPack() {
       savePackingState(activePackingOrder.id, 'cartons', orderCartons);
     }
   }, [orderCartons, activePackingOrder?.id]);
+
+  // ALWAYS ensure at least 1 carton exists when in packing mode
+  // This runs after orderCartons query loads and creates a default if none exist
+  useEffect(() => {
+    if (!activePackingOrder?.id || isFetchingCartons) return;
+    
+    // Don't create if we already created for this order
+    if (defaultCartonCreatedForOrderRef.current === activePackingOrder.id) return;
+    
+    // Don't create if cartons already exist
+    if (orderCartons && orderCartons.length > 0) {
+      defaultCartonCreatedForOrderRef.current = activePackingOrder.id;
+      return;
+    }
+    
+    // Only create for real orders (not mock)
+    if (activePackingOrder.id.startsWith('mock-')) return;
+    
+    // Mark as creating to prevent duplicate creations
+    defaultCartonCreatedForOrderRef.current = activePackingOrder.id;
+    
+    console.log('📦 Creating default carton for packing mode - no cartons exist');
+    createCartonMutation.mutate({
+      orderId: activePackingOrder.id,
+      cartonNumber: 1,
+      cartonType: 'non-company',
+      cartonId: null,
+      cartonName: 'Package 1',
+      weight: null,
+      trackingNumber: null,
+      labelPrinted: false
+    });
+  }, [activePackingOrder?.id, orderCartons, isFetchingCartons, createCartonMutation]);
 
   // Auto-populate GLS cartons for DHL Nachnahme multi-carton orders
   useEffect(() => {
@@ -9626,31 +9662,11 @@ export default function PickPack() {
       const basicValidation = cartons.every((carton, index) => {
         const hasValidType = carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company';
         
-        // Smart weight validation
+        // Weight is NEVER required - always optional
+        // Only validate GLS 40kg limit if weight is provided
         let hasValidWeight = true;
-        
-        // First carton always requires weight
-        if (index === 0) {
-          if (isGLSShipping) {
-            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40);
-          } else {
-            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0);
-          }
-        }
-        // Company cartons always require weight
-        else if (carton.cartonType !== 'non-company') {
-          if (isGLSShipping) {
-            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40);
-          } else {
-            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0);
-          }
-        }
-        // Non-company cartons (2nd+) don't require weight, but if they have it, validate GLS limit
-        else {
-          if (isGLSShipping && carton.weight) {
-            hasValidWeight = parseFloat(carton.weight) <= 40;
-          }
-          // Non-company 2nd+ cartons don't require weight
+        if (isGLSShipping && carton.weight && parseFloat(carton.weight) > 40) {
+          hasValidWeight = false; // GLS limit exceeded
         }
         
         return hasValidType && hasValidWeight;
