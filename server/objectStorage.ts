@@ -237,6 +237,57 @@ export class ObjectStorageService {
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
   }
+
+  // Upload a file buffer directly to object storage
+  async uploadFileBuffer(
+    buffer: Buffer,
+    filename: string,
+    contentType: string,
+    subdir: string = 'order-documents'
+  ): Promise<{ url: string; objectPath: string }> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    if (!privateObjectDir) {
+      throw new Error(
+        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
+          "tool and set PRIVATE_OBJECT_DIR env var."
+      );
+    }
+
+    const objectId = randomUUID();
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fullPath = `${privateObjectDir}/${subdir}/${objectId}-${sanitizedFilename}`;
+
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    // Upload the buffer
+    await file.save(buffer, {
+      contentType,
+      metadata: {
+        originalName: filename,
+        uploadedAt: new Date().toISOString(),
+      },
+    });
+
+    // Return the normalized object path for access
+    const objectPath = `/objects/${subdir}/${objectId}-${sanitizedFilename}`;
+    
+    return {
+      url: objectPath,
+      objectPath: fullPath,
+    };
+  }
+
+  // Check if object storage is properly configured
+  isConfigured(): boolean {
+    try {
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || "";
+      return privateDir.length > 0;
+    } catch {
+      return false;
+    }
+  }
 }
 
 function parseObjectPath(path: string): {

@@ -22612,30 +22612,58 @@ Important:
         return res.status(400).json({ message: 'No files uploaded' });
       }
 
-      const uploadDir = 'uploads/order-documents';
-      await fs.promises.mkdir(uploadDir, { recursive: true });
-
       const uploadedFiles: { name: string; url: string; size: number }[] = [];
+      const objectStorageService = new ObjectStorageService();
+      const useObjectStorage = objectStorageService.isConfigured();
 
-      for (const file of files) {
-        const timestamp = Date.now();
-        const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filename = `${timestamp}-${sanitizedName}`;
-        const filepath = path.join(uploadDir, filename);
-        
-        await fs.promises.writeFile(filepath, file.buffer);
-        
-        uploadedFiles.push({
-          name: file.originalname,
-          url: `/uploads/order-documents/${filename}`,
-          size: file.size
-        });
+      if (useObjectStorage) {
+        // Use Replit Object Storage for production
+        console.log('[Upload] Using Object Storage for order documents');
+        for (const file of files) {
+          try {
+            const result = await objectStorageService.uploadFileBuffer(
+              file.buffer,
+              file.originalname,
+              file.mimetype,
+              'order-documents'
+            );
+            
+            uploadedFiles.push({
+              name: file.originalname,
+              url: result.url,
+              size: file.size
+            });
+          } catch (uploadError) {
+            console.error('[Upload] Object storage upload failed for file:', file.originalname, uploadError);
+            throw uploadError;
+          }
+        }
+      } else {
+        // Fallback to local filesystem for development
+        console.log('[Upload] Using local filesystem for order documents (Object Storage not configured)');
+        const uploadDir = 'uploads/order-documents';
+        await fs.promises.mkdir(uploadDir, { recursive: true });
+
+        for (const file of files) {
+          const timestamp = Date.now();
+          const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const filename = `${timestamp}-${sanitizedName}`;
+          const filepath = path.join(uploadDir, filename);
+          
+          await fs.promises.writeFile(filepath, file.buffer);
+          
+          uploadedFiles.push({
+            name: file.originalname,
+            url: `/uploads/order-documents/${filename}`,
+            size: file.size
+          });
+        }
       }
 
       res.json({ success: true, uploadedFiles });
     } catch (error) {
       console.error('Error uploading order documents:', error);
-      res.status(500).json({ message: 'Failed to upload documents' });
+      res.status(500).json({ message: 'Failed to upload documents', error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
