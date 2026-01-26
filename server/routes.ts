@@ -126,7 +126,7 @@ import { nanoid } from "nanoid";
 import { db } from "./db";
 import { normalizePhone } from '@shared/utils/phoneNormalizer';
 import { normalizeCityName } from '@shared/utils/nameNormalizer';
-import { eq, desc, and, sql, inArray, or, ilike, isNull, isNotNull, lt, gt, ne } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, or, ilike, isNull, isNotNull, lt, gt, ne, gte } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -962,7 +962,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               or(
                 ne(orders.pickStatus, "completed"),
                 isNull(orders.pickStatus)
-              )
+              ),
+              gte(orders.createdAt, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000))
             )
           )
           .orderBy(desc(orders.createdAt));
