@@ -391,14 +391,16 @@ export default function POS() {
     ...productVariants.map((v: any) => {
       const parentProduct = products.find((p: any) => p.id === v.productId);
       const displayName = parentProduct ? `${parentProduct.name} - ${v.name}` : v.name;
+      const variantPriceEur = v.priceEur && parseFloat(v.priceEur) > 0 ? v.priceEur : (parentProduct?.priceEur || '0');
+      const variantPriceCzk = v.priceCzk && parseFloat(v.priceCzk) > 0 ? v.priceCzk : (parentProduct?.priceCzk || '0');
       return { 
         id: v.id,
         name: displayName,
         originalVariantName: v.name,
         sku: v.sku,
         barcode: v.barcode,
-        priceEur: v.priceEur,
-        priceCzk: v.priceCzk,
+        priceEur: variantPriceEur,
+        priceCzk: variantPriceCzk,
         imageUrl: v.imageUrl,
         productId: v.productId,
         variantId: v.id,
