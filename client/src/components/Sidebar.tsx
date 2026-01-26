@@ -236,8 +236,28 @@ export function Sidebar() {
     return filterNavItems(navigation, isAdministrator);
   }, [isAdministrator]);
   
-  // Find parent menus that should be open based on current location
+  // Default sections to expand on first load
+  const defaultExpandedSections = ['orders', 'warehouse', 'stock', 'warehouseOperations', 'imports', 'manufacturing'];
+  
+  // Storage key for persisting sidebar state per user
+  const SIDEBAR_STATE_KEY = 'sidebar_expanded_sections';
+  
+  // Load saved state from localStorage or use defaults
   const getInitialOpenItems = useCallback(() => {
+    try {
+      const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
+      if (savedState) {
+        return JSON.parse(savedState) as string[];
+      }
+    } catch (e) {
+      console.error('Error loading sidebar state:', e);
+    }
+    // Return default expanded sections on first load
+    return defaultExpandedSections;
+  }, []);
+  
+  // Find parent menus that should be open based on current location
+  const getActiveParentMenus = useCallback(() => {
     const openMenus: string[] = [];
     filteredNavigation.forEach(item => {
       if (item.children) {
@@ -252,11 +272,20 @@ export function Sidebar() {
     return openMenus;
   }, [filteredNavigation, location]);
 
-  const [openItems, setOpenItems] = useState<string[]>(getInitialOpenItems());
+  const [openItems, setOpenItems] = useState<string[]>(getInitialOpenItems);
+  
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(openItems));
+    } catch (e) {
+      console.error('Error saving sidebar state:', e);
+    }
+  }, [openItems]);
 
   // Automatically open parent menus and scroll to active item when location changes
   useEffect(() => {
-    const activeParentMenus = getInitialOpenItems();
+    const activeParentMenus = getActiveParentMenus();
     
     // Open parent menus if they have active children
     setOpenItems(prev => {
