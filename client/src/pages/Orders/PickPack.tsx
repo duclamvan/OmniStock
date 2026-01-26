@@ -469,7 +469,7 @@ const ProductImage = memo(({
               style={{ pointerEvents: 'none' }}
             />
           ) : item.serviceId ? (
-            <Wrench className="h-32 w-32 text-purple-300 dark:text-purple-500 dark:text-purple-400" style={{ pointerEvents: 'none' }} />
+            <Wrench className="h-32 w-32 text-gray-300 dark:text-gray-500 dark:text-gray-400" style={{ pointerEvents: 'none' }} />
           ) : (
             <Package className="h-32 w-32 text-gray-300" style={{ pointerEvents: 'none' }} />
           )}
@@ -480,11 +480,11 @@ const ProductImage = memo(({
           <div className="flex items-start gap-2">
             {item.productId ? (
               <Link href={`/products/${item.productId}`}>
-                <h3 className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-200 dark:text-blue-100 cursor-pointer hover:underline">{item.productName}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200 dark:text-gray-100 cursor-pointer hover:underline">{item.productName}</h3>
               </Link>
             ) : item.serviceId ? (
               <Link href={`/services/${item.serviceId}`}>
-                <h3 className="text-lg sm:text-xl font-bold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:text-purple-200 cursor-pointer hover:underline">{item.productName}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200 cursor-pointer hover:underline">{item.productName}</h3>
               </Link>
             ) : item.bundleId ? (
               <Link href={`/bundles/${item.bundleId}`}>
@@ -495,23 +495,23 @@ const ProductImage = memo(({
             )}
           </div>
           {item.serviceId && (
-            <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded p-2">
+            <div className="bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded p-2">
               <div className="flex items-center gap-1.5 mb-1">
-                <Badge className="bg-purple-600 text-white dark:bg-purple-700 text-xs">{t('service')}</Badge>
-                <span className="text-xs font-medium text-purple-700 dark:text-purple-200">{t('serviceItemNoLocation')}</span>
+                <Badge className="bg-gray-600 text-white dark:bg-gray-700 text-xs">{t('service')}</Badge>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{t('serviceItemNoLocation')}</span>
               </div>
               {item.notes && (
-                <p className="text-xs text-purple-900 font-medium mt-1">{t('note')}: {item.notes}</p>
+                <p className="text-xs text-gray-900 font-medium mt-1">{t('note')}: {item.notes}</p>
               )}
             </div>
           )}
           <div className="flex items-center gap-2">
-            <Hash className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+            <Hash className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             <span className="text-sm text-gray-500">{t('skuLabel')}</span>
             <span className="font-mono font-semibold text-sm text-gray-900">{item.sku}</span>
           </div>
           <div className="flex items-center gap-2">
-            <ScanLine className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+            <ScanLine className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             <span className="text-sm text-gray-500">{t('barcodeLabel')}</span>
             <span className="font-mono font-semibold text-sm text-gray-900">{item.barcode}</span>
           </div>
@@ -519,7 +519,7 @@ const ProductImage = memo(({
         
         <div className="flex justify-between items-center px-2">
           <span className="text-sm font-medium text-gray-500">{t('clickToMinimize')}</span>
-          <Badge className="bg-gradient-to-r from-orange-50 dark:from-orange-900/300 to-red-500 text-white">
+          <Badge className="bg-gradient-to-r from-gray-50 dark:from-gray-900/300 to-gray-1000 text-white">
             {item.quantity}x
           </Badge>
         </div>
@@ -553,12 +553,12 @@ const ProductImage = memo(({
             style={{ pointerEvents: 'none' }}
           />
         ) : item.serviceId ? (
-          <Wrench className="h-10 w-10 lg:h-16 lg:w-16 text-purple-300 dark:text-purple-500 dark:text-purple-400" style={{ pointerEvents: 'none' }} />
+          <Wrench className="h-10 w-10 lg:h-16 lg:w-16 text-gray-300 dark:text-gray-500 dark:text-gray-400" style={{ pointerEvents: 'none' }} />
         ) : (
           <Package className="h-10 w-10 lg:h-16 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
         )}
       </div>
-      <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-50 dark:from-orange-900/300 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
+      <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-gray-50 dark:from-gray-900/300 to-gray-1000 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
         {item.quantity}x
       </div>
     </div>
@@ -605,13 +605,13 @@ const CartonCard = memo(({
   
   return (
     <Card 
-      className={`border-2 ${isDraft ? 'border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/30 opacity-80' : 'border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-800'}`} 
+      className={`border-2 ${isDraft ? 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 opacity-80' : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800'}`} 
       data-testid={`carton-card-${index + 1}`}
     >
       <CardContent className="p-3 space-y-3">
         {/* Carton Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <Box className="h-5 w-5" />
             {t('cartonHash')}{carton.cartonNumber}
           </h3>
@@ -760,12 +760,12 @@ const CartonCard = memo(({
                         e.currentTarget.blur();
                       }
                     }}
-                    className={`text-center text-xl font-bold text-purple-800 dark:text-purple-200 border-2 border-purple-300 dark:border-purple-700 focus:border-purple-500 ${
-                      isGLS && localWeight && parseDecimal(localWeight) > 40 ? 'border-red-500 dark:border-red-600 focus:border-red-500 dark:focus:border-red-600' : ''
+                    className={`text-center text-xl font-bold text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-700 focus:border-gray-500 ${
+                      isGLS && localWeight && parseDecimal(localWeight) > 40 ? 'border-red-500 dark:border-red-600 focus:border-gray-500 dark:focus:border-red-600' : ''
                     }`}
                     data-testid={`weight-input-${index + 1}`}
                   />
-                  <span className="text-xl font-bold text-purple-800 dark:text-purple-200">kg</span>
+                  <span className="text-xl font-bold text-gray-800 dark:text-gray-200">kg</span>
                 </div>
                 {localWeight && parseDecimal(localWeight) > 40 && (
                   <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-semibold">
@@ -774,7 +774,7 @@ const CartonCard = memo(({
                   </div>
                 )}
                 {carton.aiWeightCalculation && (
-                  <div className="text-xs text-purple-700 dark:text-purple-200 flex items-center gap-1">
+                  <div className="text-xs text-gray-700 dark:text-gray-200 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
                     {t('aiCalculated')}
                     {carton.volumeUtilization && (
@@ -811,13 +811,13 @@ const CartonCard = memo(({
                     e.currentTarget.blur();
                   }
                 }}
-                className="text-center text-xl font-bold text-purple-800 dark:text-purple-200 border-2 border-purple-300 dark:border-purple-700 focus:border-purple-500"
+                className="text-center text-xl font-bold text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-700 focus:border-gray-500"
                 data-testid={`weight-input-${index + 1}`}
               />
-              <span className="text-xl font-bold text-purple-800 dark:text-purple-200">kg</span>
+              <span className="text-xl font-bold text-gray-800 dark:text-gray-200">kg</span>
             </div>
             {carton.aiWeightCalculation && (
-              <div className="text-xs text-purple-700 dark:text-purple-200 flex items-center gap-1">
+              <div className="text-xs text-gray-700 dark:text-gray-200 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
                 {t('aiCalculated')}
                 {carton.volumeUtilization && (
@@ -1200,7 +1200,7 @@ function UnifiedDocumentsList({
         return (
           <DocumentRow
             key={file.id}
-            icon={<Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 'text-teal-600'}`} />}
+            icon={<Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 'text-gray-600'}`} />}
             name={file.description || file.fileName}
             subtitle={subtitle}
             isPrinted={isPrinted}
@@ -1319,12 +1319,12 @@ function ProductDocumentsSelector({
 
   return (
     <div className="space-y-2 mt-3">
-      <div className="border border-blue-200 dark:border-blue-700 dark:border-blue-800 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/30/50 dark:bg-blue-950/30">
+      <div className="border border-gray-200 dark:border-gray-700 dark:border-gray-800 rounded-lg p-3 bg-gray-50 dark:bg-gray-900/30/50 dark:bg-gray-950/30">
         <div className="flex items-center gap-2 mb-2">
-          <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:text-blue-400" />
-          <div className="text-sm font-semibold text-blue-900 dark:text-blue-300">{t('filesSent')}</div>
+          <FileText className="h-4 w-4 text-gray-600 dark:text-gray-400 dark:text-gray-400" />
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-300">{t('filesSent')}</div>
         </div>
-        <div className="text-xs font-medium text-blue-700 dark:text-blue-200 dark:text-blue-100 dark:text-blue-400 mb-2">{t('documentsCount', { count: productFiles.length })}</div>
+        <div className="text-xs font-medium text-gray-700 dark:text-gray-200 dark:text-gray-100 dark:text-gray-400 mb-2">{t('documentsCount', { count: productFiles.length })}</div>
         <div className="space-y-1.5">
           {productFiles.map((file: any) => {
         const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
@@ -1337,7 +1337,7 @@ function ProductDocumentsSelector({
             className={`p-3 rounded-lg border transition-colors ${
               isPrinted
                 ? 'bg-green-50 dark:bg-green-900/30 dark:bg-green-950/30 border-green-300 dark:border-green-700 dark:border-green-800'
-                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-teal-200 dark:hover:border-teal-700'
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-700'
             }`}
             data-testid={`product-doc-${file.id}`}
           >
@@ -1345,9 +1345,9 @@ function ProductDocumentsSelector({
             <div className="flex items-start gap-3 mb-2">
               {/* Icon */}
               <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gradient-to-br ${
-                isPrinted ? 'from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 dark:from-green-950/30 dark:to-emerald-950/30 border-green-300 dark:border-green-700 dark:border-green-800' : 'from-teal-50 to-cyan-50 dark:to-cyan-900/30 dark:from-teal-950/30 dark:to-cyan-950/30 border-teal-200 dark:border-teal-800'
+                isPrinted ? 'from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 dark:from-green-950/30 dark:to-emerald-950/30 border-green-300 dark:border-green-700 dark:border-green-800' : 'from-gray-50 to-gray-50 dark:to-gray-900/30 dark:from-gray-950/30 dark:to-gray-950/30 border-gray-200 dark:border-gray-800'
               } border flex items-center justify-center`}>
-                <Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600 dark:text-green-400 dark:text-green-300 dark:text-green-500 dark:text-green-400' : 'text-teal-500 dark:text-teal-400'}`} />
+                <Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600 dark:text-green-400 dark:text-green-300 dark:text-green-500 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`} />
               </div>
               
               {/* Document Info - Full Width */}
@@ -1371,7 +1371,7 @@ function ProductDocumentsSelector({
                 className={`h-8 px-3 text-xs font-semibold flex-1 ${
                   isPrinted
                     ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white'
-                    : 'hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300'
+                    : 'hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300'
                 }`}
                 onClick={() => handlePrint(file.id, file.fileUrl || file.url)}
                 data-testid={`button-print-product-doc-${file.id}`}
@@ -1703,24 +1703,24 @@ function PickingListView({
   return (
     <div className="space-y-3">
       {/* Overall Progress Header */}
-      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 sm:p-4 shadow-sm">
+      <div className="bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-100 dark:to-gray-900/30 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <ClipboardList className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             {t('pickingProgress')}
           </h3>
           <div className="flex items-center gap-2">
-            <Badge className="bg-purple-600 dark:bg-purple-700 text-white font-bold text-xs px-2 py-0.5">
+            <Badge className="bg-gray-600 dark:bg-gray-700 text-white font-bold text-xs px-2 py-0.5">
               {productGroups.length} {t('products') || 'products'}
             </Badge>
-            <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
+            <Badge className="bg-gray-600 dark:bg-gray-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
               {order.pickedItems} / {order.totalItems}
             </Badge>
           </div>
         </div>
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-gray-500 to-gray-1000 transition-all duration-500"
             style={{ width: `${(order.pickedItems / order.totalItems) * 100}%` }}
           />
         </div>
@@ -1755,7 +1755,7 @@ function PickingListView({
           if (allPicked) {
             bgClass = 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-600';
           } else if (isPartial) {
-            bgClass = 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-600';
+            bgClass = 'bg-gray-100 dark:bg-gray-900/30 border-gray-300 dark:border-gray-600';
           }
           
           // Current item highlight (blue ring)
@@ -1796,9 +1796,9 @@ function PickingListView({
                     allPicked 
                       ? 'border-green-500 dark:border-green-400' 
                       : isPartial 
-                        ? 'border-yellow-500 dark:border-yellow-400' 
+                        ? 'border-gray-500 dark:border-gray-400' 
                         : hasCurrent 
-                          ? 'border-blue-500 dark:border-blue-400' 
+                          ? 'border-gray-500 dark:border-gray-400' 
                           : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {firstItem.image ? (
@@ -1820,7 +1820,7 @@ function PickingListView({
                     </div>
                   )}
                   {isPartial && !allPicked && (
-                    <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-yellow-500 dark:bg-yellow-400 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
+                    <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-1000 dark:bg-gray-400 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
                       <span className="text-xs sm:text-sm font-bold text-white">{pickedQuantity}</span>
                     </div>
                   )}
@@ -1838,7 +1838,7 @@ function PickingListView({
                   {/* Color range for quick recognition - shows first and last */}
                   <div className="flex items-center gap-2 flex-wrap">
                     {isMultiVariant && firstColorNumber && lastColorNumber ? (
-                      <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-medium">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 font-mono font-medium">
                         #{firstColorNumber} → #{lastColorNumber}
                       </span>
                     ) : firstItem.colorNumber && (
@@ -1848,7 +1848,7 @@ function PickingListView({
                     )}
                     {/* Multi-variant indicator */}
                     {isMultiVariant && (
-                      <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
+                      <Badge className="text-[10px] px-1.5 py-0 bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600">
                         {variantCount} {t('variants') || 'variants'}
                       </Badge>
                     )}
@@ -1856,14 +1856,14 @@ function PickingListView({
                   {/* Warehouse Location - Under Product Title */}
                   <div className="mt-1.5 flex items-center gap-1.5">
                     {firstItem.productType === 'virtual' ? (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border border-violet-300 dark:border-violet-600">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600">
                         <Cloud className="h-4 w-4 sm:h-5 sm:w-5" />
                         {t('virtualItemAutoCompleted') || 'Virtual item - auto-completed'}
                       </div>
                     ) : (
                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold ${
                       hasCurrent 
-                        ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-2 border-orange-400 dark:border-orange-600' 
+                        ? 'bg-gray-100 dark:bg-gray-900/40 text-gray-800 dark:text-gray-200 border-2 border-gray-400 dark:border-gray-600' 
                         : isSameAisleAsNext
                           ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-2 border-gray-700 dark:border-gray-300'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
@@ -1889,7 +1889,7 @@ function PickingListView({
                       allPicked 
                         ? 'bg-green-600 dark:bg-green-700 text-white' 
                         : isPartial 
-                          ? 'bg-yellow-500 dark:bg-yellow-600 text-white' 
+                          ? 'bg-gray-1000 dark:bg-gray-500 text-white' 
                           : 'bg-gray-700 dark:bg-gray-600 text-white'
                     }`}
                   >
@@ -1916,27 +1916,27 @@ function PickingListView({
                   <span className="font-mono">{firstItem.sku}</span>
                   {/* Virtual product badge */}
                   {firstItem.productType === 'virtual' && (
-                    <Badge className="text-[10px] px-1.5 py-0 bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-600 font-medium">
+                    <Badge className="text-[10px] px-1.5 py-0 bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-600 font-medium">
                       <Cloud className="h-2.5 w-2.5 mr-0.5" />
                       {t('virtualAutoCompleted') || 'Virtual - Auto-picked'}
                     </Badge>
                   )}
                   {/* Physical no quantity badge */}
                   {firstItem.productType === 'physical_no_quantity' && (
-                    <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-600 font-medium">
+                    <Badge className="text-[10px] px-1.5 py-0 bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-600 font-medium">
                       <MapPin className="h-2.5 w-2.5 mr-0.5" />
                       {t('noQtyTracking') || 'No Qty Tracking'}
                     </Badge>
                   )}
                   {/* Carton/Bulk Unit Badge */}
                   {firstItem.bulkUnitQty && totalQuantity >= firstItem.bulkUnitQty && (
-                    <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
+                    <Badge className="text-[10px] px-1.5 py-0 bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-600 font-medium">
                       <Box className="h-2.5 w-2.5 mr-0.5" />
                       {Math.floor(totalQuantity / firstItem.bulkUnitQty)} {firstItem.bulkUnitName || 'carton'}
                     </Badge>
                   )}
                   {isPartial && (
-                    <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                    <span className="text-gray-600 dark:text-gray-400 font-medium">
                       ({pickedQuantity}/{totalQuantity} {t('picked') || 'picked'})
                     </span>
                   )}
@@ -1975,7 +1975,7 @@ function PickingListView({
                       
                       let itemBg = 'bg-gray-50 dark:bg-gray-800/50';
                       if (itemIsPicked) itemBg = 'bg-green-50 dark:bg-green-900/30';
-                      else if (itemIsPartial) itemBg = 'bg-yellow-50 dark:bg-yellow-900/30';
+                      else if (itemIsPartial) itemBg = 'bg-gray-100 dark:bg-gray-900/30';
                       
                       return (
                         <div
@@ -1993,8 +1993,8 @@ function PickingListView({
                             {/* Color number badge */}
                             <div className={`w-8 h-6 flex-shrink-0 rounded flex items-center justify-center font-bold text-xs ${
                               itemIsPicked ? 'bg-green-500 text-white' : 
-                              itemIsPartial ? 'bg-yellow-500 text-white' : 
-                              'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                              itemIsPartial ? 'bg-gray-1000 text-white' : 
+                              'bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300'
                             }`}>
                               {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                             </div>
@@ -2005,7 +2005,7 @@ function PickingListView({
                                 {item.variantName && item.variantName !== item.sku ? item.variantName : item.productName}
                               </p>
                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-mono bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-1 py-0.5 rounded">
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-mono bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 px-1 py-0.5 rounded">
                                   <MapPin className="h-2.5 w-2.5" />
                                   <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation || t('noLocation')} />
                                 </span>
@@ -2021,7 +2021,7 @@ function PickingListView({
                             {/* Status */}
                             <Badge className={`text-xs font-bold px-1.5 py-0 ${
                               itemIsPicked ? 'bg-green-600 text-white' : 
-                              itemIsPartial ? 'bg-yellow-500 text-white' : 
+                              itemIsPartial ? 'bg-gray-1000 text-white' : 
                               'bg-gray-500 text-white'
                             }`}>
                               {item.pickedQuantity}/{item.quantity}
@@ -2142,17 +2142,17 @@ function GroupedItemsCardDisplay({ items }: { items: OrderItem[] }) {
             </p>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {group.variantCount > 1 && (
-                <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
+                <Badge className="text-[10px] px-1.5 py-0 bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600">
                   {group.variantCount} variants
                 </Badge>
               )}
               {group.colorRange && (
-                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
+                <span className="text-[10px] text-gray-600 dark:text-gray-400 font-mono">
                   #{group.colorRange}
                 </span>
               )}
               {group.primaryLocation && (
-                <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                <span className="text-xs text-gray-600 dark:text-gray-400 font-mono flex items-center gap-0.5">
                   <MapPin className="h-3 w-3" />
                   {group.primaryLocation}
                 </span>
@@ -2182,17 +2182,17 @@ function GroupedItemsCompactDisplay({ items }: { items: OrderItem[] }) {
             </p>
             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
               {group.variantCount > 1 && (
-                <span className="text-[10px] text-purple-600 dark:text-purple-400">
+                <span className="text-[10px] text-gray-600 dark:text-gray-400">
                   {group.variantCount}v
                 </span>
               )}
               {group.colorRange && (
-                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
+                <span className="text-[10px] text-gray-600 dark:text-gray-400 font-mono">
                   #{group.colorRange}
                 </span>
               )}
               {group.primaryLocation && (
-                <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                <span className="text-[10px] text-gray-600 dark:text-gray-400 font-mono flex items-center gap-0.5">
                   <MapPin className="h-2.5 w-2.5" />
                   {group.primaryLocation}
                 </span>
@@ -2380,24 +2380,24 @@ function GroupedPickingListView({
   return (
     <div className="space-y-3">
       {/* Overall Progress Header */}
-      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 sm:p-4 shadow-sm">
+      <div className="bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-100 dark:to-gray-900/30 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <ClipboardList className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             {t('pickingProgress')}
           </h3>
           <div className="flex items-center gap-2">
-            <Badge className="bg-purple-600 dark:bg-purple-700 text-white font-bold text-xs px-2 py-0.5">
+            <Badge className="bg-gray-600 dark:bg-gray-700 text-white font-bold text-xs px-2 py-0.5">
               {productGroups.length} {t('products') || 'products'}
             </Badge>
-            <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
+            <Badge className="bg-gray-600 dark:bg-gray-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
               {order.pickedItems} / {order.totalItems}
             </Badge>
           </div>
         </div>
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-gray-500 to-gray-1000 transition-all duration-500"
             style={{ width: `${(order.pickedItems / order.totalItems) * 100}%` }}
           />
         </div>
@@ -2427,7 +2427,7 @@ function GroupedPickingListView({
           if (allPicked) {
             cardBg = 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-600';
           } else if (isPartial) {
-            cardBg = 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-600';
+            cardBg = 'bg-gray-100 dark:bg-gray-900/30 border-gray-300 dark:border-gray-600';
           }
           
           const currentHighlight = hasCurrent ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-1' : '';
@@ -2456,8 +2456,8 @@ function GroupedPickingListView({
                   <div className="flex-shrink-0 relative">
                     <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shadow-md border-2 ${
                       allPicked ? 'border-green-500 dark:border-green-400' : 
-                      isPartial ? 'border-yellow-500 dark:border-yellow-400' : 
-                      hasCurrent ? 'border-blue-500 dark:border-blue-400' :
+                      isPartial ? 'border-gray-500 dark:border-gray-400' : 
+                      hasCurrent ? 'border-gray-500 dark:border-gray-400' :
                       'border-gray-300 dark:border-gray-600'
                     }`}>
                       {firstItem.image ? (
@@ -2474,7 +2474,7 @@ function GroupedPickingListView({
                       </div>
                     )}
                     {isPartial && !allPicked && (
-                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
+                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-1000 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
                         <span className="text-xs font-bold text-white">{pickedQuantity}</span>
                       </div>
                     )}
@@ -2493,7 +2493,7 @@ function GroupedPickingListView({
                         {/* Color range for quick recognition */}
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           {isMultiVariant && firstColorNumber && lastColorNumber ? (
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-medium">
+                            <span className="text-xs text-gray-600 dark:text-gray-400 font-mono font-medium">
                               #{firstColorNumber} → #{lastColorNumber}
                             </span>
                           ) : firstItem.colorNumber && (
@@ -2502,7 +2502,7 @@ function GroupedPickingListView({
                             </span>
                           )}
                           {isMultiVariant && (
-                            <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
+                            <Badge className="text-[10px] px-1.5 py-0 bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600">
                               {variantCount} {t('variants') || 'variants'}
                             </Badge>
                           )}
@@ -2512,7 +2512,7 @@ function GroupedPickingListView({
                         <div className="mt-1.5 flex items-center gap-1.5">
                           <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-bold ${
                             hasCurrent 
-                              ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200' 
+                              ? 'bg-gray-100 dark:bg-gray-900/40 text-gray-800 dark:text-gray-200' 
                               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                           }`}>
                             <MapPin className="h-3 w-3" />
@@ -2524,7 +2524,7 @@ function GroupedPickingListView({
                       {/* Quantity Badge */}
                       <Badge className={`text-base sm:text-lg font-bold px-2.5 sm:px-3 py-1 ${
                         allPicked ? 'bg-green-600 dark:bg-green-700 text-white' : 
-                        isPartial ? 'bg-yellow-500 dark:bg-yellow-600 text-white' : 
+                        isPartial ? 'bg-gray-1000 dark:bg-gray-500 text-white' : 
                         'bg-gray-700 dark:bg-gray-600 text-white'
                       }`}>
                         {isPartial ? `${pickedQuantity}/` : '×'}{totalQuantity}
@@ -2535,7 +2535,7 @@ function GroupedPickingListView({
                     <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div 
                         className={`h-full transition-all duration-300 ${
-                          allPicked ? 'bg-green-500' : isPartial ? 'bg-yellow-500' : 'bg-gray-400'
+                          allPicked ? 'bg-green-500' : isPartial ? 'bg-gray-1000' : 'bg-gray-400'
                         }`}
                         style={{ width: `${(pickedQuantity / totalQuantity) * 100}%` }}
                       />
@@ -2586,7 +2586,7 @@ function GroupedPickingListView({
                       
                       let itemBg = 'bg-white dark:bg-gray-900';
                       if (isPicked) itemBg = 'bg-green-50 dark:bg-green-900/30';
-                      else if (itemIsPartial) itemBg = 'bg-yellow-50 dark:bg-yellow-900/30';
+                      else if (itemIsPartial) itemBg = 'bg-gray-100 dark:bg-gray-900/30';
                       
                       return (
                         <div
@@ -2604,8 +2604,8 @@ function GroupedPickingListView({
                             {/* Color number badge */}
                             <div className={`w-10 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs ${
                               isPicked ? 'bg-green-500 text-white' : 
-                              itemIsPartial ? 'bg-yellow-500 text-white' : 
-                              'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                              itemIsPartial ? 'bg-gray-1000 text-white' : 
+                              'bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300'
                             }`}>
                               {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                             </div>
@@ -2616,7 +2616,7 @@ function GroupedPickingListView({
                                 {item.variantName && item.variantName !== item.sku ? item.variantName : item.productName}
                               </p>
                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                <span className="inline-flex items-center gap-1 text-xs font-mono bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
+                                <span className="inline-flex items-center gap-1 text-xs font-mono bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded">
                                   <MapPin className="h-3 w-3" />
                                   <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation || t('noLocation')} />
                                 </span>
@@ -2632,7 +2632,7 @@ function GroupedPickingListView({
                             {/* Status */}
                             <Badge className={`text-xs font-bold px-2 py-0.5 ${
                               isPicked ? 'bg-green-600 text-white' : 
-                              itemIsPartial ? 'bg-yellow-500 text-white' : 
+                              itemIsPartial ? 'bg-gray-1000 text-white' : 
                               'bg-gray-600 text-white'
                             }`}>
                               {item.pickedQuantity}/{item.quantity}
@@ -2738,8 +2738,8 @@ function PickingLocationSelector({
   }
 
   return (
-    <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-4 shadow-lg">
-      <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-3 tracking-wider text-center">
+    <div className="bg-gray-100 dark:bg-gray-900/30 border-4 border-gray-500 rounded-lg p-4 shadow-lg">
+      <p className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase mb-3 tracking-wider text-center">
         {t('warehouseLocation')}
       </p>
       
@@ -2748,25 +2748,25 @@ function PickingLocationSelector({
       ) : sortedLocations.length > 0 ? (
         <div className="space-y-3">
           <Select value={selectedLocation} onValueChange={handleLocationChange}>
-            <SelectTrigger className={`w-full h-20 sm:h-24 bg-gradient-to-br from-orange-50 to-white border-4 rounded-xl shadow-lg hover:shadow-xl focus:ring-4 transition-all [&>span]:flex-1 [&>span]:text-center [&>svg]:hidden ${
+            <SelectTrigger className={`w-full h-20 sm:h-24 bg-gradient-to-br from-gray-50 to-white border-4 rounded-xl shadow-lg hover:shadow-xl focus:ring-4 transition-all [&>span]:flex-1 [&>span]:text-center [&>svg]:hidden ${
               hasStockAvailable 
-                ? 'border-orange-400 hover:border-orange-500 focus:ring-orange-300' 
+                ? 'border-gray-400 hover:border-gray-500 focus:ring-gray-300' 
                 : 'border-red-400 hover:border-red-500 focus:ring-red-300'
             }`}>
               <SelectValue placeholder={t('selectLocation') || 'Select location'}>
                 <div className="flex flex-col items-center justify-center gap-1 w-full">
                   <span className={`text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-wider drop-shadow-sm ${
-                    hasStockAvailable ? 'text-orange-700 dark:text-orange-600' : 'text-red-600 dark:text-red-500'
+                    hasStockAvailable ? 'text-gray-700 dark:text-gray-600' : 'text-red-600 dark:text-red-500'
                   }`}>
                     {selectedLocation || t('noStock', 'NO STOCK')}
                   </span>
-                  <span className="text-xs text-orange-500 font-medium uppercase tracking-widest flex items-center gap-1">
+                  <span className="text-xs text-gray-500 font-medium uppercase tracking-widest flex items-center gap-1">
                     <ChevronDown className="h-3 w-3" /> {t('tapToChange') || 'Tap to change'}
                   </span>
                 </div>
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white border-4 border-orange-400 rounded-xl shadow-xl min-w-[320px] p-2">
+            <SelectContent className="bg-white border-4 border-gray-400 rounded-xl shadow-xl min-w-[320px] p-2">
               {/* Show all locations - 0-stock ones are disabled */}
               {sortedLocations.map((location) => {
                 const hasStock = (location.quantity || 0) > 0;
@@ -2775,15 +2775,15 @@ function PickingLocationSelector({
                     key={location.id} 
                     value={location.locationCode}
                     disabled={!hasStock}
-                    className={`py-4 px-4 cursor-pointer border-b border-orange-200 last:border-b-0 [&>span]:w-full [&>span:first-child]:hidden ${
+                    className={`py-4 px-4 cursor-pointer border-b border-gray-200 last:border-b-0 [&>span]:w-full [&>span:first-child]:hidden ${
                       hasStock 
-                        ? 'hover:bg-orange-50 focus:bg-orange-100' 
+                        ? 'hover:bg-gray-50 focus:bg-gray-100' 
                         : 'opacity-50 cursor-not-allowed bg-gray-50'
                     }`}
                   >
                     <div className="w-full text-center">
                       <div className={`text-2xl sm:text-3xl font-black font-mono tracking-wider mb-2 ${
-                        hasStock ? 'text-orange-700' : 'text-gray-400'
+                        hasStock ? 'text-gray-700' : 'text-gray-400'
                       }`}>
                         {location.locationCode}
                       </div>
@@ -2796,7 +2796,7 @@ function PickingLocationSelector({
                           {location.quantity || 0} {t('inStock') || 'in stock'}
                         </Badge>
                         {location.isPrimary && (
-                          <Badge className="bg-blue-500 text-white border-blue-600 text-sm px-2 py-1">
+                          <Badge className="bg-gray-500 text-white border-gray-600 text-sm px-2 py-1">
                             ★ {t('primary') || 'Primary'}
                           </Badge>
                         )}
@@ -2815,7 +2815,7 @@ function PickingLocationSelector({
                 (selectedLocationData.quantity || 0) >= currentItem.quantity 
                   ? 'bg-green-600 text-white' 
                   : (selectedLocationData.quantity || 0) > 0
-                    ? 'bg-yellow-500 text-white'
+                    ? 'bg-gray-1000 text-white'
                     : 'bg-red-600 text-white'
               }`}>
                 {selectedLocationData.quantity || 0} {t('available') || 'available'}
@@ -2835,7 +2835,7 @@ function PickingLocationSelector({
       ) : (
         // No locations configured - show warning
         <div className="text-center py-2">
-          <p className="text-sm text-orange-700 dark:text-orange-300 font-medium">
+          <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
             {t('noLocationsConfigured') || 'No locations configured for this product'}
           </p>
         </div>
@@ -2925,8 +2925,8 @@ function BundleComponentLocationSelector({
   }
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 mt-2">
-      <p className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase mb-2 tracking-wider">
+    <div className="bg-gray-50 dark:bg-gray-900/20 border-2 border-gray-300 dark:border-gray-700 rounded-lg p-3 mt-2">
+      <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-2 tracking-wider">
         📍 {t('pickFromLocation', 'Pick From Location')}
       </p>
       
@@ -2937,18 +2937,18 @@ function BundleComponentLocationSelector({
           <Select value={selectedLocation} onValueChange={handleLocationChange}>
             <SelectTrigger className={`w-full h-12 bg-white dark:bg-gray-800 border-2 text-base font-bold font-mono text-center ${
               hasStockAvailable 
-                ? 'border-amber-300 dark:border-amber-600' 
+                ? 'border-gray-300 dark:border-gray-600' 
                 : 'border-red-300 dark:border-red-600'
             }`}>
               <SelectValue placeholder={t('selectLocation', 'Select location')}>
                 <span className={`text-lg font-black ${
-                  hasStockAvailable ? 'text-amber-700 dark:text-amber-300' : 'text-red-600 dark:text-red-400'
+                  hasStockAvailable ? 'text-gray-700 dark:text-gray-300' : 'text-red-600 dark:text-red-400'
                 }`}>
                   {selectedLocation || t('noStock', 'NO STOCK')}
                 </span>
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 border-2 border-amber-300">
+            <SelectContent className="bg-white dark:bg-gray-800 border-2 border-gray-300">
               {/* Show all locations - 0-stock ones are disabled */}
               {sortedLocations.map((location) => {
                 const hasStock = (location.quantity || 0) > 0;
@@ -2959,7 +2959,7 @@ function BundleComponentLocationSelector({
                     disabled={!hasStock}
                     className={`text-base font-mono py-2 cursor-pointer ${
                       hasStock 
-                        ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30' 
+                        ? 'hover:bg-gray-50 dark:hover:bg-gray-900/30' 
                         : 'opacity-50 cursor-not-allowed bg-gray-50'
                     }`}
                   >
@@ -2972,13 +2972,13 @@ function BundleComponentLocationSelector({
                           hasStock
                             ? (location.quantity || 0) >= bundleItem.quantity * (bundleItem.bulkUnitQty || 1)
                               ? 'bg-green-100 text-green-700 border-green-300' 
-                              : 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                              : 'bg-gray-100 text-gray-700 border-gray-300'
                             : 'bg-red-100 text-red-700 border-red-300'
                         }`}>
                           {location.quantity || 0}
                         </Badge>
                         {location.isPrimary && (
-                          <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs">
+                          <Badge className="bg-gray-100 text-gray-700 border-gray-300 text-xs">
                             ★
                           </Badge>
                         )}
@@ -2997,7 +2997,7 @@ function BundleComponentLocationSelector({
                 (selectedLocationData.quantity || 0) >= bundleItem.quantity * (bundleItem.bulkUnitQty || 1)
                   ? 'bg-green-600 text-white' 
                   : (selectedLocationData.quantity || 0) > 0
-                    ? 'bg-yellow-500 text-white'
+                    ? 'bg-gray-1000 text-white'
                     : 'bg-red-600 text-white'
               }`}>
                 {selectedLocationData.quantity || 0} {t('inStock', 'in stock')}
@@ -3014,7 +3014,7 @@ function BundleComponentLocationSelector({
         </div>
       ) : (
         <div className="text-center py-1">
-          <p className="text-xs text-amber-600 dark:text-amber-400">
+          <p className="text-xs text-gray-600 dark:text-gray-400">
             {t('noLocations', 'No locations configured')}
           </p>
         </div>
@@ -3489,16 +3489,16 @@ function MultiLocationPicker({
   // Service items bypass stock checks
   if (isServiceItem) {
     return (
-      <div className="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-4 border-2 border-purple-300 dark:border-purple-700">
+      <div className="bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 border-2 border-gray-300 dark:border-gray-700">
         <div className="flex items-center justify-center gap-2 mb-4">
-          <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-          <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+          <Receipt className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          <p className="text-lg font-bold text-gray-700 dark:text-gray-300">
             {t('serviceBill', 'Service Bill')}
           </p>
         </div>
         
         {/* Service Item Details */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-purple-200 dark:border-purple-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-start gap-3">
             <div className="flex-1">
               <p className="font-bold text-gray-900 dark:text-gray-100 text-base">
@@ -3514,7 +3514,7 @@ function MultiLocationPicker({
                   {t('quantity', 'Qty')}: <span className="font-bold text-gray-900 dark:text-gray-100">{currentItem.quantity}</span>
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {t('price', 'Price')}: <span className="font-bold text-purple-700 dark:text-purple-300">{Number(currentItem.price || 0).toFixed(2)}</span>
+                  {t('price', 'Price')}: <span className="font-bold text-gray-700 dark:text-gray-300">{Number(currentItem.price || 0).toFixed(2)}</span>
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
                   {t('total', 'Total')}: <span className="font-bold text-green-700 dark:text-green-300">{(Number(currentItem.price || 0) * currentItem.quantity).toFixed(2)}</span>
@@ -3526,7 +3526,7 @@ function MultiLocationPicker({
         
         <Button 
           size="lg"
-          className="w-full h-14 text-lg font-bold bg-purple-600 hover:bg-purple-700 text-white"
+          className="w-full h-14 text-lg font-bold bg-gray-600 hover:bg-gray-700 text-white"
           onClick={() => {
             setPickedFromLocations({
               ...pickedFromLocations,
@@ -3562,10 +3562,10 @@ function MultiLocationPicker({
     <div className="space-y-4">
       {/* Virtual Product Badge */}
       {isVirtual && (
-        <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3">
+        <div className="bg-gray-50 dark:bg-gray-900/30 border-2 border-gray-300 dark:border-gray-700 rounded-lg p-3">
           <div className="flex items-center justify-center gap-2">
-            <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
+            <Package className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
               📦 1 {currentItem.productName?.split(' ')[0] || 'unit'} = {deductionRatio}x {currentItem.masterProductName || 'pieces'}
             </span>
           </div>
@@ -3594,7 +3594,7 @@ function MultiLocationPicker({
                   <div className="flex items-center gap-3">
                     <code className="text-sm font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {loc.locationCode}
-                      {loc.isPrimary && <span className="text-amber-500 ml-1">★</span>}
+                      {loc.isPrimary && <span className="text-gray-500 ml-1">★</span>}
                     </code>
                     <Badge 
                       variant="secondary" 
@@ -3633,7 +3633,7 @@ function MultiLocationPicker({
               className={`h-full transition-all duration-300 ${
                 totalPicked >= targetQuantity 
                   ? 'bg-green-500' 
-                  : 'bg-blue-500'
+                  : 'bg-gray-500'
               }`}
               style={{ width: `${Math.min(100, (totalPicked / targetQuantity) * 100)}%` }}
             />
@@ -3646,7 +3646,7 @@ function MultiLocationPicker({
               <div className="flex items-center gap-2">
                 <Button
                   size="lg"
-                  className="h-14 w-14 p-0 bg-gray-100 hover:bg-rose-500 hover:text-white text-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-rose-500 rounded-xl transition-colors disabled:opacity-40"
+                  className="h-14 w-14 p-0 bg-gray-100 hover:bg-gray-500 hover:text-white text-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-500 rounded-xl transition-colors disabled:opacity-40"
                   onClick={() => adjustPickedAtLocation(-1)}
                   disabled={selectedLocation.pickedFromHere <= 0}
                   data-testid="btn-pick-minus"
@@ -3687,7 +3687,7 @@ function MultiLocationPicker({
 
               {/* Hint - Not enough at this location */}
               {selectedLocation.availableVirtual < remainingToPick && selectedLocation.availableVirtual > 0 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                   {t('notEnoughHere', 'Not enough here - select another location')}
                 </p>
               )}
@@ -3727,10 +3727,10 @@ function MultiLocationPicker({
 
       {/* Carton/Bulk Unit Info */}
       {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 text-center">
+        <div className="bg-gray-50 dark:bg-gray-900/20 border-2 border-gray-300 dark:border-gray-700 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2">
-            <Box className="h-5 w-5 text-amber-600" />
-            <span className="text-sm font-bold text-amber-700 dark:text-amber-300">
+            <Box className="h-5 w-5 text-gray-600" />
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
               {Math.floor(totalPicked / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}(s)
             </span>
           </div>
@@ -3827,8 +3827,8 @@ function StockAwarePickingButtons({
         </p>
         {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
           <div className="mt-2 flex items-center justify-center gap-2">
-            <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            <span className="text-base font-bold text-amber-700 dark:text-amber-300">
+            <Box className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <span className="text-base font-bold text-gray-700 dark:text-gray-300">
               {Math.floor(currentItem.pickedQuantity / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
               {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
             </span>
@@ -3844,7 +3844,7 @@ function StockAwarePickingButtons({
       {/* Progress Bar */}
       <div className="mt-4 h-3 bg-gray-200 rounded-full overflow-hidden">
         <div 
-          className="h-full bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 transition-all duration-300"
+          className="h-full bg-gradient-to-r from-gray-50 dark:from-gray-900/300 to-gray-100 dark:to-gray-900/300 transition-all duration-300"
           style={{ width: `${(currentItem.pickedQuantity / currentItem.quantity) * 100}%` }}
         />
       </div>
@@ -3852,8 +3852,8 @@ function StockAwarePickingButtons({
       {/* Carton Details */}
       {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
         <div className="mt-3 flex items-center justify-center gap-2">
-          <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <span className="text-base font-bold text-amber-700 dark:text-amber-300">
+          <Box className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          <span className="text-base font-bold text-gray-700 dark:text-gray-300">
             {Math.floor(currentItem.pickedQuantity / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
             {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
           </span>
@@ -3880,7 +3880,7 @@ function StockAwarePickingButtons({
         {/* Plus Button */}
         <Button
           size="lg"
-          className="h-20 text-3xl font-black bg-blue-50 dark:bg-blue-900/300 hover:bg-blue-600 text-white shadow-lg rounded-xl"
+          className="h-20 text-3xl font-black bg-gray-50 dark:bg-gray-900/300 hover:bg-gray-600 text-white shadow-lg rounded-xl"
           onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + 1, currentItem.quantity))}
           disabled={currentItem.pickedQuantity >= currentItem.quantity}
         >
@@ -3901,14 +3901,14 @@ function StockAwarePickingButtons({
       
       {/* Packaging Unit Buttons */}
       {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 1 && (
-        <div className="mt-4 pt-4 border-t-2 border-amber-200 dark:border-amber-700">
-          <p className="text-center text-sm font-bold text-amber-700 dark:text-amber-300 mb-3">
+        <div className="mt-4 pt-4 border-t-2 border-gray-200 dark:border-gray-700">
+          <p className="text-center text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
             {t('pickByPackagingUnit', 'Pick by Packaging Unit')}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <Button
               size="lg"
-              className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
+              className="h-16 text-lg font-bold bg-gray-100 dark:bg-gray-900/50 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-md rounded-xl border-2 border-gray-300 dark:border-gray-600"
               onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - currentItem.bulkUnitQty!, 0))}
               disabled={currentItem.pickedQuantity < currentItem.bulkUnitQty}
               data-testid="btn-remove-packaging-unit"
@@ -3920,7 +3920,7 @@ function StockAwarePickingButtons({
             
             <Button
               size="lg"
-              className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
+              className="h-16 text-lg font-bold bg-gray-100 dark:bg-gray-900/50 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-md rounded-xl border-2 border-gray-300 dark:border-gray-600"
               onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + currentItem.bulkUnitQty!, currentItem.quantity))}
               disabled={currentItem.pickedQuantity + currentItem.bulkUnitQty! > currentItem.quantity}
               data-testid="btn-add-packaging-unit"
@@ -3930,7 +3930,7 @@ function StockAwarePickingButtons({
               <span>1 {currentItem.bulkUnitName || t('carton', 'carton')}</span>
             </Button>
           </div>
-          <p className="text-center text-xs text-amber-600 dark:text-amber-400 mt-2">
+          <p className="text-center text-xs text-gray-600 dark:text-gray-400 mt-2">
             1 {currentItem.bulkUnitName || t('carton', 'carton')} = {currentItem.bulkUnitQty} {t('pieces', 'pcs')}
           </p>
         </div>
@@ -8312,7 +8312,7 @@ export default function PickPack() {
         time: '30m ago',
         user: order.pickedBy || 'Employee',
         icon: Package,
-        color: 'text-blue-600 dark:text-blue-400'
+        color: 'text-gray-600 dark:text-gray-400'
       });
     });
     
@@ -8325,7 +8325,7 @@ export default function PickPack() {
         time: '15m ago',
         user: order.packedBy || 'Employee',
         icon: Box,
-        color: 'text-purple-600 dark:text-purple-400'
+        color: 'text-gray-600 dark:text-gray-400'
       });
     });
     
@@ -8337,7 +8337,7 @@ export default function PickPack() {
         time: '3h ago',
         user: '',
         icon: Truck,
-        color: 'text-orange-600 dark:text-orange-400',
+        color: 'text-gray-600 dark:text-gray-400',
         summary: `${completedToday.length} orders shipped today`
       });
     }
@@ -9476,10 +9476,10 @@ export default function PickPack() {
   const getOrderStatusDisplay = (order: PickPackOrder) => {
     // Check the pickStatus and packStatus fields for actual status
     if (order.pickStatus === 'in_progress') {
-      return { label: t('orders:picking'), color: 'bg-blue-100 dark:bg-blue-900/30 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 dark:text-blue-100 dark:text-blue-200 dark:text-blue-100 border-blue-300 dark:border-blue-700 dark:border-blue-700' };
+      return { label: t('orders:picking'), color: 'bg-gray-100 dark:bg-gray-900/30 dark:bg-gray-900/30 text-gray-700 dark:text-gray-200 dark:text-gray-100 dark:text-gray-200 dark:text-gray-100 border-gray-300 dark:border-gray-700 dark:border-gray-700' };
     }
     if (order.packStatus === 'in_progress') {
-      return { label: t('orders:packing'), color: 'bg-amber-100 dark:bg-amber-900/30 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 dark:text-amber-200 border-amber-300 dark:border-amber-700 dark:border-amber-700' };
+      return { label: t('orders:packing'), color: 'bg-gray-100 dark:bg-gray-900/30 dark:bg-gray-900/30 text-gray-700 dark:text-gray-200 dark:text-gray-200 border-gray-300 dark:border-gray-700 dark:border-gray-700' };
     }
     if (order.status === 'ready_to_ship' && order.packStatus === 'completed') {
       return { label: t('orders:ready'), color: 'bg-green-100 dark:bg-green-900/30 dark:bg-green-900/30 text-green-700 dark:text-green-200 dark:text-green-200 border-green-300 dark:border-green-700 dark:border-green-700' };
@@ -9494,7 +9494,7 @@ export default function PickPack() {
       return { label: t('orders:readyToShip'), color: 'bg-green-100 dark:bg-green-900/30 dark:bg-green-900/30 text-green-700 dark:text-green-200 dark:text-green-200 border-green-200 dark:border-green-700 dark:border-green-700' };
     }
     if (order.pickStatus === 'completed' && order.packStatus === 'not_started') {
-      return { label: t('orders:awaitingPacking'), color: 'bg-yellow-100 dark:bg-yellow-900/30 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700 dark:border-yellow-700' };
+      return { label: t('orders:awaitingPacking'), color: 'bg-gray-100 dark:bg-gray-900/30 dark:bg-gray-900/30 text-gray-700 dark:text-gray-200 dark:text-gray-200 border-gray-200 dark:border-gray-700 dark:border-gray-700' };
     }
     // Removed redundant condition - already handled above
     return { label: t('orders:pending'), color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700' };
@@ -9789,7 +9789,7 @@ export default function PickPack() {
       <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden">
         {/* Optimized Header - Packing Mode */}
-        <div className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-purple-900 text-white shadow-lg sticky top-0 z-20">
+        <div className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-gray-900 text-white shadow-lg sticky top-0 z-20">
           <div className="px-3 lg:px-6 py-2.5 lg:py-3">
             {/* Top Row: Controls, Order Info, Timer */}
             <div className="flex items-center justify-between gap-2 lg:gap-4">
@@ -9824,7 +9824,7 @@ export default function PickPack() {
               <div className="flex-1 flex flex-col items-start gap-1.5 min-w-0 ml-2">
                 <div className="text-base lg:text-lg font-bold tracking-wide truncate w-full">{activePackingOrder.orderId}</div>
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="text-base lg:text-lg text-yellow-300 font-black truncate drop-shadow-md">{activePackingOrder.customerName}</span>
+                  <span className="text-base lg:text-lg text-gray-300 font-black truncate drop-shadow-md">{activePackingOrder.customerName}</span>
                   {(() => {
                     const shippingAddr = activePackingOrder.shippingAddress;
                     const country = (typeof shippingAddr === 'object' && shippingAddr !== null && 'country' in shippingAddr) ? shippingAddr.country : '';
@@ -9839,13 +9839,13 @@ export default function PickPack() {
                         activePackingOrder.shippingMethod.toUpperCase().includes('GLS') 
                           ? 'bg-emerald-600 dark:bg-emerald-700 text-white'
                           : activePackingOrder.shippingMethod.toUpperCase().includes('PPL')
-                          ? 'bg-orange-500 dark:bg-orange-600 text-white'
+                          ? 'bg-gray-500 dark:bg-gray-600 text-white'
                           : activePackingOrder.shippingMethod.toUpperCase().includes('DHL')
-                          ? 'bg-yellow-400 dark:bg-yellow-600 text-gray-900 dark:text-white'
+                          ? 'bg-gray-400 dark:bg-gray-500 text-gray-900 dark:text-white'
                           : activePackingOrder.shippingMethod.toUpperCase() === 'PICKUP'
                           ? 'bg-green-500 dark:bg-green-600 text-white'
                           : activePackingOrder.shippingMethod.toUpperCase() === 'HAND-DELIVERY'
-                          ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                          ? 'bg-gray-500 dark:bg-gray-600 text-white'
                           : 'bg-white/30 dark:bg-white/20 text-white'
                       }`}>
                         {activePackingOrder.shippingMethod.toUpperCase().includes('GLS') ? 'GLS' :
@@ -9893,7 +9893,7 @@ export default function PickPack() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className={`h-8 w-8 lg:h-9 lg:w-9 transition-all duration-200 text-white ${showItemChecklist ? 'bg-sky-500/80 hover:bg-sky-500' : 'bg-white/20 hover:bg-white/30'}`}
+                  className={`h-8 w-8 lg:h-9 lg:w-9 transition-all duration-200 text-white ${showItemChecklist ? 'bg-gray-500/80 hover:bg-gray-500' : 'bg-white/20 hover:bg-white/30'}`}
                   onClick={() => setShowItemChecklist(!showItemChecklist)}
                   title={showItemChecklist ? t('orders:hideItemChecklist') : t('orders:showItemChecklist')}
                   data-testid="button-toggle-item-checklist"
@@ -10037,7 +10037,7 @@ export default function PickPack() {
             {/* Item Verification List - Collapsible Accordion (toggleable via settings) */}
             {showItemChecklist && (
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className="shadow-sm border-2 border-sky-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
+              <AccordionItem value="items" className="shadow-sm border-2 border-gray-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
                 <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-sky-700 dark:from-sky-800 to-sky-800 dark:to-sky-900 text-white transition-colors -mt-0.5 rounded-t-lg">
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
@@ -10133,7 +10133,7 @@ export default function PickPack() {
                 <AccordionContent>
                   {/* Barcode Scanner Input - Collapsible */}
                   {scanningEnabled && showBarcodeScanner && (
-                    <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-sky-50">
+                    <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-gray-50">
                       <div className="flex gap-3">
                         <div className="relative flex-1">
                           <Input
@@ -10243,11 +10243,11 @@ export default function PickPack() {
                               <div key={productId} className={`relative rounded-lg border-2 transition-all duration-300 overflow-hidden ${
                                 allVerified
                                   ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                  : 'bg-white dark:bg-gray-900 border-purple-300 dark:border-purple-700'
+                                  : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700'
                               }`}>
                                 {hasAnyNotes && !allVerified && (
                                   <div className="absolute -top-2 -right-2 z-50">
-                                    <div className="bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                    <div className="bg-gray-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
                                       <AlertTriangle className="h-3 w-3" />
                                       NOTE
                                     </div>
@@ -10278,7 +10278,7 @@ export default function PickPack() {
                                       )}
                                     </div>
                                     <div className={`absolute -bottom-1 -right-1 min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md ${
-                                      allVerified ? 'bg-green-600 text-white' : 'bg-purple-600 text-white'
+                                      allVerified ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'
                                     }`}>
                                       {allVerified ? <CheckCircle className="h-4 w-4" /> : `${groupItems.reduce((sum, item) => sum + (item.quantity || 0), 0)}×`}
                                     </div>
@@ -10288,7 +10288,7 @@ export default function PickPack() {
                                       {parentName}
                                     </p>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                      <Badge className={`text-xs px-2 py-0.5 ${allVerified ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'}`}>
+                                      <Badge className={`text-xs px-2 py-0.5 ${allVerified ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300'}`}>
                                         {verifiedCount}/{groupItems.length} {t('variants') || 'variants'}
                                       </Badge>
                                     </div>
@@ -10301,7 +10301,7 @@ export default function PickPack() {
                                       className={`h-8 px-3 text-xs font-bold ${
                                         allVerified
                                           ? 'bg-green-600 hover:bg-green-700 text-white' 
-                                          : 'border-purple-400 text-purple-700 hover:bg-purple-50'
+                                          : 'border-gray-400 text-gray-700 hover:bg-gray-50'
                                       }`}
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -10347,7 +10347,7 @@ export default function PickPack() {
                                 
                                 {/* Expanded Variant List */}
                                 {isGroupExpanded && (
-                                  <div className="border-t border-purple-200 dark:border-purple-700 max-h-64 overflow-y-auto">
+                                  <div className="border-t border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
                                     {[...groupItems].sort((a, b) => {
                                       // Sort by colorNumber numerically, fallback to extracting from product name
                                       const getNum = (item: any) => {
@@ -10366,8 +10366,8 @@ export default function PickPack() {
                                       return (
                                         <div
                                           key={item.id}
-                                          className={`h-14 px-3 py-2 border-b last:border-b-0 border-purple-100 dark:border-purple-800 flex items-center gap-3 transition-all duration-150 cursor-pointer
-                                            ${isRecentlyScanned ? 'bg-yellow-100 dark:bg-yellow-900/30 ring-2 ring-yellow-400' : isVerified ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                          className={`h-14 px-3 py-2 border-b last:border-b-0 border-gray-100 dark:border-gray-800 flex items-center gap-3 transition-all duration-150 cursor-pointer
+                                            ${isRecentlyScanned ? 'bg-gray-100 dark:bg-gray-900/30 ring-2 ring-yellow-400' : isVerified ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                           onClick={() => {
                                             if (!isVerified && !isBundle) {
                                               const newCount = item.quantity > 4 ? item.quantity : Math.min((verifiedItems[item.id] || 0) + 1, item.quantity);
@@ -10377,7 +10377,7 @@ export default function PickPack() {
                                           }}
                                         >
                                           <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs transition-colors ${
-                                            isVerified ? 'bg-green-500 text-white' : 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                                            isVerified ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300'
                                           }`}>
                                             {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                                           </div>
@@ -10389,13 +10389,13 @@ export default function PickPack() {
                                               <span>📍 {item.productType === 'virtual' ? (t('naLocation') || 'N/A') : <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />}</span>
                                               {item.sku && <span className="font-mono">• {item.sku}</span>}
                                               {item.productType === 'virtual' && (
-                                                <Badge className="text-[8px] px-1 py-0 bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-600">
+                                                <Badge className="text-[8px] px-1 py-0 bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-600">
                                                   <Cloud className="h-2 w-2 mr-0.5" />
                                                   {t('virtualAutoCompleted') || 'Virtual'}
                                                 </Badge>
                                               )}
                                               {item.productType === 'physical_no_quantity' && (
-                                                <Badge className="text-[8px] px-1 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-600">
+                                                <Badge className="text-[8px] px-1 py-0 bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-600">
                                                   {t('noQtyTracking') || 'No Qty'}
                                                 </Badge>
                                               )}
@@ -10437,7 +10437,7 @@ export default function PickPack() {
                               key={item.id} 
                               className={`relative p-3 rounded-lg border-2 transition-all duration-300 ${
                                 isRecentlyScanned
-                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-700 shadow-lg scale-105 ring-4 ring-yellow-200 dark:ring-yellow-700 animate-pulse'
+                                  ? 'bg-gray-100 dark:bg-gray-900/30 border-gray-400 dark:border-gray-700 shadow-lg scale-105 ring-4 ring-yellow-200 dark:ring-yellow-700 animate-pulse'
                                   : isVerified || (isBundle && allBundleComponentsVerified)
                                   ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 shadow-sm' 
                                   : 'bg-white border-gray-300 shadow-sm'
@@ -10445,7 +10445,7 @@ export default function PickPack() {
                             >
                               {(item.notes || item.shipmentNotes) && !(isVerified || (isBundle && allBundleComponentsVerified)) && (
                                 <div className="absolute -top-2 -right-2 z-50">
-                                  <div className={`${item.shipmentNotes ? 'bg-red-500' : 'bg-amber-500'} text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg`}>
+                                  <div className={`${item.shipmentNotes ? 'bg-red-500' : 'bg-gray-500'} text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg`}>
                                     <AlertTriangle className="h-3 w-3" />
                                     {item.shipmentNotes ? 'SPECIAL' : 'NOTE'}
                                   </div>
@@ -10476,7 +10476,7 @@ export default function PickPack() {
                                   <div className={`absolute -bottom-1 -right-1 min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md ${
                                     isVerified || (isBundle && allBundleComponentsVerified)
                                       ? 'bg-green-50 dark:bg-green-900/300 text-white' 
-                                      : 'bg-blue-50 dark:bg-blue-900/300 text-white'
+                                      : 'bg-gray-50 dark:bg-gray-900/300 text-white'
                                   }`}>
                                     {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-3.5 w-3.5" /> : `${item.quantity}×`}
                                   </div>
@@ -10494,7 +10494,7 @@ export default function PickPack() {
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-7 w-7 p-0 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/30"
+                                            className="h-7 w-7 p-0 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30 dark:bg-gray-900/30"
                                             onClick={() => {
                                               const newExpanded = new Set(expandedBundles);
                                               if (isExpanded) {
@@ -10514,7 +10514,7 @@ export default function PickPack() {
                                           className={`h-7 px-2 text-xs font-bold ${
                                             isVerified || (isBundle && allBundleComponentsVerified)
                                               ? 'bg-green-50 dark:bg-green-900/300 hover:bg-green-600 text-white' 
-                                              : 'border-sky-300 text-sky-600 hover:bg-sky-50'
+                                              : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                                           }`}
                                           onClick={() => {
                                             if (isBundle) {
@@ -10560,7 +10560,7 @@ export default function PickPack() {
                                         <div className="w-full mt-0.5">
                                           <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
                                             <div 
-                                              className="h-full bg-sky-500 transition-all duration-300"
+                                              className="h-full bg-gray-500 transition-all duration-300"
                                               style={{ width: `${((verifiedItems[item.id] || 0) / item.quantity) * 100}%` }}
                                             />
                                           </div>
@@ -10579,7 +10579,7 @@ export default function PickPack() {
                                     )}
                                     {isBundle && (
                                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                                        <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-xs px-2 py-0.5 font-semibold">
+                                        <Badge className="bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 font-semibold">
                                           Bundle ({bundleComponentsVerified}/{totalBundleComponents})
                                         </Badge>
                                       </div>
@@ -10612,7 +10612,7 @@ export default function PickPack() {
                                 <div className={`absolute -bottom-1 -right-1 min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md ${
                                   isVerified || (isBundle && allBundleComponentsVerified)
                                     ? 'bg-green-600 dark:bg-green-700 text-white' 
-                                    : 'bg-blue-600 dark:bg-blue-700 text-white'
+                                    : 'bg-gray-600 dark:bg-gray-700 text-white'
                                 }`}>
                                   {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : `${item.quantity}×`}
                                 </div>
@@ -10625,7 +10625,7 @@ export default function PickPack() {
                                 {/* Badges Row */}
                                 {isBundle && (
                                   <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                    <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-xs px-2 py-0.5 font-semibold">
+                                    <Badge className="bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 font-semibold">
                                       Bundle ({bundleComponentsVerified}/{totalBundleComponents})
                                     </Badge>
                                   </div>
@@ -10653,7 +10653,7 @@ export default function PickPack() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/30"
+                                      className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30 dark:bg-gray-900/30"
                                       onClick={() => {
                                         const newExpanded = new Set(expandedBundles);
                                         if (isExpanded) {
@@ -10674,7 +10674,7 @@ export default function PickPack() {
                                     className={`h-8 px-3 text-sm font-bold ${
                                       isVerified || (isBundle && allBundleComponentsVerified)
                                         ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white' 
-                                        : 'border-sky-300 text-sky-600 hover:bg-sky-50'
+                                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                                     }`}
                                     onClick={() => {
                                       if (isBundle) {
@@ -10720,7 +10720,7 @@ export default function PickPack() {
                                   <div className="w-24 mt-1">
                                     <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                       <div 
-                                        className="h-full bg-sky-500 transition-all duration-300"
+                                        className="h-full bg-gray-500 transition-all duration-300"
                                         style={{ width: `${((verifiedItems[item.id] || 0) / item.quantity) * 100}%` }}
                                       />
                                     </div>
@@ -10731,8 +10731,8 @@ export default function PickPack() {
                             
                             {/* Bundle Components - Expanded with Individual Location Selectors */}
                             {isBundle && isExpanded && (
-                              <div className="mt-3 ml-2 space-y-3 border-l-4 border-amber-400 pl-3">
-                                <div className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider mb-2">
+                              <div className="mt-3 ml-2 space-y-3 border-l-4 border-gray-400 pl-3">
+                                <div className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
                                   {t('bundleComponents', 'Bundle Components')} ({item.bundleItems?.length || 0})
                                 </div>
                                 {item.bundleItems?.map((bundleItem: any, idx: number) => {
@@ -10745,13 +10745,13 @@ export default function PickPack() {
                                       className={`p-3 rounded-lg border-2 transition-all ${
                                         isComponentVerified 
                                           ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                          : 'bg-white dark:bg-gray-800 border-amber-300 dark:border-amber-700'
+                                          : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700'
                                       }`}
                                     >
                                       {/* Component Header */}
                                       <div className="flex items-start gap-3 mb-2">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                                          isComponentVerified ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-amber-500 dark:bg-amber-600 text-white'
+                                          isComponentVerified ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-500 dark:bg-gray-600 text-white'
                                         }`}>
                                           {isComponentVerified ? <Check className="h-4 w-4" /> : idx + 1}
                                         </div>
@@ -10765,7 +10765,7 @@ export default function PickPack() {
                                             )}
                                           </div>
                                           <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                                            <span className={`font-bold ${isComponentVerified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                            <span className={`font-bold ${isComponentVerified ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
                                               {verifiedItems[componentId] || 0} / {bundleItem.quantity} {t('picked', 'picked')}
                                             </span>
                                           </div>
@@ -10776,7 +10776,7 @@ export default function PickPack() {
                                           className={`h-10 px-4 text-sm font-bold shrink-0 ${
                                             isComponentVerified 
                                               ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white' 
-                                              : 'border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30'
+                                              : 'border-gray-400 text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30'
                                           }`}
                                           onClick={async () => {
                                             const currentCount = verifiedItems[componentId] || 0;
@@ -10863,7 +10863,7 @@ export default function PickPack() {
                                         <div className="mt-2">
                                           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                             <div 
-                                              className="h-full bg-amber-500 transition-all duration-300"
+                                              className="h-full bg-gray-500 transition-all duration-300"
                                               style={{ width: `${((verifiedItems[componentId] || 0) / bundleItem.quantity) * 100}%` }}
                                             />
                                           </div>
@@ -10879,11 +10879,11 @@ export default function PickPack() {
                             {hasNotes && (
                               <div className="mt-2 ml-2 space-y-1">
                                 {item.notes && (
-                                  <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded border-l-4 border-amber-400 dark:border-amber-700">
+                                  <div className="p-3 bg-gray-50 dark:bg-gray-900/30 rounded border-l-4 border-gray-400 dark:border-gray-700">
                                     <div className="flex items-start gap-2">
-                                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                                      <AlertTriangle className="h-4 w-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-amber-700 dark:text-amber-200 mb-1">{t('orders:shippingNotes')}</div>
+                                        <div className="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1">{t('orders:shippingNotes')}</div>
                                         <div className="text-sm text-black font-medium leading-normal whitespace-pre-wrap">{item.notes}</div>
                                       </div>
                                     </div>
@@ -10918,17 +10918,17 @@ export default function PickPack() {
                                 )}
                                 
                                 {(item.packingInstructionsText || item.packingInstructionsImage) && (
-                                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded border-l-4 border-blue-400 dark:border-blue-700">
+                                  <div className="p-3 bg-gray-50 dark:bg-gray-900/30 rounded border-l-4 border-gray-400 dark:border-gray-700">
                                     <div className="flex items-start gap-2">
-                                      <Package className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                                      <Package className="h-4 w-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-blue-700 dark:text-blue-200 dark:text-blue-100 mb-1">{t('orders:packingInstructionsHeader')}</div>
+                                        <div className="text-xs font-bold text-gray-700 dark:text-gray-200 dark:text-gray-100 mb-1">{t('orders:packingInstructionsHeader')}</div>
                                         {item.packingInstructionsImage && (
                                           <div className="mb-2">
                                             <img 
                                               src={item.packingInstructionsImage} 
                                               alt={t('packingInstructions')}
-                                              className="w-full max-w-xs rounded border border-blue-200 dark:border-blue-700"
+                                              className="w-full max-w-xs rounded border border-gray-200 dark:border-gray-700"
                                             />
                                           </div>
                                         )}
@@ -11015,8 +11015,8 @@ export default function PickPack() {
           )}
 
           {/* Multi-Carton Packing Section */}
-          <Card className="shadow-sm border-2 border-purple-300 dark:border-purple-700 overflow-hidden" id="checklist-cartons">
-            <CardHeader className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-purple-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+          <Card className="shadow-sm border-2 border-gray-300 dark:border-gray-700 overflow-hidden" id="checklist-cartons">
+            <CardHeader className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-gray-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -11081,21 +11081,21 @@ export default function PickPack() {
               
               {/* AI Carton Plan Banner - Show saved plan from order creation */}
               {packingPlan && packingPlan.cartons && packingPlan.cartons.length > 0 && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-2">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-900/30 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2">
                   <div className="flex items-start gap-2">
-                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <Sparkles className="h-5 w-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-bold text-blue-800 dark:text-blue-200 text-sm">{t('orders:aiCartonPlan')}</h4>
-                        <Badge variant="outline" className="bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-600 text-xs">
+                        <h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">{t('orders:aiCartonPlan')}</h4>
+                        <Badge variant="outline" className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 text-xs">
                           {packingPlan.totalCartons} {packingPlan.totalCartons === 1 ? t('carton') : t('cartons')}
                         </Badge>
                       </div>
                       <div className="space-y-1.5">
                         {packingPlan.cartons.map((planCarton: any, idx: number) => (
-                          <div key={idx} className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1.5 border border-blue-100 dark:border-blue-800">
+                          <div key={idx} className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1.5 border border-gray-100 dark:border-gray-800">
                             <div className="flex items-center gap-2">
-                              <Box className="h-3.5 w-3.5 text-blue-500" />
+                              <Box className="h-3.5 w-3.5 text-gray-500" />
                               <span className="font-medium text-gray-800 dark:text-gray-200">
                                 {planCarton.cartonName || `Carton ${idx + 1}`}
                               </span>
@@ -11109,7 +11109,7 @@ export default function PickPack() {
                                 {(planCarton.totalWeightKg || planCarton.weight || 0).toFixed(2)} kg
                               </span>
                               {planCarton.volumeUtilization !== undefined && (
-                                <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                <span className="text-gray-600 dark:text-gray-400 font-medium">
                                   {Math.round(planCarton.volumeUtilization)}% {t('filled')}
                                 </span>
                               )}
@@ -11118,7 +11118,7 @@ export default function PickPack() {
                         ))}
                       </div>
                       {packingPlan.suggestions && packingPlan.suggestions.length > 0 && (
-                        <div className="mt-2 text-xs text-blue-700 dark:text-blue-300 italic">
+                        <div className="mt-2 text-xs text-gray-700 dark:text-gray-300 italic">
                           {packingPlan.suggestions[0]}
                         </div>
                       )}
@@ -11155,7 +11155,7 @@ export default function PickPack() {
               {/* Add Another Carton Button */}
               <Button
                 variant="outline"
-                className="w-full border-2 border-dashed border-purple-400 dark:border-purple-700 text-purple-800 dark:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30 dark:bg-purple-900/30"
+                className="w-full border-2 border-dashed border-gray-400 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/30 dark:bg-gray-900/30"
                 onClick={() => {
                   if (activePackingOrder) {
                     // Mark as manually modified to prevent AI recalculation
@@ -11227,14 +11227,14 @@ export default function PickPack() {
                 const shippingMethod = activePackingOrder?.shippingMethod?.toUpperCase() || '';
                 return shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
               })() && (
-                <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-lg border-2 border-purple-200 dark:border-purple-700">
+                <div className="bg-gray-100 dark:bg-gray-900/30 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">{t('totalCartons')}</span>
-                    <span className="font-bold text-purple-900">{cartons.length}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{t('totalCartons')}</span>
+                    <span className="font-bold text-gray-900">{cartons.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">{t('totalWeight')}</span>
-                    <span className="font-bold text-purple-900">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{t('totalWeight')}</span>
+                    <span className="font-bold text-gray-900">
                       {cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(3)} kg
                     </span>
                   </div>
@@ -11344,8 +11344,8 @@ export default function PickPack() {
             const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
             return isDHL;
           })() && (
-          <Card className="shadow-sm border-2 border-indigo-200 dark:border-indigo-700 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-700 dark:from-indigo-800 to-indigo-800 dark:to-indigo-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+          <Card className="shadow-sm border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-700 dark:from-indigo-800 to-indigo-800 dark:to-gray-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 {t('shippingInformation')}
@@ -11481,7 +11481,7 @@ export default function PickPack() {
                       
                       {/* Country/Zielland - Emphasized */}
                       <div 
-                        className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-indigo-400 transition-colors"
+                        className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
                         onClick={() => copyField(germanCountry, 'Country')}
                       >
                         <span className="text-3xl">{getCountryFlag(germanCountry)}</span>
@@ -11501,13 +11501,13 @@ export default function PickPack() {
                             key={size}
                             className={`p-3 rounded-lg border-2 text-center cursor-pointer transition-all ${
                               size === glsPackageSize
-                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg'
-                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-400'
+                                ? 'bg-gray-600 border-gray-600 text-white shadow-lg'
+                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
                             }`}
                             onClick={() => { setGlsPackageSize(size); copyField(size, 'Paket size'); }}
                           >
                             <div className="text-2xl font-bold">{size}</div>
-                            <div className={`text-xs mt-0.5 ${size === glsPackageSize ? 'text-indigo-100' : 'text-gray-400'}`}>
+                            <div className={`text-xs mt-0.5 ${size === glsPackageSize ? 'text-gray-100' : 'text-gray-400'}`}>
                               {size === glsPackageSize ? 'Selected' : 'Paket'}
                             </div>
                           </div>
@@ -11713,7 +11713,7 @@ export default function PickPack() {
                     {/* DHL Link Button */}
                     <Button
                       variant="default"
-                      className="w-full bg-yellow-50 dark:bg-yellow-900/300 hover:bg-yellow-600 text-black font-semibold"
+                      className="w-full bg-gray-100 dark:bg-gray-900/300 hover:bg-gray-500 text-black font-semibold"
                       onClick={() => {
                         window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
                       }}
@@ -11724,9 +11724,9 @@ export default function PickPack() {
                     </Button>
 
                     {/* SECTION 1: Package & Payment Details */}
-                    <div className="space-y-3 p-3 bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
+                    <div className="space-y-3 p-3 bg-gray-100 dark:bg-gray-900/30 border-2 border-gray-300 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Package className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
+                        <Package className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                         <span className="text-base font-bold text-black">Paket & Zahlungsdetails</span>
                       </div>
 
@@ -11742,8 +11742,8 @@ export default function PickPack() {
                               key={size}
                               className={`p-3 rounded-lg border-2 text-center font-semibold transition-all ${
                                 highlightedSize === size
-                                  ? 'bg-yellow-50 dark:bg-yellow-900/300 border-yellow-600 text-black shadow-md'
-                                  : 'bg-white border-gray-300 text-gray-700 hover:border-yellow-400 dark:border-yellow-700'
+                                  ? 'bg-gray-100 dark:bg-gray-900/300 border-gray-600 text-black shadow-md'
+                                  : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400 dark:border-gray-700'
                               }`}
                               data-testid={`package-size-${size}`}
                             >
@@ -11765,7 +11765,7 @@ export default function PickPack() {
                           <Checkbox 
                             checked={showCOD} 
                             disabled 
-                            className="border-2 border-yellow-600 dark:border-yellow-500"
+                            className="border-2 border-gray-600 dark:border-gray-500"
                           />
                           <label className="text-sm font-semibold text-black">
                             Nachnahme (+8,99€)
@@ -11780,7 +11780,7 @@ export default function PickPack() {
                           // Extract .value property from settings response
                           const bankData = dhlBankDetails?.value || dhlBankDetails;
                           return (
-                          <div className="pl-6 space-y-2 pt-2 border-l-2 border-yellow-300 dark:border-yellow-700">
+                          <div className="pl-6 space-y-2 pt-2 border-l-2 border-gray-300 dark:border-gray-700">
                             {bankData ? (
                               <>
                                 <CompactCopyField label="IBAN*" value={bankData.iban || ''} />
@@ -11795,9 +11795,9 @@ export default function PickPack() {
                                   value={activePackingOrder.orderId || ''} 
                                 />
                                 <div className="pt-2">
-                                  <Alert className="bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700">
-                                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                    <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+                                  <Alert className="bg-gray-50 dark:bg-gray-900/30 border-gray-300 dark:border-gray-700">
+                                    <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                    <AlertDescription className="text-xs text-gray-800 dark:text-gray-200">
                                       Wichtig: Bitte BIC und IBAN in Großbuchstaben (A-Z) und Ziffern (0-9) angeben.
                                     </AlertDescription>
                                   </Alert>
@@ -11816,19 +11816,19 @@ export default function PickPack() {
                     </div>
 
                     {/* Yellow Separator */}
-                    <Separator className="my-4 bg-yellow-300 h-1 dark:bg-yellow-600" />
+                    <Separator className="my-4 bg-gray-300 h-1 dark:bg-gray-500" />
 
                     {/* SECTION 2: Recipient Address (Empfänger) */}
-                    <div className="space-y-2 p-3 bg-white border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
+                    <div className="space-y-2 p-3 bg-white border-2 border-gray-300 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
+                        <MapPin className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                         <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
                       </div>
 
                       {/* Frequent Buyer Badge - Only show for returning customers */}
                       {customerOrderCount && customerOrderCount.count > 1 && (
-                        <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded">
-                          <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400 fill-yellow-600" />
+                        <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-100 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded">
+                          <Star className="h-4 w-4 text-gray-600 dark:text-gray-400 fill-yellow-600" />
                           <span className="text-xs text-black font-medium">
                             Frequent buyer - Already in DHL addressbook
                           </span>
@@ -11858,13 +11858,13 @@ export default function PickPack() {
                     </div>
 
                     {/* Yellow Separator */}
-                    <Separator className="my-4 bg-yellow-300 h-1 dark:bg-yellow-600" />
+                    <Separator className="my-4 bg-gray-300 h-1 dark:bg-gray-500" />
 
                     {/* SECTION 3: Sender Address (Absender) */}
                     {senderData && (
-                      <div className="space-y-2 p-3 bg-white border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
+                      <div className="space-y-2 p-3 bg-white border-2 border-gray-300 dark:border-gray-700 rounded-lg">
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
+                          <MapPin className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                           <span className="text-base font-bold text-black">Absender (Sender)</span>
                         </div>
 
@@ -11894,9 +11894,9 @@ export default function PickPack() {
                     {/* Multi-carton indicator for DHL Nachnahme */}
                     {cartons.length > 1 && (
                       <div className="mt-4">
-                        <Alert className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700">
-                          <Info className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                          <AlertDescription className="text-sm text-yellow-900">
+                        <Alert className="bg-gray-100 dark:bg-gray-900/30 border-gray-300 dark:border-gray-700">
+                          <Info className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+                          <AlertDescription className="text-sm text-gray-900">
                             <strong>Carton 1 of {cartons.length}:</strong> DHL Nachnahme (with COD)
                           </AlertDescription>
                         </Alert>
@@ -11912,20 +11912,20 @@ export default function PickPack() {
                       
                       return (
                         <div className="mt-4 space-y-2">
-                          <Separator className="bg-yellow-300 h-0.5 dark:bg-yellow-600" />
-                          <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded">
-                            <Truck className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                            <span className="text-sm font-bold text-yellow-900">{t('orders:dhlShippingLabel')}</span>
+                          <Separator className="bg-gray-300 h-0.5 dark:bg-gray-500" />
+                          <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-gray-900/30 border-l-4 border-gray-500 rounded">
+                            <Truck className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+                            <span className="text-sm font-bold text-gray-900">{t('orders:dhlShippingLabel')}</span>
                           </div>
                           <div 
                             className={`border-2 rounded-lg p-3 transition-all ${
                               isValid 
                                 ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700'
+                                : 'bg-gray-100 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
                             }`}
                           >
                             <div className="flex items-center gap-2 mb-2">
-                              <div className="w-7 h-7 rounded-full bg-yellow-600 flex dark:bg-yellow-700 items-center justify-center flex-shrink-0">
+                              <div className="w-7 h-7 rounded-full bg-gray-500 flex dark:bg-gray-600 items-center justify-center flex-shrink-0">
                                 <span className="text-white font-bold text-sm">1</span>
                               </div>
                               <span className="text-sm font-semibold text-gray-900">Carton #1 (DHL)</span>
@@ -12111,15 +12111,15 @@ export default function PickPack() {
                       className="space-y-3"
                     >
                       {/* Header - Always Visible */}
-                      <div className="flex items-center justify-between p-3 bg-sky-50 border-2 border-sky-300 rounded-lg">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 border-2 border-gray-300 rounded-lg">
                         <div className="flex items-center gap-3 flex-1">
-                          <Truck className="h-5 w-5 text-sky-600 flex-shrink-0" />
+                          <Truck className="h-5 w-5 text-gray-600 flex-shrink-0" />
                           <div>
                             <div className="font-bold text-black text-base">
                               GLS Shipping ({glsCartons.length} {glsCartons.length === 1 ? 'carton' : 'cartons'})
                             </div>
                             {glsCartons.length > 0 && (
-                              <div className="text-sm text-sky-700">
+                              <div className="text-sm text-gray-700">
                                 Total weight: {totalGLSWeight.toFixed(2)} kg
                               </div>
                             )}
@@ -12133,9 +12133,9 @@ export default function PickPack() {
                             data-testid="button-toggle-gls-section"
                           >
                             {isGlsSectionExpanded ? (
-                              <ChevronUp className="h-5 w-5 text-sky-700" />
+                              <ChevronUp className="h-5 w-5 text-gray-700" />
                             ) : (
-                              <ChevronDown className="h-5 w-5 text-sky-700" />
+                              <ChevronDown className="h-5 w-5 text-gray-700" />
                             )}
                           </Button>
                         </CollapsibleTrigger>
@@ -12143,9 +12143,9 @@ export default function PickPack() {
 
                       <CollapsibleContent className="space-y-3">
                         {glsCartons.length === 0 ? (
-                          <Alert className="bg-sky-50 border-sky-300">
-                            <Info className="h-4 w-4 text-sky-700" />
-                            <AlertDescription className="text-sm text-sky-900">
+                          <Alert className="bg-gray-50 border-gray-300">
+                            <Info className="h-4 w-4 text-gray-700" />
+                            <AlertDescription className="text-sm text-gray-900">
                               No cartons added to GLS yet. Use the button below to add cartons for cost-effective shipping.
                             </AlertDescription>
                           </Alert>
@@ -12156,9 +12156,9 @@ export default function PickPack() {
                               {glsCartons.map((carton, index) => (
                                 <div
                                   key={carton.id}
-                                  className="flex items-center gap-2 p-2 bg-white border border-sky-200 rounded"
+                                  className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded"
                                 >
-                                  <Package className="h-4 w-4 text-sky-600 flex-shrink-0" />
+                                  <Package className="h-4 w-4 text-gray-600 flex-shrink-0" />
                                   <span className="text-sm font-medium text-black flex-1">
                                     Carton #{cartons.findIndex(c => c.id === carton.id) + 1}
                                     {carton.weight && ` (${carton.weight} kg)`}
@@ -12192,9 +12192,9 @@ export default function PickPack() {
                             />
 
                             {/* Recipient Address */}
-                            <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
+                            <div className="space-y-2 p-3 bg-white border-2 border-gray-300 rounded-lg">
                               <div className="flex items-center gap-2">
-                                <MapPin className="h-5 w-5 text-sky-700" />
+                                <MapPin className="h-5 w-5 text-gray-700" />
                                 <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
                               </div>
 
@@ -12213,9 +12213,9 @@ export default function PickPack() {
 
                             {/* Sender Address */}
                             {senderData && (
-                              <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
+                              <div className="space-y-2 p-3 bg-white border-2 border-gray-300 rounded-lg">
                                 <div className="flex items-center gap-2">
-                                  <MapPin className="h-5 w-5 text-sky-700" />
+                                  <MapPin className="h-5 w-5 text-gray-700" />
                                   <span className="text-base font-bold text-black">Absender (Sender)</span>
                                 </div>
 
@@ -12234,10 +12234,10 @@ export default function PickPack() {
 
                             {/* GLS Shipping Labels */}
                             <div className="mt-4 space-y-2">
-                              <Separator className="bg-sky-300 h-0.5" />
-                              <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
-                                <Truck className="h-4 w-4 text-sky-700" />
-                                <span className="text-sm font-bold text-sky-900">GLS Shipping Labels ({glsCartons.length})</span>
+                              <Separator className="bg-gray-300 h-0.5" />
+                              <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 border-l-4 border-gray-500 rounded">
+                                <Truck className="h-4 w-4 text-gray-700" />
+                                <span className="text-sm font-bold text-gray-900">GLS Shipping Labels ({glsCartons.length})</span>
                               </div>
                               {glsCartons.map((carton) => {
                                 const index = cartons.findIndex(c => c.id === carton.id);
@@ -12256,11 +12256,11 @@ export default function PickPack() {
                                         ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700' 
                                         : isValid 
                                           ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                          : 'bg-sky-50 border-sky-200'
+                                          : 'bg-gray-50 border-gray-200'
                                     }`}
                                   >
                                     <div className="flex items-center gap-2 mb-2">
-                                      <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
+                                      <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
                                         <span className="text-white font-bold text-sm">{index + 1}</span>
                                       </div>
                                       <span className="text-sm font-semibold text-gray-900">{t('cartonNumberGls', { number: index + 1 })}</span>
@@ -12354,10 +12354,10 @@ export default function PickPack() {
               })() && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Shipping Address */}
-                  <div className="sm:col-span-2 p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
+                  <div className="sm:col-span-2 p-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('shippingAddressLabel')}</span>
+                      <MapPin className="h-4 w-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{t('shippingAddressLabel')}</span>
                     </div>
                     {(() => {
                       const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress, t);
@@ -12367,7 +12367,7 @@ export default function PickPack() {
                         </p>
                       ) : (
                         <div className="pl-6">
-                          <p className="text-sm text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded px-3 py-2 inline-flex items-center gap-2">
+                          <p className="text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 inline-flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 flex-shrink-0" />
                             {t('noShippingAddressProvided')}
                           </p>
@@ -12378,10 +12378,10 @@ export default function PickPack() {
 
                   {/* Shipping Method */}
                   {activePackingOrder.shippingMethod && (
-                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Truck className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('shippingMethodLabel')}</span>
+                        <Truck className="h-4 w-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{t('shippingMethodLabel')}</span>
                       </div>
                       <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-method">
                         {activePackingOrder.shippingMethod}
@@ -12391,10 +12391,10 @@ export default function PickPack() {
 
                   {/* Tracking Number */}
                   {activePackingOrder.trackingNumber && (
-                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Package className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('trackingNumberLabel')}</span>
+                        <Package className="h-4 w-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{t('trackingNumberLabel')}</span>
                       </div>
                       <p className="text-sm font-mono font-medium text-gray-900 pl-6" data-testid="text-tracking-number">
                         {activePackingOrder.trackingNumber}
@@ -12407,10 +12407,10 @@ export default function PickPack() {
               {/* Dobírka (COD) Section - Only for PPL orders with COD */}
               {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && 
                (activePackingOrder.paymentMethod?.toUpperCase() === 'COD' || activePackingOrder.codAmount) && (
-                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg mt-4">
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-gray-200 dark:border-gray-700 rounded-lg mt-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Dobírka (COD)</span>
+                    <DollarSign className="h-4 w-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Dobírka (COD)</span>
                   </div>
                   
                   <div className="pl-6">
@@ -12522,7 +12522,7 @@ export default function PickPack() {
             );
 
             return (
-              <Card id="section-dhl" className="shadow-sm border-2 border-yellow-400 dark:border-yellow-700 overflow-hidden">
+              <Card id="section-dhl" className="shadow-sm border-2 border-gray-400 dark:border-gray-700 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-yellow-50 dark:from-yellow-900/300 to-yellow-600 text-black px-4 py-3 rounded-t-lg -mt-0.5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
@@ -12573,22 +12573,22 @@ export default function PickPack() {
                   <div className="space-y-4">
                     <button
                       onClick={() => setShippingDetailsExpanded(prev => ({ ...prev, dhlNachnahme: !prev.dhlNachnahme }))}
-                      className="w-full flex items-center gap-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded hover:bg-yellow-200 transition-colors"
+                      className="w-full flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-gray-900/30 border-l-4 border-gray-500 rounded hover:bg-gray-200 transition-colors"
                     >
-                      <MapPin className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                      <span className="text-sm font-bold text-yellow-900">{t('orders:shippingDetails')}</span>
+                      <MapPin className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+                      <span className="text-sm font-bold text-gray-900">{t('orders:shippingDetails')}</span>
                       {shippingDetailsExpanded.dhlNachnahme ? (
-                        <ChevronUp className="h-4 w-4 text-yellow-700 dark:text-yellow-200 ml-auto" />
+                        <ChevronUp className="h-4 w-4 text-gray-700 dark:text-gray-200 ml-auto" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-yellow-700 dark:text-yellow-200 ml-auto" />
+                        <ChevronDown className="h-4 w-4 text-gray-700 dark:text-gray-200 ml-auto" />
                       )}
                     </button>
                     {shippingDetailsExpanded.dhlNachnahme && (
                     <div className="space-y-4">
                   {/* SECTION 1: Package & Payment Details */}
-                  <div className="space-y-3 p-3 bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
+                  <div className="space-y-3 p-3 bg-gray-100 dark:bg-gray-900/30 border-2 border-gray-300 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Package className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
+                      <Package className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                       <span className="text-base font-bold text-black">{t('packageAndPaymentDetails')}</span>
                     </div>
 
@@ -12604,8 +12604,8 @@ export default function PickPack() {
                             key={size}
                             className={`p-3 rounded-lg border-2 text-center font-semibold transition-all ${
                               highlightedSize === size
-                                ? 'bg-yellow-50 dark:bg-yellow-900/300 border-yellow-600 text-black shadow-md'
-                                : 'bg-white border-gray-300 text-gray-700 hover:border-yellow-400 dark:border-yellow-700'
+                                ? 'bg-gray-100 dark:bg-gray-900/300 border-gray-600 text-black shadow-md'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400 dark:border-gray-700'
                             }`}
                             data-testid={`package-size-${size}`}
                           >
@@ -12627,7 +12627,7 @@ export default function PickPack() {
                         <Checkbox 
                           checked={showCOD} 
                           disabled 
-                          className="border-2 border-yellow-600 dark:border-yellow-500"
+                          className="border-2 border-gray-600 dark:border-gray-500"
                         />
                         <label className="text-sm font-semibold text-black">
                           {t('nachnahmeWithFee')}
@@ -12641,7 +12641,7 @@ export default function PickPack() {
                       {showCOD && (() => {
                         const bankData = dhlBankDetails?.value || dhlBankDetails;
                         return (
-                        <div className="pl-6 space-y-2 pt-2 border-l-2 border-yellow-300 dark:border-yellow-700">
+                        <div className="pl-6 space-y-2 pt-2 border-l-2 border-gray-300 dark:border-gray-700">
                           {bankData ? (
                             <>
                               <CompactCopyField label="IBAN*" value={bankData.iban || ''} />
@@ -12656,9 +12656,9 @@ export default function PickPack() {
                                 value={activePackingOrder.orderId || ''} 
                               />
                               <div className="pt-2">
-                                <Alert className="bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700">
-                                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                  <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+                                <Alert className="bg-gray-50 dark:bg-gray-900/30 border-gray-300 dark:border-gray-700">
+                                  <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                  <AlertDescription className="text-xs text-gray-800 dark:text-gray-200">
                                     {t('importantBicIbanNote')}
                                   </AlertDescription>
                                 </Alert>
@@ -12677,19 +12677,19 @@ export default function PickPack() {
                   </div>
 
                   {/* Yellow Separator */}
-                  <Separator className="my-4 bg-yellow-300 h-1 dark:bg-yellow-600" />
+                  <Separator className="my-4 bg-gray-300 h-1 dark:bg-gray-500" />
 
                   {/* SECTION 2: Recipient Address (Empfänger) */}
-                  <div className="space-y-2 p-3 bg-white border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
+                  <div className="space-y-2 p-3 bg-white border-2 border-gray-300 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
+                      <MapPin className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                       <span className="text-base font-bold text-black">{t('recipientAddress')}</span>
                     </div>
 
                     {/* Frequent Buyer Badge - Only show for returning customers */}
                     {customerOrderCount && customerOrderCount.count > 1 && (
-                      <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded">
-                        <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400 fill-yellow-600" />
+                      <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-100 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded">
+                        <Star className="h-4 w-4 text-gray-600 dark:text-gray-400 fill-yellow-600" />
                         <span className="text-xs text-black font-medium">
                           {t('frequentBuyerInAddressbook')}
                         </span>
@@ -12714,13 +12714,13 @@ export default function PickPack() {
                   </div>
 
                   {/* Yellow Separator */}
-                  <Separator className="my-4 bg-yellow-300 h-1 dark:bg-yellow-600" />
+                  <Separator className="my-4 bg-gray-300 h-1 dark:bg-gray-500" />
 
                   {/* SECTION 3: Sender Address (Absender) */}
                   {senderData && (
-                    <div className="space-y-2 p-3 bg-white border-2 border-yellow-300 dark:border-yellow-700 rounded-lg">
+                    <div className="space-y-2 p-3 bg-white border-2 border-gray-300 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-yellow-700 dark:text-yellow-200" />
+                        <MapPin className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                         <span className="text-base font-bold text-black">Absender (Sender)</span>
                       </div>
 
@@ -12748,19 +12748,19 @@ export default function PickPack() {
                   {/* Multi-carton indicator + DHL Shipping Label */}
                   {cartons.length > 1 && showCOD && (
                     <>
-                      <Alert className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700">
-                        <Info className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                        <AlertDescription className="text-sm text-yellow-900">
+                      <Alert className="bg-gray-100 dark:bg-gray-900/30 border-gray-300 dark:border-gray-700">
+                        <Info className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+                        <AlertDescription className="text-sm text-gray-900">
                           <strong>Carton 1 of {cartons.length}:</strong> DHL Nachnahme (with COD)
                         </AlertDescription>
                       </Alert>
 
                       {/* DHL Shipping Label */}
                       <div className="space-y-2">
-                        <Separator className="bg-yellow-300 h-0.5 dark:bg-yellow-600" />
-                        <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded">
-                          <Truck className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                          <span className="text-sm font-bold text-yellow-900">{t('orders:dhlShippingLabel')}</span>
+                        <Separator className="bg-gray-300 h-0.5 dark:bg-gray-500" />
+                        <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-gray-900/30 border-l-4 border-gray-500 rounded">
+                          <Truck className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+                          <span className="text-sm font-bold text-gray-900">{t('orders:dhlShippingLabel')}</span>
                         </div>
                         {(() => {
                           const dhlCarton = cartons[0];
@@ -12773,11 +12773,11 @@ export default function PickPack() {
                               className={`border-2 rounded-lg p-3 transition-all ${
                                 isValid 
                                   ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                  : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700'
+                                  : 'bg-gray-100 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
                               }`}
                             >
                               <div className="flex items-center gap-2 mb-2">
-                                <div className="w-7 h-7 rounded-full bg-yellow-600 flex dark:bg-yellow-700 items-center justify-center flex-shrink-0">
+                                <div className="w-7 h-7 rounded-full bg-gray-500 flex dark:bg-gray-600 items-center justify-center flex-shrink-0">
                                   <span className="text-white font-bold text-sm">1</span>
                                 </div>
                                 <span className="text-sm font-semibold text-gray-900">Carton #1 (DHL)</span>
@@ -12957,7 +12957,7 @@ export default function PickPack() {
             );
 
             return (
-              <Card id="section-gls" className="shadow-sm border-2 border-sky-300 overflow-hidden">
+              <Card id="section-gls" className="shadow-sm border-2 border-gray-300 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-sky-600 dark:from-sky-700 to-sky-700 dark:to-sky-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
@@ -12966,15 +12966,15 @@ export default function PickPack() {
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 space-y-4">
                   {/* Separator */}
-                  <div className="flex items-center gap-2 px-2 py-1 bg-sky-50 border-l-4 border-sky-500 rounded">
-                    <Info className="h-4 w-4 text-sky-700" />
-                    <span className="text-sm text-sky-900">
+                  <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 border-l-4 border-gray-500 rounded">
+                    <Info className="h-4 w-4 text-gray-700" />
+                    <span className="text-sm text-gray-900">
                       {t('additionalCartonsViaGls')}
                     </span>
                   </div>
 
                   {totalGLSWeight > 0 && (
-                    <div className="text-sm text-sky-700 font-medium">
+                    <div className="text-sm text-gray-700 font-medium">
                       {t('totalWeightKg', { weight: totalGLSWeight.toFixed(2) })}
                     </div>
                   )}
@@ -12994,14 +12994,14 @@ export default function PickPack() {
                   <div className="space-y-3">
                     <button
                       onClick={() => setShippingDetailsExpanded(prev => ({ ...prev, gls: !prev.gls }))}
-                      className="w-full flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded hover:bg-sky-200 transition-colors"
+                      className="w-full flex items-center gap-2 px-2 py-1 bg-gray-100 border-l-4 border-gray-500 rounded hover:bg-gray-200 transition-colors"
                     >
-                      <MapPin className="h-4 w-4 text-sky-700" />
-                      <span className="text-sm font-bold text-sky-900">{t('orders:shippingDetails')}</span>
+                      <MapPin className="h-4 w-4 text-gray-700" />
+                      <span className="text-sm font-bold text-gray-900">{t('orders:shippingDetails')}</span>
                       {shippingDetailsExpanded.gls ? (
-                        <ChevronUp className="h-4 w-4 text-sky-700 ml-auto" />
+                        <ChevronUp className="h-4 w-4 text-gray-700 ml-auto" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-sky-700 ml-auto" />
+                        <ChevronDown className="h-4 w-4 text-gray-700 ml-auto" />
                       )}
                     </button>
                     {shippingDetailsExpanded.gls && (
@@ -13022,10 +13022,10 @@ export default function PickPack() {
 
                   {/* GLS Shipping Labels */}
                   <div className="space-y-2">
-                    <Separator className="bg-sky-300 h-0.5" />
-                    <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
-                      <Truck className="h-4 w-4 text-sky-700" />
-                      <span className="text-sm font-bold text-sky-900">{t('glsShippingLabelsCount', { count: glsCartons.length })}</span>
+                    <Separator className="bg-gray-300 h-0.5" />
+                    <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 border-l-4 border-gray-500 rounded">
+                      <Truck className="h-4 w-4 text-gray-700" />
+                      <span className="text-sm font-bold text-gray-900">{t('glsShippingLabelsCount', { count: glsCartons.length })}</span>
                     </div>
                     {glsCartons.map((carton) => {
                       const index = cartons.findIndex(c => c.id === carton.id);
@@ -13044,11 +13044,11 @@ export default function PickPack() {
                               ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700' 
                               : isValid 
                                 ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                : 'bg-sky-50 border-sky-200'
+                                : 'bg-gray-50 border-gray-200'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
                               <span className="text-white font-bold text-sm">{index + 1}</span>
                             </div>
                             <span className="text-sm font-semibold text-gray-900">{t('cartonNumberGls', { number: index + 1 })}</span>
@@ -13163,7 +13163,7 @@ export default function PickPack() {
                 } else if (hasDuplicates) {
                   return 'border-2 border-red-300 dark:border-red-700';
                 } else {
-                  return 'border-2 border-sky-300';
+                  return 'border-2 border-gray-300';
                 }
               }
               
@@ -13184,7 +13184,7 @@ export default function PickPack() {
                 } else if (hasDuplicates) {
                   return 'border-2 border-red-300 dark:border-red-700';
                 } else {
-                  return 'border-2 border-yellow-400 dark:border-yellow-700';
+                  return 'border-2 border-gray-400 dark:border-gray-700';
                 }
               }
               
@@ -13192,14 +13192,14 @@ export default function PickPack() {
               const isHandDelivery = activePackingOrder.shippingMethod?.toUpperCase() === 'HAND-DELIVERY';
               
               if (isPickup) return 'border-2 border-green-300 dark:border-green-700';
-              if (isHandDelivery) return 'border-2 border-blue-300 dark:border-blue-700';
+              if (isHandDelivery) return 'border-2 border-gray-300 dark:border-gray-700';
               
               return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
-                ? 'border-2 border-orange-300 dark:border-orange-700' 
+                ? 'border-2 border-gray-300 dark:border-gray-700' 
                 : isGLS
-                ? 'border-2 border-sky-300'
+                ? 'border-2 border-gray-300'
                 : isDHL
-                ? 'border-2 border-yellow-400 dark:border-yellow-700'
+                ? 'border-2 border-gray-400 dark:border-gray-700'
                 : 'border-2 border-stone-300';
             })()
           }`}>
@@ -13212,7 +13212,7 @@ export default function PickPack() {
                 const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
                 
                 if (isPickup) return 'bg-gradient-to-r from-green-600 dark:from-green-500 to-green-700 dark:to-green-600';
-                if (isHandDelivery) return 'bg-gradient-to-r from-blue-600 dark:from-blue-500 to-blue-700 dark:to-blue-600';
+                if (isHandDelivery) return 'bg-gradient-to-r from-blue-600 dark:from-gray-500 to-blue-700 dark:to-blue-600';
                 
                 if (isGLS && cartons.length > 0) {
                   // Check if all tracking numbers are filled and valid
@@ -13253,7 +13253,7 @@ export default function PickPack() {
                 }
                 
                 return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
-                  ? 'bg-gradient-to-r from-orange-600 dark:from-orange-500 to-orange-700 dark:to-orange-600'
+                  ? 'bg-gradient-to-r from-orange-600 dark:from-gray-500 to-orange-700 dark:to-orange-600'
                   : isGLS
                   ? 'bg-gradient-to-r from-sky-600 dark:from-sky-700 to-sky-700 dark:to-sky-800'
                   : isDHL
@@ -13351,25 +13351,25 @@ export default function PickPack() {
               {/* Hand-Delivery Section - Personal delivery */}
               {activePackingOrder.shippingMethod?.toUpperCase() === 'HAND-DELIVERY' && (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-cyan-50 dark:to-cyan-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg">
-                    <div className="h-12 w-12 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-50 dark:to-gray-900/30 border-2 border-gray-300 dark:border-gray-700 rounded-lg">
+                    <div className="h-12 w-12 rounded-full bg-gray-500 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
                       <Truck className="h-6 w-6 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-blue-800 dark:text-blue-200 text-lg">{t('orders:handDeliveryOrder', 'Hand Delivery')}</p>
-                      <p className="text-sm text-blue-600 dark:text-blue-400">{t('orders:noShippingLabelRequiredHandDelivery', 'No shipping label required - personal delivery to customer')}</p>
+                      <p className="font-bold text-gray-800 dark:text-gray-200 text-lg">{t('orders:handDeliveryOrder', 'Hand Delivery')}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('orders:noShippingLabelRequiredHandDelivery', 'No shipping label required - personal delivery to customer')}</p>
                     </div>
-                    <CheckCircle className="h-8 w-8 text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                    <CheckCircle className="h-8 w-8 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                   </div>
                   {/* Show delivery location if available */}
                   {activePackingOrder.handDeliveryLocation && (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">{t('orders:deliveryLocation', 'Delivery Location')}</p>
-                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">{activePackingOrder.handDeliveryLocation}</p>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('orders:deliveryLocation', 'Delivery Location')}</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{activePackingOrder.handDeliveryLocation}</p>
                     </div>
                   )}
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {t('orders:handDeliveryReadyNote', 'Once packing is complete, the order will be ready for personal delivery.')}
                     </p>
                   </div>
@@ -13394,7 +13394,7 @@ export default function PickPack() {
                   {isAwaitingPPLLabels ? (
                     <Button
                       variant="default"
-                      className="w-full bg-orange-600 dark:bg-orange-700 text-white font-semibold"
+                      className="w-full bg-gray-600 dark:bg-gray-700 text-white font-semibold"
                       disabled={true}
                       data-testid="button-creating-ppl-labels"
                     >
@@ -13407,8 +13407,8 @@ export default function PickPack() {
                         variant="default"
                         className={`w-full font-semibold transition-all ${
                           !hasShippingAddress 
-                            ? 'bg-yellow-50 dark:bg-yellow-900/300/50 hover:bg-yellow-50 dark:bg-yellow-900/300/50 text-gray-700 opacity-60 cursor-not-allowed' 
-                            : 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-600 text-white'
+                            ? 'bg-gray-100 dark:bg-gray-900/300/50 hover:bg-gray-100 dark:bg-gray-900/300/50 text-gray-700 opacity-60 cursor-not-allowed' 
+                            : 'bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white'
                         }`}
                         onClick={() => createPPLLabelsMutation.mutate(activePackingOrder.id)}
                         disabled={isButtonDisabled}
@@ -13426,7 +13426,7 @@ export default function PickPack() {
                       {activePackingOrder.pplBatchId && !activePackingOrder.pplLabelData && (
                         <Button
                           variant="outline"
-                          className="w-full border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-200 hover:bg-orange-50 dark:bg-orange-900/30"
+                          className="w-full border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-900/30"
                           onClick={() => retryPPLLabelMutation.mutate(activePackingOrder.id)}
                           disabled={retryPPLLabelMutation.isPending}
                           data-testid="button-retry-ppl-label"
@@ -13444,7 +13444,7 @@ export default function PickPack() {
                     // No labels exist AND multiple cartons - Show Generate All Labels button
                     <Button
                       variant="default"
-                      className="w-full bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-600 text-white font-semibold transition-all duration-200"
+                      className="w-full bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold transition-all duration-200"
                       onClick={async () => {
                         try {
                           if (cartons.length === 0) {
@@ -13531,7 +13531,7 @@ export default function PickPack() {
                     // Labels exist - Show Print All Labels button (blue to distinguish from Generate)
                     <Button
                       variant="default"
-                      className="w-full bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold transition-all duration-200"
+                      className="w-full bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold transition-all duration-200"
                       onClick={async () => {
                         try {
                           setIsPrintingAllLabels(true);
@@ -13677,13 +13677,13 @@ export default function PickPack() {
                               className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
                                 isCancelled
                                   ? 'bg-gradient-to-r from-gray-100 dark:from-gray-700 to-gray-200 dark:to-gray-800 border-2 border-gray-400 dark:border-gray-600 opacity-75'
-                                  : 'bg-gradient-to-r from-orange-50 dark:from-orange-900/30 to-red-50 border-2 border-orange-300 dark:border-orange-700 hover:shadow-md hover:scale-[1.01]'
+                                  : 'bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-100 border-2 border-gray-300 dark:border-gray-700 hover:shadow-md hover:scale-[1.01]'
                               }`}
                               style={{ animationDelay: `${index * 50}ms` }}
                               data-testid={`ppl-shipment-card-${index + 1}`}
                             >
                               <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
-                                isCancelled ? 'bg-gray-500 dark:bg-gray-600' : 'bg-orange-600 dark:bg-orange-700 shadow-lg'
+                                isCancelled ? 'bg-gray-500 dark:bg-gray-600' : 'bg-gray-600 dark:bg-gray-700 shadow-lg'
                               }`}>
                                 <span className="text-white font-bold text-sm">{index + 1}</span>
                               </div>
@@ -13710,7 +13710,7 @@ export default function PickPack() {
                                 className={`h-8 text-xs flex-shrink-0 ${
                                   label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
                                     ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white border-green-600'
-                                    : 'hover:bg-orange-50 dark:bg-orange-900/30 hover:text-orange-700 dark:text-orange-200 hover:border-orange-300 dark:border-orange-700'
+                                    : 'hover:bg-gray-50 dark:bg-gray-900/30 hover:text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:border-gray-700'
                                 }`}
                                 disabled={isCancelled}
                                 onClick={async () => {
@@ -13813,13 +13813,13 @@ export default function PickPack() {
                                   className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
                                     isCancelled
                                       ? 'bg-gradient-to-r from-gray-100 dark:from-gray-700 to-gray-200 dark:to-gray-800 border-2 border-gray-400 dark:border-gray-600 opacity-75'
-                                      : 'bg-gradient-to-r from-orange-50 dark:from-orange-900/30 to-red-50 border-2 border-orange-300 dark:border-orange-700 hover:shadow-md hover:scale-[1.01]'
+                                      : 'bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-100 border-2 border-gray-300 dark:border-gray-700 hover:shadow-md hover:scale-[1.01]'
                                   }`}
                                   style={{ animationDelay: `${index * 50}ms` }}
                                   data-testid={`ppl-shipment-card-${index + 1}`}
                                 >
                                   <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
-                                    isCancelled ? 'bg-gray-500 dark:bg-gray-600' : 'bg-orange-600 dark:bg-orange-700 shadow-lg'
+                                    isCancelled ? 'bg-gray-500 dark:bg-gray-600' : 'bg-gray-600 dark:bg-gray-700 shadow-lg'
                                   }`}>
                                     <span className="text-white font-bold text-sm">{index + 1}</span>
                                   </div>
@@ -13888,7 +13888,7 @@ export default function PickPack() {
                                                   btn.classList.remove('opacity-50', 'cursor-not-allowed');
                                                 }
                                               }}
-                                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:text-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                               title={t('orders:refreshTrackingFromPPL')}
                                               data-testid="button-refresh-ppl-tracking"
                                             >
@@ -13935,7 +13935,7 @@ export default function PickPack() {
                                                   }
                                                 }
                                               }}
-                                              className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:text-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                               title={t('updateTrackingNumberFromLabelBarcode')}
                                               data-testid="button-edit-ppl-tracking"
                                             >
@@ -13958,7 +13958,7 @@ export default function PickPack() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="h-8 text-xs flex-shrink-0 bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 text-orange-700 dark:text-orange-200 border-orange-300 dark:border-orange-700 transition-all duration-200"
+                                          className="h-8 text-xs flex-shrink-0 bg-gray-100 dark:bg-gray-900/30 hover:bg-gray-200 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 transition-all duration-200"
                                           onClick={async () => {
                                             try {
                                               setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: true }));
@@ -14039,7 +14039,7 @@ export default function PickPack() {
                                           className={`h-8 text-xs flex-shrink-0 ${
                                             label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
                                               ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white border-green-600'
-                                              : 'hover:bg-orange-50 dark:bg-orange-900/30 hover:text-orange-700 dark:text-orange-200 hover:border-orange-300 dark:border-orange-700'
+                                              : 'hover:bg-gray-50 dark:bg-gray-900/30 hover:text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:border-gray-700'
                                           }`}
                                           disabled={isCancelled}
                                           onClick={async () => {
@@ -14188,10 +14188,10 @@ export default function PickPack() {
                             {isMultiCartonShipment && hasLabelsWithPDF && !isCancelled && (() => {
                               const allLabelsPrinted = shipmentLabelsFromDB.some(l => l.trackingNumbers?.[0] && printedPPLLabels.has(l.trackingNumbers[0]));
                               return (
-                              <div className={`mt-4 p-4 bg-gradient-to-r ${allLabelsPrinted ? 'from-green-100 to-emerald-50 dark:from-green-900/40 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-600' : 'from-orange-100 to-amber-50 dark:from-orange-900/40 dark:to-amber-900/30 border-2 border-orange-400 dark:border-orange-600'} rounded-xl`}>
+                              <div className={`mt-4 p-4 bg-gradient-to-r ${allLabelsPrinted ? 'from-green-100 to-emerald-50 dark:from-green-900/40 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-600' : 'from-orange-100 to-gray-50 dark:from-gray-900/40 dark:to-gray-900/30 border-2 border-gray-400 dark:border-gray-600'} rounded-xl`}>
                                 <Button
                                   size="lg"
-                                  className={`w-full h-14 text-lg font-bold ${allLabelsPrinted ? 'bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600' : 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600'} text-white shadow-lg`}
+                                  className={`w-full h-14 text-lg font-bold ${allLabelsPrinted ? 'bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600' : 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600'} text-white shadow-lg`}
                                   onClick={async () => {
                                     try {
                                       // Find the first label with PDF data (all labels in batch share the same PDF)
@@ -14270,13 +14270,13 @@ export default function PickPack() {
                                   className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
                                     isCancelled
                                       ? 'bg-gradient-to-r from-gray-100 dark:from-gray-700 to-gray-200 dark:to-gray-800 border-2 border-gray-400 dark:border-gray-600 opacity-75'
-                                      : 'bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-yellow-50 dark:to-yellow-900/30 border-2 border-amber-400 dark:border-amber-700 hover:shadow-md hover:scale-[1.01]'
+                                      : 'bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-yellow-50 dark:to-yellow-900/30 border-2 border-gray-400 dark:border-gray-700 hover:shadow-md hover:scale-[1.01]'
                                   }`}
                                   style={{ animationDelay: `${displayIndex * 50}ms` }}
                                   data-testid={`ppl-orphaned-label-${orphanIndex + 1}`}
                                 >
                                   <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
-                                    isCancelled ? 'bg-gray-500 dark:bg-gray-600' : 'bg-amber-600 dark:bg-amber-700 shadow-lg'
+                                    isCancelled ? 'bg-gray-500 dark:bg-gray-600' : 'bg-gray-600 dark:bg-gray-700 shadow-lg'
                                   }`}>
                                     <span className="text-white font-bold text-sm">{labelNumber}</span>
                                   </div>
@@ -14285,7 +14285,7 @@ export default function PickPack() {
                                       <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
                                         CZ-PPL{label.labelData?.hasCOD || (activePackingOrder.codAmount && parseFloat(String(activePackingOrder.codAmount)) > 0) ? '-DOB' : ''} #{labelNumber}
                                       </p>
-                                      <Badge variant="outline" className="text-xs px-2 py-0 flex-shrink-0 border-amber-500 text-amber-700 dark:text-amber-200">
+                                      <Badge variant="outline" className="text-xs px-2 py-0 flex-shrink-0 border-gray-500 text-gray-700 dark:text-gray-200">
                                         {t('noCarton')}
                                       </Badge>
                                       {isCancelled && (
@@ -14311,7 +14311,7 @@ export default function PickPack() {
                                       className={`h-8 text-xs flex-shrink-0 ${
                                         label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
                                           ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white border-green-600'
-                                          : 'hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:bg-amber-900/30 hover:text-amber-700 dark:text-amber-200 hover:border-amber-300 dark:border-amber-700'
+                                          : 'hover:bg-gray-50 dark:hover:bg-gray-900/30 dark:bg-gray-900/30 hover:text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:border-gray-700'
                                       }`}
                                       onClick={async () => {
                                         try {
@@ -14495,8 +14495,8 @@ export default function PickPack() {
                         variant="outline"
                         className={`w-full border-2 border-dashed ${
                           hasCOD 
-                            ? 'border-amber-500 text-amber-700 dark:text-amber-200 hover:bg-amber-50 dark:bg-amber-900/30 hover:border-amber-400 dark:border-amber-600'
-                            : 'border-orange-400 text-orange-700 dark:text-orange-200 hover:bg-orange-50 dark:bg-orange-900/30 hover:border-orange-300 dark:border-orange-700'
+                            ? 'border-gray-500 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-900/30 hover:border-gray-400 dark:border-gray-600'
+                            : 'border-gray-400 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-900/30 hover:border-gray-300 dark:border-gray-700'
                         }`}
                         onClick={async () => {
                           if (hasCOD && cartons.length > 0) {
@@ -14613,7 +14613,7 @@ export default function PickPack() {
                                 }
                               }}
                               className={`font-mono text-[16px] pr-10 ${
-                                isDuplicate ? 'border-red-400 dark:border-red-700 focus:border-red-500' : 
+                                isDuplicate ? 'border-red-400 dark:border-red-700 focus:border-gray-500' : 
                                 isValid ? 'border-green-400 dark:border-green-700 focus:border-green-500' : ''
                               }`}
                               data-testid={`input-gls-tracking-carton-${index + 1}`}
@@ -14718,13 +14718,13 @@ export default function PickPack() {
                             ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700' 
                             : isValid 
                             ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                            : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700'
+                            : 'bg-gray-100 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
                         }`}
                         data-testid={`dhl-carton-card-${index + 1}`}
                       >
                         {/* Carton Header */}
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-7 h-7 rounded-full bg-yellow-50 dark:bg-yellow-900/300 flex items-center justify-center flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-900/300 flex items-center justify-center flex-shrink-0">
                             <span className="text-black font-bold text-sm">{carton.cartonNumber}</span>
                           </div>
                           <span className="text-sm font-semibold text-black">Carton #{carton.cartonNumber}</span>
@@ -14770,7 +14770,7 @@ export default function PickPack() {
                                 }
                               }}
                               className={`font-mono text-[16px] pr-10 ${
-                                isDuplicate ? 'border-red-400 dark:border-red-700 focus:border-red-500' : 
+                                isDuplicate ? 'border-red-400 dark:border-red-700 focus:border-gray-500' : 
                                 isValid ? 'border-green-400 dark:border-green-700 focus:border-green-500' : ''
                               }`}
                               data-testid={`input-dhl-tracking-carton-${index + 1}`}
@@ -14839,9 +14839,9 @@ export default function PickPack() {
                         <>
                           {/* DHL Section */}
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded">
-                              <Truck className="h-4 w-4 text-yellow-700 dark:text-yellow-200" />
-                              <span className="text-sm font-bold text-yellow-900">DHL Nachnahme</span>
+                            <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-gray-900/30 border-l-4 border-gray-500 rounded">
+                              <Truck className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+                              <span className="text-sm font-bold text-gray-900">DHL Nachnahme</span>
                             </div>
                             {(() => {
                               const carton = dhlCarton;
@@ -14862,12 +14862,12 @@ export default function PickPack() {
                                       ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700' 
                                       : isValid 
                                       ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                      : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700'
+                                      : 'bg-gray-100 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
                                   }`}
                                   data-testid={`carton-card-dhl-1`}
                                 >
                                   <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-7 h-7 rounded-full bg-yellow-600 flex dark:bg-yellow-700 items-center justify-center flex-shrink-0">
+                                    <div className="w-7 h-7 rounded-full bg-gray-500 flex dark:bg-gray-600 items-center justify-center flex-shrink-0">
                                       <span className="text-white font-bold text-sm">1</span>
                                     </div>
                                     <span className="text-sm font-semibold text-gray-900">Carton #1 (DHL)</span>
@@ -14942,7 +14942,7 @@ export default function PickPack() {
                             return availableCartonsForGLS.length > 0 && (
                               <Button
                                 variant="outline"
-                                className="w-full border-sky-400 text-sky-700 hover:bg-sky-50 font-medium mt-3"
+                                className="w-full border-gray-400 text-gray-700 hover:bg-gray-50 font-medium mt-3"
                                 onClick={() => {
                                   // Add next available carton
                                   const nextCarton = availableCartonsForGLS[0];
@@ -14959,9 +14959,9 @@ export default function PickPack() {
                           {/* GLS Section */}
                           {glsCartons.length > 0 && (
                             <div className="space-y-2 mt-4">
-                              <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
-                                <Truck className="h-4 w-4 text-sky-700" />
-                                <span className="text-sm font-bold text-sky-900">GLS Shipping Labels ({glsCartons.length})</span>
+                              <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 border-l-4 border-gray-500 rounded">
+                                <Truck className="h-4 w-4 text-gray-700" />
+                                <span className="text-sm font-bold text-gray-900">GLS Shipping Labels ({glsCartons.length})</span>
                               </div>
                               {glsCartons.map((carton) => {
                                 const index = cartons.findIndex(c => c.id === carton.id);
@@ -14982,12 +14982,12 @@ export default function PickPack() {
                                         ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700' 
                                         : isValid 
                                         ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                                        : 'bg-sky-50 border-sky-200'
+                                        : 'bg-gray-50 border-gray-200'
                                     }`}
                                     data-testid={`carton-card-gls-${index + 1}`}
                                   >
                                     <div className="flex items-center gap-2 mb-2">
-                                      <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
+                                      <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
                                         <span className="text-white font-bold text-sm">{index + 1}</span>
                                       </div>
                                       <span className="text-sm font-semibold text-gray-900">{t('cartonNumberGls', { number: index + 1 })}</span>
@@ -15078,10 +15078,10 @@ export default function PickPack() {
                       {shippingLabels.map((label) => (
                         <div 
                           key={label.id}
-                          className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-cyan-50 dark:to-cyan-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg"
+                          className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-50 dark:to-gray-900/30 border-2 border-gray-300 dark:border-gray-700 rounded-lg"
                           data-testid={`shipping-label-${label.labelNumber}`}
                         >
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center dark:bg-blue-700 justify-center">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-600 flex items-center dark:bg-gray-700 justify-center">
                             <span className="text-white font-bold text-sm">{label.labelNumber}</span>
                           </div>
                           <div className="flex-1">
@@ -15091,7 +15091,7 @@ export default function PickPack() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-xs flex-shrink-0 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-200 dark:text-blue-100 dark:text-blue-200 dark:text-blue-100 hover:border-blue-300 dark:hover:border-blue-700 dark:border-blue-700"
+                            className="h-8 text-xs flex-shrink-0 hover:bg-gray-50 dark:hover:bg-gray-900/30 dark:bg-gray-900/30 hover:text-gray-700 dark:hover:text-gray-200 dark:text-gray-100 dark:text-gray-200 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-700 dark:border-gray-700"
                             onClick={() => {
                               window.print();
                             }}
@@ -15123,7 +15123,7 @@ export default function PickPack() {
                   {/* Add Label Button */}
                   <Button
                     variant="outline"
-                    className="w-full border-2 border-dashed border-blue-400 dark:border-blue-700 text-blue-700 dark:text-blue-200 dark:text-blue-100 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 dark:border-blue-700"
+                    className="w-full border-2 border-dashed border-gray-400 dark:border-gray-700 text-gray-700 dark:text-gray-200 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-900/30 dark:bg-gray-900/30 hover:border-gray-300 dark:hover:border-gray-700 dark:border-gray-700"
                     onClick={() => {
                       const nextNumber = shippingLabels.length + 1;
                       setShippingLabels(prev => [
@@ -15139,15 +15139,15 @@ export default function PickPack() {
 
                   {/* Summary */}
                   {shippingLabels.length > 0 && (
-                    <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg">
+                    <div className="bg-gray-100 dark:bg-gray-900/30 p-3 rounded-lg">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-semibold text-blue-800 dark:text-blue-200 dark:text-blue-100">Total Labels:</span>
-                        <span className="font-bold text-blue-900">{shippingLabels.length}</span>
+                        <span className="font-semibold text-gray-800 dark:text-gray-200 dark:text-gray-100">Total Labels:</span>
+                        <span className="font-bold text-gray-900">{shippingLabels.length}</span>
                       </div>
                       {cartons.length > 0 && shippingLabels.length !== cartons.length && (
-                        <Alert className="mt-2 bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700">
-                          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                          <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+                        <Alert className="mt-2 bg-gray-50 dark:bg-gray-900/30 border-gray-300 dark:border-gray-700">
+                          <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                          <AlertDescription className="text-xs text-gray-800 dark:text-gray-200">
                             Label count ({shippingLabels.length}) differs from carton count ({cartons.length})
                           </AlertDescription>
                         </Alert>
@@ -15372,7 +15372,7 @@ export default function PickPack() {
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white cursor-wait'
                   : canCompletePacking
                   ? 'bg-gradient-to-r from-green-600 dark:from-green-500 to-emerald-600 dark:to-emerald-500 hover:from-green-700 dark:hover:from-green-600 hover:to-emerald-700 dark:hover:to-emerald-600 text-white'
-                  : 'bg-yellow-50 dark:bg-yellow-900/300 hover:bg-yellow-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-900/300 hover:bg-gray-500 text-white'
               }`}
               data-testid="button-complete-packing"
             >
@@ -15410,7 +15410,7 @@ export default function PickPack() {
                   className="w-full h-10 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600"
                   data-testid="button-force-finish-packing"
                 >
-                  <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                  <AlertTriangle className="h-4 w-4 mr-2 text-gray-500" />
                   {t('forceFinishPacking')}
                 </Button>
               </div>
@@ -15422,9 +15422,9 @@ export default function PickPack() {
       
       {/* Packing Completion Modal - Overlays on top for final confirmation */}
       <Dialog open={showPackingCompletionModal} onOpenChange={setShowPackingCompletionModal}>
-        <DialogContent className="max-w-lg sm:max-w-xl p-0 gap-0 overflow-hidden bg-gradient-to-br from-purple-50 dark:from-purple-900/40 to-indigo-50 dark:to-indigo-900/40 border-0 shadow-2xl">
+        <DialogContent className="max-w-lg sm:max-w-xl p-0 gap-0 overflow-hidden bg-gradient-to-br from-gray-50 dark:from-gray-900/40 to-gray-100 dark:to-gray-900/40 border-0 shadow-2xl">
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-4 sm:p-6 text-white text-center relative">
+          <div className="bg-gradient-to-r from-gray-500 to-gray-1000 p-4 sm:p-6 text-white text-center relative">
             <Button
               variant="ghost"
               size="icon"
@@ -15437,7 +15437,7 @@ export default function PickPack() {
               <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
             </div>
             <h2 className="text-xl sm:text-2xl font-black">🎉 {t('packingComplete')}</h2>
-            <p className="text-2xl sm:text-3xl font-black mt-2 text-yellow-300 drop-shadow-lg">
+            <p className="text-2xl sm:text-3xl font-black mt-2 text-gray-300 drop-shadow-lg">
               {activePackingOrder.customerName}
             </p>
             <p className="text-sm sm:text-base text-white/90 mt-1">
@@ -15451,15 +15451,15 @@ export default function PickPack() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                 <div className="p-2 sm:p-0">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
-                  <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{formatTimer(packingTimer)}</p>
+                  <p className="text-xl font-bold text-gray-600 dark:text-gray-400">{formatTimer(packingTimer)}</p>
                 </div>
                 <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('cartons')}</p>
-                  <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{cartons.length}</p>
+                  <p className="text-xl font-bold text-gray-600 dark:text-gray-400">{cartons.length}</p>
                 </div>
                 <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('weight')}</p>
-                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  <p className="text-xl font-bold text-gray-600 dark:text-gray-400">
                     {cartons.length > 0 
                       ? `${cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(2)} kg`
                       : '— kg'}
@@ -15700,7 +15700,7 @@ export default function PickPack() {
       <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden">
         {/* Header - Ultra Compact for Mobile */}
-        <div className="bg-gradient-to-r from-blue-700 dark:from-blue-900 to-blue-800 dark:to-blue-950 text-white shadow-lg z-20">
+        <div className="bg-gradient-to-r from-blue-700 dark:from-gray-900 to-blue-800 dark:to-blue-950 text-white shadow-lg z-20">
           <div className="px-3 lg:px-6 py-2 lg:py-4">
             {/* Mobile Layout - Ultra Compact */}
             <div className="lg:hidden">
@@ -15721,7 +15721,7 @@ export default function PickPack() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold truncate">{activePickingOrder.orderId}</div>
-                  <div className="text-sm text-yellow-300 truncate font-black drop-shadow-md">{activePickingOrder.customerName}</div>
+                  <div className="text-sm text-gray-300 truncate font-black drop-shadow-md">{activePickingOrder.customerName}</div>
                 </div>
                 
                 <div className="flex items-center gap-1.5">
@@ -15802,7 +15802,7 @@ export default function PickPack() {
                 </div>
                 
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-blue-100 dark:text-blue-50">{t('progress')}</span>
+                  <span className="text-gray-100 dark:text-gray-50">{t('progress')}</span>
                   <span className="font-bold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
@@ -15865,24 +15865,24 @@ export default function PickPack() {
                       <Badge 
                         className={`
                           ${activePickingOrder.priority === 'high' ? 'bg-red-600 dark:bg-red-700 text-white' : ''}
-                          ${activePickingOrder.priority === 'medium' ? 'bg-amber-600 dark:bg-amber-700 text-white' : ''}
+                          ${activePickingOrder.priority === 'medium' ? 'bg-gray-600 dark:bg-gray-700 text-white' : ''}
                           ${activePickingOrder.priority === 'low' ? 'bg-green-600 dark:bg-green-700 text-white' : ''}
                         `}
                       >
                         {activePickingOrder.priority.toUpperCase()}
                       </Badge>
                     </div>
-                    <p className="text-xl font-black text-yellow-300 mt-1 drop-shadow-md">{activePickingOrder.customerName}</p>
+                    <p className="text-xl font-black text-gray-300 mt-1 drop-shadow-md">{activePickingOrder.customerName}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <div className="flex items-center gap-2">
-                      <Timer className="h-5 w-5 text-blue-200 dark:text-blue-100" />
+                      <Timer className="h-5 w-5 text-gray-200 dark:text-gray-100" />
                       <span className="font-mono text-2xl font-bold" data-picking-timer>{formatTimer(pickingTimer)}</span>
                     </div>
-                    <p className="text-xs text-blue-100 dark:text-blue-50 mt-1">{t('elapsedTime')}</p>
+                    <p className="text-xs text-gray-100 dark:text-gray-50 mt-1">{t('elapsedTime')}</p>
                   </div>
                   
                   <Button
@@ -15903,7 +15903,7 @@ export default function PickPack() {
                   
                   <Button
                     size="sm"
-                    className={`h-10 ${isTimerRunning ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'} text-white border-0 shadow-md`}
+                    className={`h-10 ${isTimerRunning ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-500 hover:bg-green-600'} text-white border-0 shadow-md`}
                     onClick={() => setIsTimerRunning(!isTimerRunning)}
                   >
                     {isTimerRunning ? (
@@ -15915,7 +15915,7 @@ export default function PickPack() {
                   
                   <Button
                     size="sm"
-                    className="h-10 bg-indigo-500 hover:bg-indigo-600 text-white border-0 shadow-md"
+                    className="h-10 bg-gray-500 hover:bg-gray-600 text-white border-0 shadow-md"
                     onClick={() => setPickingViewMode(pickingViewMode === 'card' ? 'list' : 'card')}
                     title={pickingViewMode === 'card' ? t('switchToListView') : t('switchToCardView')}
                     data-testid="button-toggle-view-mode-desktop"
@@ -15953,7 +15953,7 @@ export default function PickPack() {
                 </div>
                 
                 <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-blue-100 dark:text-blue-50">{t('progress')}</span>
+                  <span className="text-gray-100 dark:text-gray-50">{t('progress')}</span>
                   <span className="font-semibold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
@@ -16007,10 +16007,10 @@ export default function PickPack() {
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-4">
-                    <Badge className="bg-white text-blue-600 dark:text-blue-400 font-bold px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm">
+                    <Badge className="bg-white text-gray-600 dark:text-gray-400 font-bold px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm">
                       {activePickingOrder.pickedItems}/{activePickingOrder.totalItems} Picked
                     </Badge>
-                    <div className="text-xs sm:text-sm text-blue-100 dark:text-blue-50">
+                    <div className="text-xs sm:text-sm text-gray-100 dark:text-gray-50">
                       Order: {activePickingOrder.orderId}
                     </div>
                   </div>
@@ -16068,8 +16068,8 @@ export default function PickPack() {
                           key={item.id} 
                           className={`transition-all ${
                             isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
-                            isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/30 to-amber-50 dark:to-amber-900/30 border-2 border-yellow-400 dark:border-yellow-700 shadow-md' :
-                            isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-lg' : 
+                            isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/30 to-gray-50 dark:to-gray-900/30 border-2 border-gray-400 dark:border-gray-700 shadow-md' :
+                            isCurrent ? 'bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-100 dark:to-gray-900/30 border-2 border-gray-500 shadow-lg' : 
                             'bg-white dark:bg-slate-800 hover:shadow-md border-2 border-gray-200 dark:border-slate-700'
                           }`}
                           data-testid={`item-overview-${item.id}`}
@@ -16093,7 +16093,7 @@ export default function PickPack() {
                                     <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                                   </div>
                                 ) : (
-                                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 dark:border-gray-500 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 dark:text-gray-200 hover:bg-blue-600 hover:text-white transition-all shadow-md">
+                                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 dark:border-gray-500 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 dark:text-gray-200 hover:bg-gray-600 hover:text-white transition-all shadow-md">
                                     {itemIndex}
                                   </div>
                                 )}
@@ -16114,7 +16114,7 @@ export default function PickPack() {
                                 {/* Show location badge for route visibility */}
                                 {itemLocation && (
                                   <div className="flex items-center gap-1 mt-1">
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400 border-gray-300 dark:border-gray-700">
                                       <MapPin className="h-2.5 w-2.5 mr-0.5" />
                                       {itemLocation}
                                     </Badge>
@@ -16125,7 +16125,7 @@ export default function PickPack() {
                                     {item.pickedQuantity}/{item.quantity}
                                   </div>
                                   {item.quantity > 1 && (
-                                    <Badge className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                    <Badge className="text-xs bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400">
                                       x{item.quantity}
                                     </Badge>
                                   )}
@@ -16155,8 +16155,8 @@ export default function PickPack() {
                         key={item.id} 
                         className={`transition-all ${
                           isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
-                          isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/30 to-amber-50 dark:to-amber-900/30 border-2 border-yellow-400 dark:border-yellow-700 shadow-md' :
-                          isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-lg' : 
+                          isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/30 to-gray-50 dark:to-gray-900/30 border-2 border-gray-400 dark:border-gray-700 shadow-md' :
+                          isCurrent ? 'bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-100 dark:to-gray-900/30 border-2 border-gray-500 shadow-lg' : 
                           'bg-white hover:shadow-md border-2 border-gray-200'
                         }`}
                         data-testid={`item-overview-${item.id}`}
@@ -16184,11 +16184,11 @@ export default function PickPack() {
                                   <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                                 </div>
                               ) : isPartiallyPicked ? (
-                                <div className="bg-yellow-50 dark:bg-yellow-900/300 rounded-full p-2 shadow-lg hover:bg-yellow-600">
+                                <div className="bg-gray-100 dark:bg-gray-900/300 rounded-full p-2 shadow-lg hover:bg-gray-500">
                                   <Clock className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                                 </div>
                               ) : (
-                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-blue-600 dark:hover:bg-blue-700 dark:bg-blue-900/30 hover:text-white hover:border-blue-600 dark:border-blue-500 transition-all shadow-md">
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-gray-600 dark:hover:bg-gray-700 dark:bg-gray-900/30 hover:text-white hover:border-gray-600 dark:border-gray-500 transition-all shadow-md">
                                   {index + 1}
                                 </div>
                               )}
@@ -16213,8 +16213,8 @@ export default function PickPack() {
                             <div className="flex-1 min-w-0">
                               <p className={`font-bold text-sm sm:text-base leading-tight ${
                                 isPicked ? 'text-green-700 dark:text-green-200' : 
-                                isPartiallyPicked ? 'text-yellow-700 dark:text-yellow-200' :
-                                isCurrent ? 'text-blue-700 dark:text-blue-200 dark:text-blue-100' : 'text-gray-900'
+                                isPartiallyPicked ? 'text-gray-700 dark:text-gray-200' :
+                                isCurrent ? 'text-gray-700 dark:text-gray-200 dark:text-gray-100' : 'text-gray-900'
                               }`}>
                                 {item.productName}
                               </p>
@@ -16223,14 +16223,14 @@ export default function PickPack() {
                               <div className="flex items-center gap-2 mt-2">
                                 <div className={`text-xl sm:text-2xl font-black ${
                                   isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
-                                  isPartiallyPicked ? 'text-yellow-600 dark:text-yellow-400' :
+                                  isPartiallyPicked ? 'text-gray-600 dark:text-gray-400' :
                                   'text-gray-600'
                                 }`}>
                                   {item.pickedQuantity}/{item.quantity}
                                 </div>
                                 <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
                                   isPicked ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200' :
-                                  isPartiallyPicked ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200' :
+                                  isPartiallyPicked ? 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-200' :
                                   'bg-gray-100 text-gray-600'
                                 }`}>
                                   {isPicked ? t('complete') : isPartiallyPicked ? t('inProgress') : t('notStarted')}
@@ -16242,8 +16242,8 @@ export default function PickPack() {
                                 <div 
                                   className={`h-full transition-all duration-300 ${
                                     isPicked ? 'bg-green-600 dark:bg-green-500' : 
-                                    isPartiallyPicked ? 'bg-yellow-500 dark:bg-yellow-400' : 
-                                    'bg-blue-600 dark:bg-blue-500'
+                                    isPartiallyPicked ? 'bg-gray-1000 dark:bg-gray-400' : 
+                                    'bg-gray-600 dark:bg-gray-500'
                                   }`}
                                   style={{ width: `${(item.pickedQuantity / item.quantity) * 100}%` }}
                                 />
@@ -16279,9 +16279,9 @@ export default function PickPack() {
                           {/* Expandable Details Section */}
                           {expandedOverviewItems.has(item.id) && (
                             <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
-                              <div className="bg-gradient-to-br from-orange-50 dark:from-orange-900/30 to-orange-100 dark:to-orange-900/30 rounded-lg p-4 border-2 border-orange-300 dark:border-orange-700 shadow-sm">
-                                <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
-                                <p className="text-2xl font-mono font-black text-orange-600 dark:text-orange-400 break-all">
+                              <div className="bg-gradient-to-br from-gray-50 dark:from-gray-900/30 to-orange-100 dark:to-orange-900/30 rounded-lg p-4 border-2 border-gray-300 dark:border-gray-700 shadow-sm">
+                                <p className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
+                                <p className="text-2xl font-mono font-black text-gray-600 dark:text-gray-400 break-all">
                                   <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                 </p>
                               </div>
@@ -16337,7 +16337,7 @@ export default function PickPack() {
                 
                 {/* Continue Picking Button */}
                 <Button 
-                  className="w-full h-12 text-sm sm:text-base font-bold bg-gradient-to-r from-blue-600 dark:from-blue-500 to-indigo-600 dark:to-indigo-500 hover:from-blue-700 dark:hover:from-blue-600 hover:to-indigo-700 dark:hover:to-indigo-600 active:from-blue-800 dark:active:from-blue-700 active:to-indigo-800 dark:active:to-indigo-700 text-white touch-manipulation"
+                  className="w-full h-12 text-sm sm:text-base font-bold bg-gradient-to-r from-blue-600 dark:from-gray-500 to-indigo-600 dark:to-gray-1000 hover:from-blue-700 dark:hover:from-blue-600 hover:to-indigo-700 dark:hover:to-indigo-600 active:from-blue-800 dark:active:from-blue-700 active:to-indigo-800 dark:active:to-indigo-700 text-white touch-manipulation"
                   onClick={() => setShowItemOverviewModal(false)}
                   data-testid="button-close-overview-bottom"
                 >
@@ -16404,7 +16404,7 @@ export default function PickPack() {
                                   className="max-w-full max-h-full w-auto h-auto object-contain"
                                 />
                               ) : currentGroup.type === 'service' ? (
-                                <Wrench className="h-24 w-24 sm:h-32 sm:w-32 text-purple-300 dark:text-purple-500" />
+                                <Wrench className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300 dark:text-gray-500" />
                               ) : (
                                 <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300 dark:text-gray-600" />
                               )}
@@ -16420,19 +16420,19 @@ export default function PickPack() {
                         
                         {/* Consolidated Service Card - All services in one view */}
                         {currentGroup.type === 'service' ? (
-                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-purple-100 dark:to-purple-900/50 rounded-xl border-2 border-purple-300 dark:border-purple-700 overflow-hidden">
+                          <div className="bg-gradient-to-br from-gray-50 dark:from-gray-900/30 to-purple-100 dark:to-gray-900/50 rounded-xl border-2 border-gray-300 dark:border-gray-700 overflow-hidden">
                             {/* Service Header */}
-                            <div className="p-4 bg-purple-100 dark:bg-purple-900/50 border-b border-purple-200 dark:border-purple-700">
+                            <div className="p-4 bg-gray-100 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                                  <span className="font-bold text-purple-900 dark:text-purple-200 text-lg">{t('serviceBill') || 'Service Bill'}</span>
+                                  <Receipt className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                  <span className="font-bold text-gray-900 dark:text-gray-200 text-lg">{t('serviceBill') || 'Service Bill'}</span>
                                 </div>
-                                <Badge className={`px-3 py-1 text-sm font-bold ${currentGroup.allPicked ? 'bg-green-500 text-white' : 'bg-purple-600 text-white'}`}>
+                                <Badge className={`px-3 py-1 text-sm font-bold ${currentGroup.allPicked ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'}`}>
                                   {currentGroup.pickedQuantity}/{currentGroup.totalQuantity}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                 {t('orderForCustomer') || 'Order'}: <span className="font-bold">{activePickingOrder.customerName}</span>
                               </p>
                             </div>
@@ -16440,7 +16440,7 @@ export default function PickPack() {
                             {/* Service Items List - No individual picking needed */}
                             <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
                               {currentGroup.items.map((serviceItem, idx) => (
-                                <div key={serviceItem.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                                <div key={serviceItem.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1 min-w-0">
                                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{serviceItem.productName}</p>
@@ -16449,7 +16449,7 @@ export default function PickPack() {
                                       )}
                                     </div>
                                     <div className="flex items-center gap-2 ml-2">
-                                      <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{serviceItem.quantity}x</span>
+                                      <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{serviceItem.quantity}x</span>
                                       <span className="text-sm font-mono text-gray-600 dark:text-gray-400">{Number(serviceItem.price || 0).toFixed(2)}</span>
                                     </div>
                                   </div>
@@ -16459,7 +16459,7 @@ export default function PickPack() {
                             
                             {/* Complete All Services Button */}
                             {!currentGroup.allPicked && (
-                              <div className="p-4 border-t border-purple-200 dark:border-purple-700">
+                              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                                 <Button
                                   size="lg"
                                   className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
@@ -16510,14 +16510,14 @@ export default function PickPack() {
                             {/* Color range and variant info */}
                             <div className="flex gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap items-center">
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-blue-600 dark:text-blue-400">({currentGroup.totalQuantity}x)</span>
+                                <span className="font-bold text-gray-600 dark:text-gray-400">({currentGroup.totalQuantity}x)</span>
                                 {currentGroup.variantCount > 1 && currentGroup.firstColorNumber && currentGroup.lastColorNumber && (
-                                  <span className="text-purple-600 dark:text-purple-400 font-mono font-medium">
+                                  <span className="text-gray-600 dark:text-gray-400 font-mono font-medium">
                                     #{currentGroup.firstColorNumber} → #{currentGroup.lastColorNumber}
                                   </span>
                                 )}
                                 {currentGroup.variantCount > 1 && (
-                                  <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 font-medium">
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 font-medium">
                                     {currentGroup.variantCount} {t('variants')}
                                   </Badge>
                                 )}
@@ -16539,10 +16539,10 @@ export default function PickPack() {
 
                       {/* Variant Picker Panel - For product groups with variants */}
                       {currentGroup && currentGroup.type === 'product' && currentGroup.variantCount > 1 && (
-                        <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-indigo-50 dark:to-indigo-900/30 rounded-xl border-2 border-purple-300 dark:border-purple-700 overflow-hidden">
+                        <div className="bg-gradient-to-br from-gray-50 dark:from-gray-900/30 to-gray-100 dark:to-gray-900/30 rounded-xl border-2 border-gray-300 dark:border-gray-700 overflow-hidden">
                           {/* Pick All Button */}
                           {!currentGroup.allPicked && (
-                            <div className="p-3 border-b border-purple-200 dark:border-purple-700">
+                            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
                               <Button
                                 size="lg"
                                 className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-base"
@@ -16595,8 +16595,8 @@ export default function PickPack() {
                                 return (
                                   <div
                                     key={item.id}
-                                    className={`p-3 border-b border-purple-100 dark:border-purple-800 last:border-b-0 cursor-pointer flex items-center gap-3 transition-all duration-150
-                                      ${isPicked ? 'bg-green-50 dark:bg-green-900/30' : isPartial ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                    className={`p-3 border-b border-gray-100 dark:border-gray-800 last:border-b-0 cursor-pointer flex items-center gap-3 transition-all duration-150
+                                      ${isPicked ? 'bg-green-50 dark:bg-green-900/30' : isPartial ? 'bg-gray-100 dark:bg-gray-900/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                     onClick={() => {
                                       if (!isPicked) {
                                         // Handle merged items - update all original items
@@ -16616,8 +16616,8 @@ export default function PickPack() {
                                     {/* Color Number Badge */}
                                     <div className={`w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm ${
                                       isPicked ? 'bg-green-500 text-white' : 
-                                      isPartial ? 'bg-yellow-500 text-white' : 
-                                      'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                                      isPartial ? 'bg-gray-1000 text-white' : 
+                                      'bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300'
                                     }`}>
                                       {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                                     </div>
@@ -16667,12 +16667,12 @@ export default function PickPack() {
                         const firstItem = currentGroup.items[0];
                         if (!firstItem || !firstItem.bulkUnitQty || firstItem.bulkUnitQty <= 0 || firstItem.quantity < firstItem.bulkUnitQty) return null;
                         return (
-                          <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3 flex items-center justify-center gap-3">
-                            <Box className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                            <span className="text-lg font-bold text-amber-800 dark:text-amber-200">
+                          <div className="bg-gray-50 dark:bg-gray-900/20 border-2 border-gray-400 dark:border-gray-600 rounded-lg p-3 flex items-center justify-center gap-3">
+                            <Box className="h-5 w-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                            <span className="text-lg font-bold text-gray-800 dark:text-gray-200">
                               {Math.floor(firstItem.quantity / firstItem.bulkUnitQty)} {firstItem.bulkUnitName || t('carton') || 'carton'}{Math.floor(firstItem.quantity / firstItem.bulkUnitQty) !== 1 ? 's' : ''}
                               {firstItem.quantity % firstItem.bulkUnitQty > 0 && (
-                                <span className="text-amber-600 dark:text-amber-400 font-medium ml-1">
+                                <span className="text-gray-600 dark:text-gray-400 font-medium ml-1">
                                   + {firstItem.quantity % firstItem.bulkUnitQty} {t('pieces') || 'pcs'}
                                 </span>
                               )}
@@ -16686,18 +16686,18 @@ export default function PickPack() {
                         const allNotes = currentGroup.items.filter(item => item.notes).map(item => item.notes);
                         if (allNotes.length === 0) return null;
                         return (
-                          <div className="bg-amber-50 dark:bg-amber-900/30 border-3 border-amber-500 rounded-lg p-4 shadow-lg">
+                          <div className="bg-gray-50 dark:bg-gray-900/30 border-3 border-gray-500 rounded-lg p-4 shadow-lg">
                             <div className="flex items-start gap-3">
                               <div className="flex-shrink-0 mt-0.5">
-                                <div className="bg-amber-500 rounded-full p-2">
+                                <div className="bg-gray-500 rounded-full p-2">
                                   <AlertCircle className="h-5 w-5 text-white" />
                                 </div>
                               </div>
                               <div className="flex-1">
-                                <h3 className="text-sm font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-2">
                                   🟡 {t('shippingNotes') || 'Shipping Notes'}
                                 </h3>
-                                <p className="text-base lg:text-lg font-semibold text-amber-900 leading-relaxed whitespace-pre-wrap">
+                                <p className="text-base lg:text-lg font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">
                                   {allNotes.join('\n')}
                                 </p>
                               </div>
@@ -16710,10 +16710,10 @@ export default function PickPack() {
                       {currentGroup && currentGroup.type === 'product' && currentGroup.variantCount <= 1 && currentGroup.items[0]?.isBundle && currentGroup.items[0]?.bundleItems && currentGroup.items[0].bundleItems.length > 0 && (() => {
                         const bundleItem0 = currentGroup.items[0];
                         return (
-                        <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-pink-50 dark:to-pink-900/30 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-purple-400 dark:border-purple-700 shadow-xl">
+                        <div className="bg-gradient-to-br from-gray-50 dark:from-gray-900/30 to-pink-50 dark:to-pink-900/30 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-gray-400 dark:border-gray-700 shadow-xl">
                           <div className="flex items-center justify-between mb-4">
-                            <p className="text-base lg:text-xl font-black text-purple-800 dark:text-purple-200 uppercase tracking-wider">{t('bundleItems')}</p>
-                            <Badge className="bg-purple-600 text-white dark:bg-purple-700 px-3 py-1">
+                            <p className="text-base lg:text-xl font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('bundleItems')}</p>
+                            <Badge className="bg-gray-600 text-white dark:bg-gray-700 px-3 py-1">
                               {bundlePickedItems[bundleItem0.id]?.size || 0} / {bundleItem0.bundleItems!.length} {t('picked')}
                             </Badge>
                           </div>
@@ -16728,7 +16728,7 @@ export default function PickPack() {
                                   className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                                     isPicked 
                                       ? 'bg-green-100 dark:bg-green-900/30 border-green-500 shadow-lg' 
-                                      : 'bg-white border-gray-300 hover:border-purple-400 dark:hover:border-purple-700 dark:border-purple-700 hover:shadow-md'
+                                      : 'bg-white border-gray-300 hover:border-gray-400 dark:hover:border-gray-700 dark:border-gray-700 hover:shadow-md'
                                   }`}
                                   onClick={() => {
                                     const currentPicked = bundlePickedItems[bundleItem0.id] || new Set();
@@ -16762,7 +16762,7 @@ export default function PickPack() {
                                     
                                     <div className="flex-1 min-w-0">
                                       {bundleItem.colorNumber && (
-                                        <div className="text-xl font-bold text-purple-700 dark:text-purple-200 mb-1">
+                                        <div className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-1">
                                           #{bundleItem.colorNumber}
                                         </div>
                                       )}
@@ -16803,7 +16803,7 @@ export default function PickPack() {
                           {(!bundlePickedItems[bundleItem0.id] || bundlePickedItems[bundleItem0.id].size < (bundleItem0.bundleItems?.length || 0)) && (
                             <Button 
                               size="lg" 
-                              className="w-full mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-purple-600 dark:from-purple-500 to-pink-600 dark:to-pink-500 hover:from-purple-700 dark:hover:from-purple-600 hover:to-pink-700 dark:hover:to-pink-600 text-white shadow-lg"
+                              className="w-full mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-purple-600 dark:from-gray-500 to-pink-600 dark:to-pink-500 hover:from-purple-700 dark:hover:from-purple-600 hover:to-pink-700 dark:hover:to-pink-600 text-white shadow-lg"
                               onClick={() => {
                                 const allIds = new Set(bundleItem0.bundleItems?.map(item => item.id) || []);
                                 setBundlePickedItems({
@@ -16884,15 +16884,15 @@ export default function PickPack() {
                       {/* Verified Location Indicator */}
                       {verifiedLocation && (
                         <div className="px-3 pt-2">
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg text-sm">
-                            <MapPinCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            <span className="text-blue-700 dark:text-blue-300 font-medium">
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+                            <MapPinCheck className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                            <span className="text-gray-700 dark:text-gray-300 font-medium">
                               {t('atLocation') || 'At location'}: <span className="font-mono font-bold">{verifiedLocation}</span>
                             </span>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                              className="h-6 w-6 p-0 ml-auto text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                               onClick={() => setVerifiedLocation(null)}
                             >
                               <X className="h-3 w-3" />
@@ -16921,7 +16921,7 @@ export default function PickPack() {
                           </div>
                           <Button 
                             onClick={handleBarcodeScan}
-                            className="h-12 lg:h-14 min-w-[48px] px-3 sm:px-5 lg:px-7 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-900 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                            className="h-12 lg:h-14 min-w-[48px] px-3 sm:px-5 lg:px-7 bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 active:bg-gray-800 dark:active:bg-gray-900 text-white font-bold shadow-md touch-manipulation rounded-lg"
                             data-testid="button-barcode-scan"
                           >
                             <ScanLine className="h-5 w-5 lg:h-6 lg:w-6 sm:mr-2" />
@@ -16929,7 +16929,7 @@ export default function PickPack() {
                           </Button>
                           <Button 
                             onClick={() => setShowCameraScanner(true)}
-                            className="h-12 lg:h-14 min-w-[48px] px-3 bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-600 active:bg-purple-800 dark:active:bg-purple-900 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                            className="h-12 lg:h-14 min-w-[48px] px-3 bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 active:bg-gray-800 dark:active:bg-gray-900 text-white font-bold shadow-md touch-manipulation rounded-lg"
                             data-testid="button-camera-scan"
                             title={t('openCameraScanner') || 'Open camera scanner'}
                           >
@@ -17022,9 +17022,9 @@ export default function PickPack() {
               // Show current item view if we have a current item but not all items are picked
               currentItem && (
                 <div className="max-w-4xl mx-auto">
-                  <Alert className="mb-4 bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-700">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                    <AlertDescription className="text-yellow-800 dark:text-yellow-200 font-semibold">
+                  <Alert className="mb-4 bg-gray-100 dark:bg-gray-900/30 border-2 border-gray-400 dark:border-gray-700">
+                    <AlertCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <AlertDescription className="text-gray-800 dark:text-gray-200 font-semibold">
                       {t('unableToDisplayItemDetails')}
                     </AlertDescription>
                   </Alert>
@@ -17163,8 +17163,8 @@ export default function PickPack() {
                       key={group.type === 'service' ? 'service-bill-consolidated' : group.firstItem.productId || group.firstItem.id} 
                       className={`cursor-pointer transition-all transform hover:scale-[1.02] ${
                         isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
-                        isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-xl ring-2 ring-blue-300' : 
-                        'bg-white hover:shadow-lg border-2 border-gray-200 hover:border-blue-300'
+                        isCurrent ? 'bg-gradient-to-r from-gray-50 dark:from-gray-900/30 to-gray-100 dark:to-gray-900/30 border-2 border-gray-500 shadow-xl ring-2 ring-blue-300' : 
+                        'bg-white hover:shadow-lg border-2 border-gray-200 hover:border-gray-300'
                       }`}
                       onClick={() => {
                         // Navigate by group index (matches parentGroups structure)
@@ -17184,7 +17184,7 @@ export default function PickPack() {
                                 <CheckCircle className="h-5 xl:h-6 w-5 xl:w-6 text-white" />
                               </div>
                             ) : isCurrent ? (
-                              <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold animate-pulse text-sm">
+                              <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold animate-pulse text-sm">
                                 {displayIndex + 1}
                               </div>
                             ) : (
@@ -17198,7 +17198,7 @@ export default function PickPack() {
                               <div className="text-center py-1">
                                 <p className={`font-bold text-sm xl:text-base ${
                                   isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
-                                  isCurrent ? 'text-purple-700 dark:text-purple-300' : 'text-purple-600'
+                                  isCurrent ? 'text-gray-700 dark:text-gray-300' : 'text-gray-600'
                                 }`}>
                                   Service Bill
                                 </p>
@@ -17207,7 +17207,7 @@ export default function PickPack() {
                               <>
                                 <p className={`font-semibold text-xs xl:text-sm truncate ${
                                   isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
-                                  isCurrent ? 'text-blue-700 dark:text-blue-100' : 'text-gray-800 dark:text-gray-200'
+                                  isCurrent ? 'text-gray-700 dark:text-gray-100' : 'text-gray-800 dark:text-gray-200'
                                 }`}>
                                   {group.parentName}
                                 </p>
@@ -17215,11 +17215,11 @@ export default function PickPack() {
                                 {isMultiVariant && (
                                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                     {group.firstColorNumber && group.lastColorNumber && (
-                                      <span className="text-[10px] xl:text-xs text-purple-600 dark:text-purple-400 font-mono font-medium">
+                                      <span className="text-[10px] xl:text-xs text-gray-600 dark:text-gray-400 font-mono font-medium">
                                         #{group.firstColorNumber} → #{group.lastColorNumber}
                                       </span>
                                     )}
-                                    <span className="text-[10px] xl:text-xs px-1.5 py-0 rounded bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-medium">
+                                    <span className="text-[10px] xl:text-xs px-1.5 py-0 rounded bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 font-medium">
                                       {group.variantCount} {t('variants')}
                                     </span>
                                   </div>
@@ -17239,13 +17239,13 @@ export default function PickPack() {
                                 )}
                                 <div className="flex items-center justify-between mt-1.5">
                                   <span className={`text-[10px] xl:text-xs font-mono px-1 xl:px-1.5 py-0.5 rounded font-bold ${
-                                    isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                    isCurrent ? 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                                   }`}>
                                     📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
                                   </span>
                                   <span className={`text-xs xl:text-sm font-bold ${
                                     isPicked ? 'text-green-600 dark:text-green-300' : 
-                                    isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
+                                    isCurrent ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'
                                   }`}>
                                     {group.pickedQty}/{group.totalQty}
                                   </span>
@@ -17268,10 +17268,10 @@ export default function PickPack() {
                 const totalItemCount = activePickingOrder.items.length;
                 
                 return (
-                  <Card className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-red-50 dark:to-red-900/20 border-2 border-orange-300 dark:border-orange-700 shadow-md">
+                  <Card className="bg-gradient-to-r from-gray-50 dark:from-gray-900/20 to-gray-100 dark:to-red-900/20 border-2 border-gray-300 dark:border-gray-700 shadow-md">
                     <CardContent className="p-3 xl:p-4">
                       <Button
-                        className="w-full h-11 xl:h-12 text-sm xl:text-base font-bold bg-gradient-to-r from-orange-600 dark:from-orange-500 to-red-600 dark:to-red-500 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
+                        className="w-full h-11 xl:h-12 text-sm xl:text-base font-bold bg-gradient-to-r from-orange-600 dark:from-gray-500 to-red-600 dark:to-gray-1000 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
                         onClick={async () => {
                           // Complete picking with current progress
                           await completePicking(true);
@@ -17347,7 +17347,7 @@ export default function PickPack() {
                             key={isService ? 'service-bill-mobile' : group.groupId}
                             className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 snap-start transition-all transform active:scale-95 touch-manipulation ${
                               isPicked ? 'bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-700' :
-                              isCurrent ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 shadow-lg' :
+                              isCurrent ? 'bg-gray-50 dark:bg-gray-900/30 border-gray-500 shadow-lg' :
                               'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700'
                             }`}
                             onClick={() => {
@@ -17365,7 +17365,7 @@ export default function PickPack() {
                                 <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
                               ) : (
                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                                  isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
+                                  isCurrent ? 'bg-gray-500 text-white' : 'border-2 border-gray-300 text-gray-600'
                                 }`}>
                                   {groupIndex + 1}
                                 </div>
@@ -17377,7 +17377,7 @@ export default function PickPack() {
                               )}
                             </div>
                             {isService ? (
-                              <p className="text-xs font-bold text-purple-600 dark:text-purple-400 text-center">Service Bill</p>
+                              <p className="text-xs font-bold text-gray-600 dark:text-gray-400 text-center">Service Bill</p>
                             ) : (
                               <>
                                 <p className="text-xs font-medium truncate">{group.parentName}</p>
@@ -17396,7 +17396,7 @@ export default function PickPack() {
             {/* Mobile Progress Toggle Button - Enhanced - Only in card view */}
             {pickingViewMode === 'card' && !showMobileProgress && (
               <Button
-                className="lg:hidden fixed bottom-4 right-4 h-12 w-12 rounded-full bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 active:bg-indigo-800 dark:active:bg-indigo-900 text-white shadow-lg z-30 touch-manipulation animate-pulse"
+                className="lg:hidden fixed bottom-4 right-4 h-12 w-12 rounded-full bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 active:bg-gray-800 dark:active:bg-gray-900 text-white shadow-lg z-30 touch-manipulation animate-pulse"
                 onClick={() => setShowMobileProgress(true)}
               >
                 <ClipboardList className="h-5 w-5" />
@@ -17436,7 +17436,7 @@ export default function PickPack() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                 <div className="p-2 sm:p-0">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
-                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatTimer(finalPickingTime ?? pickingTimer)}</p>
+                  <p className="text-xl font-bold text-gray-600 dark:text-gray-400">{formatTimer(finalPickingTime ?? pickingTimer)}</p>
                 </div>
                 <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('items')}</p>
@@ -17444,7 +17444,7 @@ export default function PickPack() {
                 </div>
                 <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('score')}</p>
-                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400">100%</p>
+                  <p className="text-xl font-bold text-gray-600 dark:text-gray-400">100%</p>
                 </div>
               </div>
             </div>
@@ -17529,7 +17529,7 @@ export default function PickPack() {
                     queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                   }
                 }}
-                className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold border-2 border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold border-2 border-gray-500 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30"
                 data-testid="button-pick-next"
               >
                 {(() => {
@@ -17615,7 +17615,7 @@ export default function PickPack() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
+                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600 dark:text-gray-400" />
                 {t('pickPackWorkflow')}
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('manageOrderFulfillment')}</p>
@@ -17625,33 +17625,33 @@ export default function PickPack() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               <div 
                 onClick={() => setSelectedTab('pending')}
-                className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-2 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:border-orange-300 dark:hover:border-orange-600 transition-colors" 
+                className="bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/50 hover:border-gray-300 dark:hover:border-gray-600 transition-colors" 
                 data-testid="stat-pending"
               >
-                <div className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
+                <div className="text-lg sm:text-2xl font-bold text-gray-600 dark:text-gray-400">
                   {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.pending}
                 </div>
-                <div className="text-xs text-orange-700 dark:text-orange-200">{t('pending')}</div>
+                <div className="text-xs text-gray-700 dark:text-gray-200">{t('pending')}</div>
               </div>
               <div 
                 onClick={() => setSelectedTab('picking')}
-                className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-300 dark:hover:border-blue-600 transition-colors" 
+                className="bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/50 hover:border-gray-300 dark:hover:border-gray-600 transition-colors" 
                 data-testid="stat-picking"
               >
-                <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+                <div className="text-lg sm:text-2xl font-bold text-gray-600 dark:text-gray-400">
                   {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.picking}
                 </div>
-                <div className="text-xs text-blue-700 dark:text-blue-200 dark:text-blue-100">{t('picking')}</div>
+                <div className="text-xs text-gray-700 dark:text-gray-200 dark:text-gray-100">{t('picking')}</div>
               </div>
               <div 
                 onClick={() => setSelectedTab('packing')}
-                className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:border-purple-300 dark:hover:border-purple-600 transition-colors" 
+                className="bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/50 hover:border-gray-300 dark:hover:border-gray-600 transition-colors" 
                 data-testid="stat-packing"
               >
-                <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <div className="text-lg sm:text-2xl font-bold text-gray-600 dark:text-gray-400">
                   {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.packing}
                 </div>
-                <div className="text-xs text-purple-700 dark:text-purple-200">{t('packing')}</div>
+                <div className="text-xs text-gray-700 dark:text-gray-200">{t('packing')}</div>
               </div>
               <div 
                 onClick={() => setSelectedTab('ready')}
@@ -17675,7 +17675,7 @@ export default function PickPack() {
           <TabsList className="grid grid-cols-5 w-full h-auto bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 p-1.5 sm:p-2 gap-1 sm:gap-2 shadow-sm rounded-lg max-w-full mx-auto sm:max-w-3xl overflow-hidden">
             <TabsTrigger 
               value="overview" 
-              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
+              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-600 dark:data-[state=active]:text-gray-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-gray-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
               data-testid="tab-overview"
             >
               <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -17691,7 +17691,7 @@ export default function PickPack() {
             </TabsTrigger>
             <TabsTrigger 
               value="pending" 
-              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-600 dark:data-[state=active]:text-orange-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
+              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-600 dark:data-[state=active]:text-gray-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-gray-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
               data-testid="tab-pending"
             >
               <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -17707,7 +17707,7 @@ export default function PickPack() {
             </TabsTrigger>
             <TabsTrigger 
               value="picking" 
-              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
+              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-600 dark:data-[state=active]:text-gray-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-gray-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
               data-testid="tab-picking"
             >
               <ShoppingBasket className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -17723,7 +17723,7 @@ export default function PickPack() {
             </TabsTrigger>
             <TabsTrigger 
               value="packing" 
-              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
+              className="relative flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-600 dark:data-[state=active]:text-gray-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-gray-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px] overflow-hidden"
               data-testid="tab-packing"
             >
               <Box className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -17768,9 +17768,9 @@ export default function PickPack() {
               const rankColors: Record<string, string> = {
                 rookie: 'from-gray-500 to-gray-600',
                 skilled: 'from-green-500 to-emerald-600',
-                expert: 'from-blue-500 to-indigo-600',
-                master: 'from-purple-500 to-violet-600',
-                legend: 'from-amber-500 via-orange-500 to-red-500'
+                expert: 'from-gray-500 to-indigo-600',
+                master: 'from-gray-500 to-violet-600',
+                legend: 'from-gray-500 via-orange-500 to-gray-1000'
               };
               const rankLabels: Record<string, string> = {
                 rookie: t('rankRookie', 'Rookie Picker'),
@@ -17794,7 +17794,7 @@ export default function PickPack() {
                           <div>
                             <h2 className="text-xl sm:text-2xl font-bold text-white">{t('performanceCenter', 'Performance Center')}</h2>
                             <p className="text-white/80 text-sm sm:text-base flex items-center gap-2">
-                              <Flame className="h-4 w-4 text-orange-300" />
+                              <Flame className="h-4 w-4 text-gray-300" />
                               {streak} {t('dayStreak', 'day streak')}
                             </p>
                           </div>
@@ -17812,11 +17812,11 @@ export default function PickPack() {
                       {/* Rank Badge */}
                       <div className="mt-4 flex items-center gap-3">
                         <div className="bg-white/20 backdrop-blur rounded-full px-4 py-1.5 flex items-center gap-2">
-                          <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
+                          <Star className="h-4 w-4 text-gray-300 fill-yellow-300" />
                           <span className="text-white font-semibold text-sm">{rankLabels[rank]}</span>
                         </div>
                         <div className="bg-white/20 backdrop-blur rounded-full px-4 py-1.5 flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-yellow-300" />
+                          <Zap className="h-4 w-4 text-gray-300" />
                           <span className="text-white font-semibold text-sm">Level {level}</span>
                         </div>
                       </div>
@@ -17827,14 +17827,14 @@ export default function PickPack() {
                       <div className="mb-6 bg-gray-100 dark:bg-slate-800 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-purple-500" />
+                            <Sparkles className="h-4 w-4 text-gray-500" />
                             {t('experiencePoints', 'Experience Points')}
                           </span>
-                          <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{xpCurrent} / {xpNeeded} XP</span>
+                          <span className="text-sm font-bold text-gray-600 dark:text-gray-400">{xpCurrent} / {xpNeeded} XP</span>
                         </div>
                         <div className="relative h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div 
-                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-1000"
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-500 to-pink-500 rounded-full transition-all duration-1000"
                             style={{ width: `${(xpCurrent / xpNeeded) * 100}%` }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
@@ -17845,10 +17845,10 @@ export default function PickPack() {
                       </div>
                       
                       {/* Daily Challenge */}
-                      <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                      <div className="mb-6 bg-gradient-to-r from-gray-50 to-orange-50 dark:from-gray-900/20 dark:to-orange-900/20 border-2 border-gray-200 dark:border-gray-800 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-400 to-gray-500 flex items-center justify-center">
                               <Target className="h-4 w-4 text-white" />
                             </div>
                             <div>
@@ -17857,16 +17857,16 @@ export default function PickPack() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{completedToday}</span>
+                            <span className="text-2xl font-bold text-gray-600 dark:text-gray-400">{completedToday}</span>
                             <span className="text-gray-500 dark:text-gray-400">/{dailyTarget}</span>
                           </div>
                         </div>
-                        <div className="relative h-4 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                        <div className="relative h-4 bg-gray-100 dark:bg-gray-900/30 rounded-full overflow-hidden">
                           <div 
                             className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ${
                               progressPercent >= 100 
                                 ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
-                                : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                                : 'bg-gradient-to-r from-amber-400 to-gray-500'
                             }`}
                             style={{ width: `${progressPercent}%` }}
                           />
@@ -17881,11 +17881,11 @@ export default function PickPack() {
                       
                       {/* Stats Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 text-center border border-blue-100 dark:border-blue-800">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-2">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-900/20 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-800">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-500 to-indigo-600 flex items-center justify-center mx-auto mb-2">
                             <Package className="h-5 w-5 text-white" />
                           </div>
-                          <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{completedToday}</div>
+                          <div className="text-2xl sm:text-3xl font-bold text-gray-600 dark:text-gray-400">{completedToday}</div>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('ordersToday', 'Orders Today')}</p>
                         </div>
                         
@@ -17897,19 +17897,19 @@ export default function PickPack() {
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('accuracy', 'Accuracy')}</p>
                         </div>
                         
-                        <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl p-4 text-center border border-purple-100 dark:border-purple-800">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center mx-auto mb-2">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-50 dark:from-gray-900/20 dark:to-gray-900/20 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-800">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-500 to-violet-600 flex items-center justify-center mx-auto mb-2">
                             <Box className="h-5 w-5 text-white" />
                           </div>
-                          <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{totalItems}</div>
+                          <div className="text-2xl sm:text-3xl font-bold text-gray-600 dark:text-gray-400">{totalItems}</div>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('itemsPicked', 'Items Picked')}</p>
                         </div>
                         
-                        <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4 text-center border border-orange-100 dark:border-orange-800">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-2">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-red-900/20 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-800">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-500 to-red-600 flex items-center justify-center mx-auto mb-2">
                             <Clock className="h-5 w-5 text-white" />
                           </div>
-                          <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">4.2m</div>
+                          <div className="text-2xl sm:text-3xl font-bold text-gray-600 dark:text-gray-400">4.2m</div>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('avgTime', 'Avg Time')}</p>
                         </div>
                       </div>
@@ -17917,19 +17917,19 @@ export default function PickPack() {
                       {/* Achievements */}
                       <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
                         <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                          <Award className="h-5 w-5 text-amber-500" />
+                          <Award className="h-5 w-5 text-gray-500" />
                           {t('recentAchievements', 'Recent Achievements')}
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div className="text-center p-3 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
+                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
                               <Zap className="h-5 w-5 text-white" />
                             </div>
                             <p className="text-xs font-medium text-gray-900 dark:text-white">{t('speedDemon', 'Speed Demon')}</p>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('under3min', '<3 min order')}</p>
                           </div>
                           <div className="text-center p-3 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-400 to-gray-1000 flex items-center justify-center">
                               <Target className="h-5 w-5 text-white" />
                             </div>
                             <p className="text-xs font-medium text-gray-900 dark:text-white">{t('perfectPicker', 'Perfect Picker')}</p>
@@ -17995,7 +17995,7 @@ export default function PickPack() {
                       {/* Sort Direction */}
                       <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                          <Navigation className="h-5 w-5 text-blue-500" />
+                          <Navigation className="h-5 w-5 text-gray-500" />
                           {t('sortDirection', 'Sort Direction')}
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -18003,15 +18003,15 @@ export default function PickPack() {
                             type="button"
                             className={`p-4 rounded-xl border-2 transition-all ${
                               routeSortOrder === 'asc'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                ? 'border-gray-500 bg-gray-50 dark:bg-gray-900/30'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                             }`}
                             onClick={() => setRouteSortOrder('asc')}
                           >
                             <div className="flex flex-col items-center gap-2">
                               <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                                 routeSortOrder === 'asc' 
-                                  ? 'bg-blue-500 text-white' 
+                                  ? 'bg-gray-500 text-white' 
                                   : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
                               }`}>
                                 <ChevronsUp className="h-5 w-5" />
@@ -18024,15 +18024,15 @@ export default function PickPack() {
                             type="button"
                             className={`p-4 rounded-xl border-2 transition-all ${
                               routeSortOrder === 'desc'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                ? 'border-gray-500 bg-gray-50 dark:bg-gray-900/30'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                             }`}
                             onClick={() => setRouteSortOrder('desc')}
                           >
                             <div className="flex flex-col items-center gap-2">
                               <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                                 routeSortOrder === 'desc' 
-                                  ? 'bg-blue-500 text-white' 
+                                  ? 'bg-gray-500 text-white' 
                                   : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
                               }`}>
                                 <ChevronsDown className="h-5 w-5" />
@@ -18177,7 +18177,7 @@ export default function PickPack() {
                                 key={zone}
                                 size="sm"
                                 variant={routeStartZones.includes(zone) ? 'default' : 'outline'}
-                                className={`text-xs ${routeStartZones.includes(zone) ? 'bg-amber-600 hover:bg-amber-700' : 'border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'}`}
+                                className={`text-xs ${routeStartZones.includes(zone) ? 'bg-gray-600 hover:bg-gray-700' : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/20'}`}
                                 onClick={() => {
                                   if (routeStartZones.includes(zone)) {
                                     setRouteStartZones(routeStartZones.filter(z => z !== zone));
@@ -18196,17 +18196,17 @@ export default function PickPack() {
                       {/* Warehouse Map - Coming Soon */}
                       <div className="bg-gradient-to-br from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-900 rounded-xl p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 relative overflow-hidden">
                         <div className="absolute top-3 right-3">
-                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 text-xs">
+                          <Badge className="bg-gradient-to-r from-gray-500 to-pink-500 text-white border-0 text-xs">
                             {t('comingSoon', 'Coming Soon')}
                           </Badge>
                         </div>
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                          <LayoutGrid className="h-5 w-5 text-purple-500" />
+                          <LayoutGrid className="h-5 w-5 text-gray-500" />
                           {t('warehouseMap', 'Warehouse Map')}
                         </h3>
                         <div className="aspect-video bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center p-6">
-                          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center mb-4">
-                            <Building className="h-8 w-8 text-purple-500" />
+                          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-gray-900/30 dark:to-pink-900/30 flex items-center justify-center mb-4">
+                            <Building className="h-8 w-8 text-gray-500" />
                           </div>
                           <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{t('interactiveMap', 'Interactive Warehouse Map')}</h4>
                           <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs">
@@ -18282,7 +18282,7 @@ export default function PickPack() {
                           if (!hasOrders && hasInProgressPicking) {
                             return (
                               <Button 
-                                className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25" 
+                                className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base bg-gradient-to-r from-gray-500 to-gray-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25" 
                                 size="lg"
                                 disabled={pickingOrders[0] && isStartingOrder[pickingOrders[0].id]}
                                 onClick={() => {
@@ -18325,14 +18325,14 @@ export default function PickPack() {
                       <Button 
                         className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
                           batchPickingMode 
-                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/25 border-0' 
-                            : 'hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-gray-500/25 border-0' 
+                            : 'hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-950/30'
                         }`}
                         variant={batchPickingMode ? "default" : "outline"} 
                         size="lg"
                         onClick={toggleBatchPickingMode}
                       >
-                        <Users className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${batchPickingMode ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                        <Users className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${batchPickingMode ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`} />
                         {batchPickingMode ? t('disableBatchMode') : t('batchPickingMode')}
                         {batchPickingMode && (
                           <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-medium">
@@ -18344,16 +18344,16 @@ export default function PickPack() {
                         className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
                           showRouteOptimizer 
                             ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 border-0' 
-                            : 'hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 group'
+                            : 'hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-950/30 group'
                         }`}
                         variant={showRouteOptimizer ? "default" : "outline"} 
                         size="lg"
                         onClick={optimizePickRoute}
                       >
-                        <Route className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${showRouteOptimizer ? 'text-white' : 'text-cyan-600 dark:text-cyan-400 group-hover:text-cyan-700'}`} />
+                        <Route className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${showRouteOptimizer ? 'text-white' : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-700'}`} />
                         {t('optimizePickRoute')}
                         {!showRouteOptimizer && (
-                          <span className="ml-auto text-xs text-cyan-600 dark:text-cyan-400 font-medium hidden sm:inline">
+                          <span className="ml-auto text-xs text-gray-600 dark:text-gray-400 font-medium hidden sm:inline">
                             {t('settings', 'Settings')}
                           </span>
                         )}
@@ -18361,17 +18361,17 @@ export default function PickPack() {
                       <Button 
                         className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
                           showPerformanceStats 
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0' 
-                            : 'hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 group'
+                            ? 'bg-gradient-to-r from-gray-500 to-gray-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0' 
+                            : 'hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-950/30 group'
                         }`}
                         variant={showPerformanceStats ? "default" : "outline"} 
                         size="lg"
                         onClick={togglePerformanceStats}
                       >
-                        <Trophy className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${showPerformanceStats ? 'text-white' : 'text-amber-500 group-hover:text-amber-600'}`} />
+                        <Trophy className={`h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3 ${showPerformanceStats ? 'text-white' : 'text-gray-500 group-hover:text-gray-600'}`} />
                         {showPerformanceStats ? t('hideStats') : t('viewPerformanceStats')}
                         {!showPerformanceStats && (
-                          <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                          <span className="ml-auto flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 font-medium">
                             <Flame className="h-3 w-3" />
                             <span className="hidden sm:inline">{t('checkYourScore', 'Check Score')}</span>
                           </span>
@@ -18417,7 +18417,7 @@ export default function PickPack() {
           <TabsContent value="pending" className="mt-4 sm:mt-6">
             {/* Batch Picking Controls */}
             {batchPickingMode && (
-              <Card className="mb-4 border-2 border-purple-500 dark:border-purple-600 overflow-hidden shadow-lg shadow-purple-500/10">
+              <Card className="mb-4 border-2 border-gray-500 dark:border-gray-600 overflow-hidden shadow-lg shadow-gray-500/10">
                 <CardHeader className="bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 text-white pb-4 pt-4">
                   <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span className="flex items-center gap-3">
@@ -18426,11 +18426,11 @@ export default function PickPack() {
                       </div>
                       <div>
                         <span className="font-bold">{t('batchPickingMode')}</span>
-                        <p className="text-xs text-purple-100 font-normal mt-0.5">{t('selectMultipleOrdersToPick', 'Select multiple orders to pick together')}</p>
+                        <p className="text-xs text-gray-100 font-normal mt-0.5">{t('selectMultipleOrdersToPick', 'Select multiple orders to pick together')}</p>
                       </div>
                     </span>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-white/90 text-purple-700 dark:text-purple-700 font-semibold px-3 py-1 text-sm">
+                      <Badge className="bg-white/90 text-gray-700 dark:text-gray-700 font-semibold px-3 py-1 text-sm">
                         {selectedBatchItems.size} {t('selected', 'selected')}
                       </Badge>
                       <Button
@@ -18444,18 +18444,18 @@ export default function PickPack() {
                     </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4 pb-4 bg-gradient-to-b from-purple-50/50 dark:from-purple-900/20 to-transparent">
+                <CardContent className="pt-4 pb-4 bg-gradient-to-b from-gray-50/50 dark:from-gray-900/20 to-transparent">
                   <div className="flex gap-2 sm:gap-3 flex-wrap">
                     <Button 
                       size="sm"
                       variant="outline"
-                      className="border-purple-300 dark:border-purple-700 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:border-purple-400"
+                      className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-900/30 hover:border-gray-400"
                       onClick={() => {
                         const allIds = new Set(getOrdersByStatus('pending').map(o => o.id));
                         setSelectedBatchItems(allIds);
                       }}
                     >
-                      <CheckCircle className="h-4 w-4 mr-1.5 text-purple-600 dark:text-purple-400" />
+                      <CheckCircle className="h-4 w-4 mr-1.5 text-gray-600 dark:text-gray-400" />
                       {t('selectAll', 'Select All')} ({getOrdersByStatus('pending').length})
                     </Button>
                     <Button 
@@ -18531,8 +18531,8 @@ export default function PickPack() {
                         batchPickingMode 
                           ? `cursor-pointer hover:shadow-md ${
                               selectedBatchItems.has(order.id) 
-                                ? 'border-2 border-purple-500 dark:border-purple-400 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 shadow-md shadow-purple-500/10' 
-                                : 'border border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500'
+                                ? 'border-2 border-gray-500 dark:border-gray-400 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-900/30 shadow-md shadow-gray-500/10' 
+                                : 'border border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                             }`
                           : ''
                       }`}
@@ -18556,8 +18556,8 @@ export default function PickPack() {
                                 <div 
                                   className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 ${
                                     selectedBatchItems.has(order.id) 
-                                      ? 'bg-purple-600 border-purple-600 text-white' 
-                                      : 'border-gray-300 dark:border-gray-600 hover:border-purple-400'
+                                      ? 'bg-gray-600 border-gray-600 text-white' 
+                                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
                                   }`}
                                   onClick={(e) => e.stopPropagation()}
                                 >
@@ -18586,7 +18586,7 @@ export default function PickPack() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                               <div className="flex items-center gap-1.5">
                                 <User className="h-4 w-4 text-gray-400" />
-                                <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
+                                <span className="truncate font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Globe className="h-4 w-4 text-gray-400" />
@@ -18597,8 +18597,8 @@ export default function PickPack() {
                                 <span className="font-medium">{order.totalItems} items</span>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <Truck className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                                <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || 'Standard'}</span>
+                                <Truck className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                <span className="truncate font-medium text-gray-600 dark:text-gray-400">{order.shippingMethod || 'Standard'}</span>
                               </div>
                             </div>
                             {/* Comprehensive product list - Grouped by product */}
@@ -18736,7 +18736,7 @@ export default function PickPack() {
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
-                                  <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
+                                  <span className="truncate font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
@@ -18747,8 +18747,8 @@ export default function PickPack() {
                                   <span className="font-medium">{order.totalItems} {t('items')}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <Truck className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                                  <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || t('standard')}</span>
+                                  <Truck className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                  <span className="truncate font-medium text-gray-600 dark:text-gray-400">{order.shippingMethod || t('standard')}</span>
                                 </div>
                               </div>
                               {order.pickedBy && (
@@ -18777,7 +18777,7 @@ export default function PickPack() {
                               </Button>
                               <Button 
                                 size="sm" 
-                                className="flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm bg-amber-600 dark:bg-amber-700 hover:bg-amber-700 dark:hover:bg-amber-600 text-white font-semibold"
+                                className="flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold"
                                 onClick={() => {
                                   // Resume picking by setting the active order and switching to picking view
                                   setActivePickingOrder(order);
@@ -18897,7 +18897,7 @@ export default function PickPack() {
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
-                                  <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
+                                  <span className="truncate font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
@@ -18908,8 +18908,8 @@ export default function PickPack() {
                                   <span className="font-medium">{order.totalItems} {t('items')}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <Truck className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                                  <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || t('standard')}</span>
+                                  <Truck className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                  <span className="truncate font-medium text-gray-600 dark:text-gray-400">{order.shippingMethod || t('standard')}</span>
                                 </div>
                               </div>
                               {order.pickedBy && (
@@ -18940,8 +18940,8 @@ export default function PickPack() {
                                 size="sm"
                                 className={`flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm font-semibold ${
                                   order.packStatus === 'in_progress' 
-                                    ? 'bg-amber-600 dark:bg-amber-700 hover:bg-amber-700 dark:hover:bg-amber-600' 
-                                    : 'bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-600'
+                                    ? 'bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600' 
+                                    : 'bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600'
                                 }`}
                                 onClick={() => startPacking(order)}
                               >
@@ -19209,39 +19209,39 @@ export default function PickPack() {
                           title: t('pplCzCarrier'), 
                           subtitle: t('pplCzSubtitle'),
                           icon: Truck,
-                          color: 'bg-blue-50 border-blue-200',
-                          headerColor: 'from-blue-50 dark:from-blue-900/30 via-blue-50 dark:via-blue-900/30 to-white dark:to-gray-900',
-                          iconBg: 'from-white dark:from-gray-900 to-blue-50 dark:to-blue-900/30 border-blue-200 dark:border-blue-700',
-                          buttonColor: 'bg-blue-600 hover:bg-blue-700',
+                          color: 'bg-gray-50 border-gray-200',
+                          headerColor: 'from-gray-50 dark:from-gray-900/30 via-blue-50 dark:via-blue-900/30 to-white dark:to-gray-900',
+                          iconBg: 'from-white dark:from-gray-900 to-gray-50 dark:to-gray-900/30 border-gray-200 dark:border-gray-700',
+                          buttonColor: 'bg-gray-600 hover:bg-gray-700',
                           orders: pplCzOrders 
                         },
                         { 
                           title: t('glsDeCarrier'), 
                           subtitle: t('glsDeSubtitle'),
                           icon: Globe,
-                          color: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700',
-                          headerColor: 'from-amber-50 dark:from-amber-900/30 via-amber-50 to-white',
-                          iconBg: 'from-white to-amber-50 dark:to-amber-900/30 border-amber-200 dark:border-amber-700',
-                          buttonColor: 'bg-amber-600 dark:bg-amber-700 hover:bg-amber-700 dark:hover:bg-amber-600',
+                          color: 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700',
+                          headerColor: 'from-gray-50 dark:from-gray-900/30 via-amber-50 to-white',
+                          iconBg: 'from-white to-gray-50 dark:to-gray-900/30 border-gray-200 dark:border-gray-700',
+                          buttonColor: 'bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600',
                           orders: glsDeOrders 
                         },
                         { 
                           title: t('dhlDeCarrier'), 
                           subtitle: t('dhlDeSubtitle'),
                           icon: Package,
-                          color: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700',
+                          color: 'bg-gray-100 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700',
                           headerColor: 'from-yellow-50 dark:from-yellow-900/30 via-yellow-50 to-white',
-                          iconBg: 'from-white to-yellow-50 dark:to-yellow-900/30 border-yellow-200 dark:border-yellow-700',
-                          buttonColor: 'bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-600',
+                          iconBg: 'from-white to-yellow-50 dark:to-yellow-900/30 border-gray-200 dark:border-gray-700',
+                          buttonColor: 'bg-gray-500 dark:bg-gray-600 hover:bg-gray-600 dark:hover:bg-gray-500',
                           orders: dhlDeOrders 
                         },
                         { 
                           title: t('personalDelivery'), 
                           icon: Users,
-                          color: 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700',
-                          headerColor: 'from-orange-50 dark:from-orange-900/30 via-orange-50 to-white',
-                          iconBg: 'from-white to-orange-50 dark:to-orange-900/30 border-orange-200 dark:border-orange-700',
-                          buttonColor: 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-600',
+                          color: 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700',
+                          headerColor: 'from-gray-50 dark:from-gray-900/30 via-orange-50 to-white',
+                          iconBg: 'from-white to-orange-50 dark:to-orange-900/30 border-gray-200 dark:border-gray-700',
+                          buttonColor: 'bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600',
                           orders: personalDelivery 
                         },
                         { 
@@ -19374,7 +19374,7 @@ export default function PickPack() {
                                             {t('readyToShip')}
                                           </span>
                                           {order.modifiedAfterPacking && (
-                                            <span className="text-xs px-1.5 py-0.5 rounded-full border font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 border-amber-200 dark:border-amber-700 flex items-center gap-1 animate-pulse">
+                                            <span className="text-xs px-1.5 py-0.5 rounded-full border font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 flex items-center gap-1 animate-pulse">
                                               <AlertTriangle className="h-3 w-3" />
                                               {t('modified')}
                                             </span>
@@ -19383,7 +19383,7 @@ export default function PickPack() {
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                                           <div className="flex items-center gap-1.5">
                                             <User className="h-3 w-3 text-gray-400" />
-                                            <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1 py-0.5 rounded text-xs">{order.customerName}</span>
+                                            <span className="truncate font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/40 px-1 py-0.5 rounded text-xs">{order.customerName}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
                                             <Globe className="h-3 w-3 text-gray-400" />
@@ -19394,8 +19394,8 @@ export default function PickPack() {
                                             <span className="font-medium">{order.totalItems} {t('items')}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
-                                            <Truck className="h-3 w-3 text-blue-500 dark:text-blue-400" />
-                                            <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || t('standard')}</span>
+                                            <Truck className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                            <span className="truncate font-medium text-gray-600 dark:text-gray-400">{order.shippingMethod || t('standard')}</span>
                                           </div>
                                         </div>
                                         {order.packedBy && (
@@ -19406,8 +19406,8 @@ export default function PickPack() {
                                         )}
                                         {order.trackingNumber && (
                                           <div className="flex items-center gap-1.5 text-xs mt-1">
-                                            <Hash className="h-3 w-3 text-blue-500 dark:text-blue-400" />
-                                            <span className="text-blue-600 dark:text-blue-400 font-medium">{t('tracking', { number: order.trackingNumber })}</span>
+                                            <Hash className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                            <span className="text-gray-600 dark:text-gray-400 font-medium">{t('tracking', { number: order.trackingNumber })}</span>
                                           </div>
                                         )}
                                         {/* Comprehensive product list - Grouped by product (compact) */}
@@ -19487,7 +19487,7 @@ export default function PickPack() {
                                                   e.stopPropagation();
                                                   handleRepack(order);
                                                 }}
-                                                className="text-amber-600 dark:text-amber-400 font-medium text-xs"
+                                                className="text-gray-600 dark:text-gray-400 font-medium text-xs"
                                               >
                                                 <Package className="h-3 w-3 mr-1.5" />
                                                 {t('repackOrder')}
@@ -19567,7 +19567,7 @@ export default function PickPack() {
                   </div>
                   <div className="flex justify-between items-start">
                     <span className="text-gray-500 dark:text-gray-400">{t('customer')}</span>
-                    <span className="font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{previewOrder?.customerName}</span>
+                    <span className="font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/40 px-1.5 py-0.5 rounded">{previewOrder?.customerName}</span>
                   </div>
                   <div className="flex justify-between items-start">
                     <span className="text-gray-500 dark:text-gray-400">{t('date')}</span>
@@ -19710,25 +19710,25 @@ export default function PickPack() {
                       }).join(', ');
                       
                       result.push(
-                        <div key={`group-${parentName}`} className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
+                        <div key={`group-${parentName}`} className="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-2 border border-gray-200 dark:border-gray-800">
                           <div className="flex justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-blue-900 dark:text-blue-100 text-sm">{parentName}</div>
-                              <div className="text-xs text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
+                              <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{parentName}</div>
+                              <div className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
                                 {variantSummary}
                               </div>
                             </div>
                             {showPricing ? (
                               <div className="text-right text-nowrap flex-shrink-0">
-                                <div className="text-xs text-blue-600 dark:text-blue-400">
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
                                   {totalQty} items
                                 </div>
-                                <div className="font-semibold text-blue-900 dark:text-blue-100">
+                                <div className="font-semibold text-gray-900 dark:text-gray-100">
                                   {previewOrder?.currency || 'CZK'}{totalPrice.toFixed(2)}
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-blue-900 dark:text-blue-100 font-bold text-nowrap">
+                              <div className="text-gray-900 dark:text-gray-100 font-bold text-nowrap">
                                 {totalQty}×
                               </div>
                             )}
@@ -19855,7 +19855,7 @@ export default function PickPack() {
             {previewOrder?.packStatus === 'not_started' && (
               <Button
                 size="sm"
-                className="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-600 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                className="bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
                 disabled={previewOrder && isStartingOrder[previewOrder.id]}
                 onClick={async () => {
                   if (previewOrder) {
@@ -19877,7 +19877,7 @@ export default function PickPack() {
             {previewOrder?.pickStatus === 'in_progress' && (
               <Button
                 size="sm"
-                className="bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                className="bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
                 onClick={() => {
                   if (previewOrder) {
                     setActivePickingOrder(previewOrder);
@@ -19899,7 +19899,7 @@ export default function PickPack() {
             {previewOrder?.packStatus === 'in_progress' && (
               <Button
                 size="sm"
-                className="bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                className="bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
                 onClick={() => {
                   if (previewOrder) {
                     startPacking(previewOrder);
@@ -20061,7 +20061,7 @@ export default function PickPack() {
               {t('cancel')}
             </Button>
             <Button
-              className="bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-600"
+              className="bg-gray-500 dark:bg-gray-600 hover:bg-gray-600 dark:hover:bg-gray-500"
               onClick={() => orderToHold && handlePutOnHold(orderToHold)}
             >
               <Pause className="h-4 w-4 mr-2" />
@@ -20152,7 +20152,7 @@ export default function PickPack() {
               {/* Progress bar */}
               <div className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-green-400 dark:from-green-500 to-blue-400 dark:to-blue-500 transition-all duration-1000 ease-linear"
+                  className="h-full bg-gradient-to-r from-green-400 dark:from-green-500 to-blue-400 dark:to-gray-500 transition-all duration-1000 ease-linear"
                   style={{ width: `${(undoTimeLeft / 20) * 100}%` }}
                 />
               </div>
