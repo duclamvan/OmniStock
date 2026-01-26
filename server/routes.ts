@@ -13098,8 +13098,32 @@ Important:
           
           if (location) {
             const currentQty = location.quantity || 0;
-            const newQty = Math.max(0, currentQty - actualQtyChange);
-            await storage.updateProductLocation(location.id, { quantity: newQty });
+            let remainingToDeduct = actualQtyChange;
+            
+            // Deduct from primary location first
+            const deductFromPrimary = Math.min(currentQty, remainingToDeduct);
+            if (deductFromPrimary > 0) {
+              const newQty = currentQty - deductFromPrimary;
+              await storage.updateProductLocation(location.id, { quantity: newQty });
+              remainingToDeduct -= deductFromPrimary;
+              console.log(`[Pick] Deducted ${deductFromPrimary} from ${location.locationCode} (was ${currentQty}, now ${newQty})`);
+            }
+            
+            // If primary location didn't have enough, spillover to other locations
+            if (remainingToDeduct > 0) {
+              const otherLocations = locations.filter(loc => loc.id !== location.id && (loc.quantity || 0) > 0);
+              for (const otherLoc of otherLocations) {
+                if (remainingToDeduct <= 0) break;
+                const otherQty = otherLoc.quantity || 0;
+                const deductFromOther = Math.min(otherQty, remainingToDeduct);
+                if (deductFromOther > 0) {
+                  const newOtherQty = otherQty - deductFromOther;
+                  await storage.updateProductLocation(otherLoc.id, { quantity: newOtherQty });
+                  remainingToDeduct -= deductFromOther;
+                  console.log(`[Pick] Spillover: Deducted ${deductFromOther} from ${otherLoc.locationCode} (was ${otherQty}, now ${newOtherQty})`);
+                }
+              }
+            }
             
             // ALWAYS update the main product quantity (both virtual and regular products)
             const targetProduct = await storage.getProductById(targetProductId);
