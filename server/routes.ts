@@ -959,6 +959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             and(
               eq(orders.orderType, "pos"),
               eq(orders.fulfillmentStage, "completed"),
+              eq(orders.isArchived, false),
               or(
                 ne(orders.pickStatus, "completed"),
                 isNull(orders.pickStatus)
