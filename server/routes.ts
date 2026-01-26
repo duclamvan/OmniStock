@@ -15009,7 +15009,10 @@ Important:
       
       // Only restore inventory if the order was actually picked (inventory was deducted)
       // If pickStatus is 'pending' or empty, no inventory was ever deducted
-      const shouldRestoreInventory = order.pickStatus === 'completed' || order.pickStatus === 'in_progress';
+      // Also restore for POS orders with fulfillmentStage='completed' (inventory deducted at creation)
+      const shouldRestoreInventory = order.pickStatus === 'completed' || order.pickStatus === 'in_progress' || (order.orderType === 'pos' && order.fulfillmentStage === 'completed');
+      
+      console.log(`[Order Delete] Order ${order.orderId}: pickStatus=${order.pickStatus}, orderType=${order.orderType}, fulfillmentStage=${order.fulfillmentStage}, shouldRestoreInventory=${shouldRestoreInventory}`);
       
       if (!shouldRestoreInventory) {
       }
