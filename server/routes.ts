@@ -29332,22 +29332,19 @@ Other rules:
     try {
       const validated = insertManufacturingRunSchema.parse(req.body);
       
-      // Auto-generate run number
-      const runNumber = await storage.generateManufacturingRunNumber();
-      
       const run = await storage.createManufacturingRun({
         ...validated,
-        runNumber,
         createdBy: req.user?.id,
       });
       
       res.status(201).json(run);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating manufacturing run:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: error.errors });
       }
-      res.status(500).json({ message: 'Failed to create manufacturing run' });
+      const errorMessage = error?.message || 'Failed to create manufacturing run';
+      res.status(500).json({ message: errorMessage });
     }
   });
 
