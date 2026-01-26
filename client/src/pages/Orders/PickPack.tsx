@@ -10038,7 +10038,7 @@ export default function PickPack() {
             {showItemChecklist && (
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
               <AccordionItem value="items" className="shadow-sm border-2 border-gray-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-sky-700 dark:from-sky-800 to-sky-800 dark:to-sky-900 text-white transition-colors -mt-0.5 rounded-t-lg">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-gray-700 dark:from-gray-800 to-gray-800 dark:to-gray-900 text-white transition-colors -mt-0.5 rounded-t-lg">
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
                       <div
@@ -11345,7 +11345,7 @@ export default function PickPack() {
             return isDHL;
           })() && (
           <Card className="shadow-sm border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-700 dark:from-indigo-800 to-indigo-800 dark:to-gray-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+            <CardHeader className="bg-gradient-to-r from-gray-700 dark:from-gray-800 to-gray-800 dark:to-gray-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 {t('shippingInformation')}
@@ -12102,7 +12102,7 @@ export default function PickPack() {
                 return (
                   <div className="space-y-4 mt-6">
                     {/* Separator */}
-                    <Separator className="my-4 bg-gradient-to-r from-yellow-300 dark:from-yellow-600 via-sky-300 dark:via-sky-600 to-sky-300 dark:to-sky-600 h-1" />
+                    <Separator className="my-4 bg-gradient-to-r from-yellow-300 dark:from-yellow-600 via-gray-300 dark:via-gray-600 to-gray-300 dark:to-gray-600 h-1" />
 
                     {/* Collapsible GLS Section */}
                     <Collapsible
@@ -12958,7 +12958,7 @@ export default function PickPack() {
 
             return (
               <Card id="section-gls" className="shadow-sm border-2 border-gray-300 overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-sky-600 dark:from-sky-700 to-sky-700 dark:to-sky-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+                <CardHeader className="bg-gradient-to-r from-gray-600 dark:from-gray-700 to-gray-700 dark:to-gray-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
                     {t('glsShippingWithCartons', { count: glsCartons.length, cartonText: glsCartons.length === 1 ? t('cartonSingular') : t('cartonsPlural') })}
@@ -13212,7 +13212,7 @@ export default function PickPack() {
                 const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
                 
                 if (isPickup) return 'bg-gradient-to-r from-green-600 dark:from-green-500 to-green-700 dark:to-green-600';
-                if (isHandDelivery) return 'bg-gradient-to-r from-blue-600 dark:from-gray-500 to-blue-700 dark:to-blue-600';
+                if (isHandDelivery) return 'bg-gradient-to-r from-gray-600 dark:from-gray-500 to-gray-700 dark:to-gray-600';
                 
                 if (isGLS && cartons.length > 0) {
                   // Check if all tracking numbers are filled and valid
@@ -13255,7 +13255,7 @@ export default function PickPack() {
                 return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
                   ? 'bg-gradient-to-r from-orange-600 dark:from-gray-500 to-orange-700 dark:to-orange-600'
                   : isGLS
-                  ? 'bg-gradient-to-r from-sky-600 dark:from-sky-700 to-sky-700 dark:to-sky-800'
+                  ? 'bg-gradient-to-r from-gray-600 dark:from-gray-700 to-gray-700 dark:to-gray-800'
                   : isDHL
                   ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/300 to-yellow-600'
                   : 'bg-gradient-to-r from-stone-600 dark:from-stone-500 to-stone-700 dark:to-stone-600';
@@ -15369,7 +15369,7 @@ export default function PickPack() {
               disabled={isCompletingPacking}
               className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
                 isCompletingPacking
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white cursor-wait'
+                  ? 'bg-gradient-to-r from-purple-600 to-gray-600 text-white cursor-wait'
                   : canCompletePacking
                   ? 'bg-gradient-to-r from-green-600 dark:from-green-500 to-emerald-600 dark:to-emerald-500 hover:from-green-700 dark:hover:from-green-600 hover:to-emerald-700 dark:hover:to-emerald-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-900/300 hover:bg-gray-500 text-white'
@@ -15501,7 +15501,7 @@ export default function PickPack() {
                       }
                     }
                   }}
-                  className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
+                  className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-700 text-white shadow-lg"
                   data-testid="button-pick-next-order"
                 >
                   {(() => {
@@ -15700,7 +15700,7 @@ export default function PickPack() {
       <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden">
         {/* Header - Ultra Compact for Mobile */}
-        <div className="bg-gradient-to-r from-blue-700 dark:from-gray-900 to-blue-800 dark:to-blue-950 text-white shadow-lg z-20">
+        <div className="bg-gradient-to-r from-gray-700 dark:from-gray-900 to-gray-800 dark:to-gray-950 text-white shadow-lg z-20">
           <div className="px-3 lg:px-6 py-2 lg:py-4">
             {/* Mobile Layout - Ultra Compact */}
             <div className="lg:hidden">
@@ -15989,7 +15989,7 @@ export default function PickPack() {
               className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-blue-600 dark:from-blue-700 to-indigo-600 dark:to-indigo-700 text-white p-3 sm:p-4 flex-shrink-0">
+              <div className="bg-gradient-to-r from-gray-600 dark:from-gray-700 to-gray-600 dark:to-gray-700 text-white p-3 sm:p-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -16337,7 +16337,7 @@ export default function PickPack() {
                 
                 {/* Continue Picking Button */}
                 <Button 
-                  className="w-full h-12 text-sm sm:text-base font-bold bg-gradient-to-r from-blue-600 dark:from-gray-500 to-indigo-600 dark:to-gray-1000 hover:from-blue-700 dark:hover:from-blue-600 hover:to-indigo-700 dark:hover:to-indigo-600 active:from-blue-800 dark:active:from-blue-700 active:to-indigo-800 dark:active:to-indigo-700 text-white touch-manipulation"
+                  className="w-full h-12 text-sm sm:text-base font-bold bg-gradient-to-r from-gray-600 dark:from-gray-500 to-gray-600 dark:to-gray-1000 hover:from-gray-700 dark:hover:from-gray-600 hover:to-gray-700 dark:hover:to-gray-600 active:from-gray-800 dark:active:from-gray-700 active:to-gray-800 dark:active:to-gray-700 text-white touch-manipulation"
                   onClick={() => setShowItemOverviewModal(false)}
                   data-testid="button-close-overview-bottom"
                 >
@@ -17768,7 +17768,7 @@ export default function PickPack() {
               const rankColors: Record<string, string> = {
                 rookie: 'from-gray-500 to-gray-600',
                 skilled: 'from-green-500 to-emerald-600',
-                expert: 'from-gray-500 to-indigo-600',
+                expert: 'from-gray-500 to-gray-600',
                 master: 'from-gray-500 to-violet-600',
                 legend: 'from-gray-500 via-orange-500 to-gray-1000'
               };
@@ -17882,7 +17882,7 @@ export default function PickPack() {
                       {/* Stats Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
                         <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-900/20 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-800">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-500 to-indigo-600 flex items-center justify-center mx-auto mb-2">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center mx-auto mb-2">
                             <Package className="h-5 w-5 text-white" />
                           </div>
                           <div className="text-2xl sm:text-3xl font-bold text-gray-600 dark:text-gray-400">{completedToday}</div>
@@ -17929,7 +17929,7 @@ export default function PickPack() {
                             <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('under3min', '<3 min order')}</p>
                           </div>
                           <div className="text-center p-3 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-400 to-gray-1000 flex items-center justify-center">
+                            <div className="h-10 w-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-gray-400 to-gray-1000 flex items-center justify-center">
                               <Target className="h-5 w-5 text-white" />
                             </div>
                             <p className="text-xs font-medium text-gray-900 dark:text-white">{t('perfectPicker', 'Perfect Picker')}</p>
@@ -17966,7 +17966,7 @@ export default function PickPack() {
               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-700">
                   {/* Header */}
-                  <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 p-5 sm:p-6 relative overflow-hidden">
+                  <div className="bg-gradient-to-r from-gray-600 via-blue-600 to-gray-600 p-5 sm:p-6 relative overflow-hidden">
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
                     <div className="flex items-center justify-between relative z-10">
                       <div className="flex items-center gap-4">
@@ -18240,7 +18240,7 @@ export default function PickPack() {
                         {t('cancel', 'Cancel')}
                       </Button>
                       <Button
-                        className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
+                        className="flex-1 bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-700 text-white"
                         onClick={applyRouteOptimization}
                       >
                         <Route className="h-4 w-4 mr-2" />
@@ -18325,7 +18325,7 @@ export default function PickPack() {
                       <Button 
                         className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
                           batchPickingMode 
-                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-gray-500/25 border-0' 
+                            ? 'bg-gradient-to-r from-purple-600 to-gray-600 hover:from-purple-700 hover:to-gray-700 text-white shadow-lg shadow-gray-500/25 border-0' 
                             : 'hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-950/30'
                         }`}
                         variant={batchPickingMode ? "default" : "outline"} 
@@ -18343,7 +18343,7 @@ export default function PickPack() {
                       <Button 
                         className={`w-full justify-start h-10 sm:h-12 text-sm sm:text-base transition-all duration-200 ${
                           showRouteOptimizer 
-                            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 border-0' 
+                            ? 'bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-700 text-white shadow-lg shadow-gray-500/25 border-0' 
                             : 'hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-950/30 group'
                         }`}
                         variant={showRouteOptimizer ? "default" : "outline"} 
@@ -18418,7 +18418,7 @@ export default function PickPack() {
             {/* Batch Picking Controls */}
             {batchPickingMode && (
               <Card className="mb-4 border-2 border-gray-500 dark:border-gray-600 overflow-hidden shadow-lg shadow-gray-500/10">
-                <CardHeader className="bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 text-white pb-4 pt-4">
+                <CardHeader className="bg-gradient-to-r from-purple-600 via-purple-500 to-gray-600 text-white pb-4 pt-4">
                   <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span className="flex items-center gap-3">
                       <div className="p-2 bg-white/20 rounded-lg">
@@ -20152,7 +20152,7 @@ export default function PickPack() {
               {/* Progress bar */}
               <div className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-green-400 dark:from-green-500 to-blue-400 dark:to-gray-500 transition-all duration-1000 ease-linear"
+                  className="h-full bg-gradient-to-r from-green-400 dark:from-green-500 to-gray-400 dark:to-gray-500 transition-all duration-1000 ease-linear"
                   style={{ width: `${(undoTimeLeft / 20) * 100}%` }}
                 />
               </div>
