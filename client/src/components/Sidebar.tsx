@@ -236,24 +236,16 @@ export function Sidebar() {
     return filterNavItems(navigation, isAdministrator);
   }, [isAdministrator]);
   
-  // Default sections to expand on first load
-  const defaultExpandedSections = ['orders', 'warehouse', 'stock', 'warehouseOperations', 'imports', 'manufacturing'];
+  // All accordion sections should be expanded by default
+  const allAccordionSections = ['orders', 'warehouse', 'stock', 'warehouseOperations', 'imports', 'manufacturing'];
   
   // Storage key for persisting sidebar state per user
   const SIDEBAR_STATE_KEY = 'sidebar_expanded_sections';
   
-  // Load saved state from localStorage or use defaults
+  // Always expand all accordion sections by default
   const getInitialOpenItems = useCallback(() => {
-    try {
-      const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
-      if (savedState) {
-        return JSON.parse(savedState) as string[];
-      }
-    } catch (e) {
-      console.error('Error loading sidebar state:', e);
-    }
-    // Return default expanded sections on first load
-    return defaultExpandedSections;
+    // Always return all sections expanded - no saved collapsed state
+    return allAccordionSections;
   }, []);
   
   // Find parent menus that should be open based on current location
