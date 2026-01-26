@@ -859,9 +859,33 @@ async function finalizeReceivingInventory(
       return result;
     }
     
-    // IDEMPOTENCY GUARD: Check if this receipt was already marked as stored
-    if (receipt.status === 'stored') {
-      console.log(`Receipt ${receiptId} was already stored, skipping inventory addition to prevent duplicates`);
+    // IDEMPOTENCY GUARD: Check if this receipt was already marked as stored or verified
+    // Also check if inventory was already added (for extra safety against race conditions)
+    if (receipt.status === 'stored' || receipt.status === 'verified') {
+      console.log(`Receipt ${receiptId} has status '${receipt.status}', skipping inventory addition to prevent duplicates`);
+      result.alreadyProcessed = true;
+      result.success = true;
+      return result;
+    }
+    
+    // Additional race condition guard: Mark receipt as being processed immediately
+    // Use a unique processing flag to prevent concurrent calls
+    const processingFlag = `processing-${Date.now()}`;
+    const [lockResult] = await tx
+      .update(receipts)
+      .set({ 
+        status: 'processing',
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(receipts.id, receiptId),
+        // Only update if status is still pending/receiving (not already processing/stored/verified)
+        sql`${receipts.status} NOT IN ('stored', 'verified', 'processing')`
+      ))
+      .returning({ id: receipts.id });
+    
+    if (!lockResult) {
+      console.log(`Receipt ${receiptId} is already being processed or completed, skipping to prevent duplicates`);
       result.alreadyProcessed = true;
       result.success = true;
       return result;
@@ -1545,16 +1569,27 @@ async function finalizeReceivingInventory(
               );
             
             if (existingLocation) {
-              // Update existing location - add quantity
-              await tx
-                .update(productLocations)
-                .set({
-                  quantity: existingLocation.quantity + va.quantity,
-                  updatedAt: new Date()
-                })
-                .where(eq(productLocations.id, existingLocation.id));
+              // DUPLICATE GUARD: Check if this receipt item was already processed
+              // The notes field contains receipt item tracking markers
+              const receiptItemMarker = `RI:${item.id}`;
+              const existingNotes = existingLocation.notes || '';
               
-              console.log(`[Variant Location] Updated ${variantLocationCode} for variant ${va.variantName}: +${va.quantity} (now ${existingLocation.quantity + va.quantity})`);
+              if (existingNotes.includes(receiptItemMarker)) {
+                console.log(`[Variant Location] SKIPPING ${variantLocationCode} for variant ${va.variantName}: already processed (found ${receiptItemMarker} in notes)`);
+              } else {
+                // Update existing location - add quantity and append tracking marker
+                const newNotes = existingNotes ? `${existingNotes},${receiptItemMarker}:V${variant.id}:Q${va.quantity}` : `${receiptItemMarker}:V${variant.id}:Q${va.quantity}`;
+                await tx
+                  .update(productLocations)
+                  .set({
+                    quantity: existingLocation.quantity + va.quantity,
+                    notes: newNotes,
+                    updatedAt: new Date()
+                  })
+                  .where(eq(productLocations.id, existingLocation.id));
+                
+                console.log(`[Variant Location] Updated ${variantLocationCode} for variant ${va.variantName}: +${va.quantity} (now ${existingLocation.quantity + va.quantity})`);
+              }
             } else {
               // Create new location entry
               await tx
@@ -1844,8 +1879,15 @@ async function finalizeReceivingInventory(
     }
     
     // Sync each product's variant quantities from product_locations
+    // IMPORTANT: Only sync products that were processed via variant allocations (in parentProductsNeedingUpdate)
+    // For non-variant products, quantity was already correctly set in productQuantities processing
     for (const productId of allProductIds) {
       try {
+        // CRITICAL FIX: Skip non-variant products that weren't processed via variant allocations
+        // Their quantity was already correctly updated in the productQuantities loop
+        // Only sync if this product is a variant parent (has variants OR was added to parentProductsNeedingUpdate)
+        const isVariantParent = parentProductsNeedingUpdate.has(productId);
+        
         // Check if this product has variants
         const variants = await tx
           .select({ id: productVariants.id, quantity: productVariants.quantity })
@@ -1853,7 +1895,14 @@ async function finalizeReceivingInventory(
           .where(eq(productVariants.productId, productId));
         
         if (variants.length === 0) {
-          // Non-variant product: first check if ANY location records exist
+          // Non-variant product: ONLY sync from locations if it's a variant parent
+          // (which means it was processed via variant allocations and locations were updated)
+          if (!isVariantParent) {
+            console.log(`[finalizeReceivingInventory] Skipping sync for non-variant product ${productId} - quantity already set correctly`);
+            continue;
+          }
+          
+          // This is a variant parent without variants (edge case) - sync from locations
           const existsCheck = await tx
             .select({ count: sql<number>`COUNT(*)::int` })
             .from(productLocations)
