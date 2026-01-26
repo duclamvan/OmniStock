@@ -2352,7 +2352,15 @@ export default function AddOrder() {
         taxRate: data.taxRate ? parseFloat(data.taxRate) / 100 : undefined,
       };
 
-      const response = await apiRequest('PATCH', `/api/orders/${editOrderId}`, convertedData);
+      // Include selected document IDs with the order update
+      const orderUpdateData = {
+        ...convertedData,
+        selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
+      };
+
+      console.log('Updating order with data:', { orderId: editOrderId, keys: Object.keys(orderUpdateData) });
+
+      const response = await apiRequest('PATCH', `/api/orders/${editOrderId}`, orderUpdateData);
       const updatedOrder = await response.json();
       return updatedOrder;
     },
@@ -2379,11 +2387,13 @@ export default function AddOrder() {
       // Navigate to order details page
       window.location.href = `/orders/${editOrderId}`;
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Order update error:", error);
+      // Show detailed error message if available
+      const errorMessage = error?.message || error?.fullResponse?.message || t('orders:failedToUpdateOrder');
       toast({
         title: t('common:error'),
-        description: t('orders:failedToUpdateOrder'),
+        description: errorMessage,
         variant: "destructive",
       });
     },
