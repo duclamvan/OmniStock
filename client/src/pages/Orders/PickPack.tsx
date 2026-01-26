@@ -9610,10 +9610,18 @@ export default function PickPack() {
       const isPPL = shippingMethod.includes('PPL');
       const isGLS = isGLSShipping;
       const isDHL = isDHLShipping;
+      const isPickup = shippingMethod === 'PICKUP';
+      const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
       const codAmount = typeof activePackingOrder.codAmount === 'string'
         ? parseFloat(activePackingOrder.codAmount) 
         : (activePackingOrder.codAmount || 0);
       const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+      
+      // Pickup and Hand-Delivery: No shipping labels required - valid by default
+      if (isPickup || isHandDelivery) {
+        // No label validation needed for these methods
+        return true;
+      }
       
       if (isPPL) {
         // PPL: Must have created shipment and at least one label exists
@@ -9857,8 +9865,15 @@ export default function PickPack() {
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                   const isPPL = shippingMethod.includes('PPL');
                   const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                  const isPickup = shippingMethod === 'PICKUP';
+                  const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
                   
                   if (cartons.length === 0) return 'bg-gray-400/50 dark:bg-gray-600/50';
+                  
+                  // Pickup and Hand-Delivery: Always green - no shipping labels needed
+                  if (isPickup || isHandDelivery) {
+                    return 'bg-green-500 dark:bg-green-600';
+                  }
                   
                   if (isPPL) {
                     // PPL: Check if shipment created and all cartons have labels
@@ -13068,6 +13083,12 @@ export default function PickPack() {
                 }
               }
               
+              const isPickup = activePackingOrder.shippingMethod?.toUpperCase() === 'PICKUP';
+              const isHandDelivery = activePackingOrder.shippingMethod?.toUpperCase() === 'HAND-DELIVERY';
+              
+              if (isPickup) return 'border-2 border-green-300 dark:border-green-700';
+              if (isHandDelivery) return 'border-2 border-blue-300 dark:border-blue-700';
+              
               return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
                 ? 'border-2 border-orange-300 dark:border-orange-700' 
                 : isGLS
@@ -13082,6 +13103,11 @@ export default function PickPack() {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                 const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                 const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                const isPickup = shippingMethod === 'PICKUP';
+                const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
+                
+                if (isPickup) return 'bg-gradient-to-r from-green-600 dark:from-green-500 to-green-700 dark:to-green-600';
+                if (isHandDelivery) return 'bg-gradient-to-r from-blue-600 dark:from-blue-500 to-blue-700 dark:to-blue-600';
                 
                 if (isGLS && cartons.length > 0) {
                   // Check if all tracking numbers are filled and valid
@@ -13131,27 +13157,48 @@ export default function PickPack() {
               })()
             }`}>
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Truck className="h-5 w-5" />
-                {t('shippingLabelsWithCount', { count: (() => {
+                {(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                  const isPickup = shippingMethod === 'PICKUP';
+                  const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
+                  
+                  if (isPickup) return <Package className="h-5 w-5" />;
+                  if (isHandDelivery) return <Truck className="h-5 w-5" />;
+                  return <Truck className="h-5 w-5" />;
+                })()}
+                {(() => {
+                  const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                  const isPickup = shippingMethod === 'PICKUP';
+                  const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
+                  
+                  if (isPickup) return t('orders:pickupOrder', 'Pickup Order');
+                  if (isHandDelivery) return t('orders:handDeliveryOrder', 'Hand Delivery');
+                  
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                   const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                   const isPPL = shippingMethod.includes('PPL');
                   
-                  if (isPPL) {
-                    // For PPL: count cartons if they exist, otherwise count labels from DB
-                    return cartons.length > 0 ? cartons.length : shipmentLabelsFromDB.length;
-                  } else if (isGLS || isDHL) {
-                    // For GLS/DHL: count cartons
-                    return cartons.length;
-                  } else {
-                    // For other methods: count labels from DB or cartons
-                    return shipmentLabelsFromDB.length > 0 ? shipmentLabelsFromDB.length : cartons.length;
-                  }
-                })() })}
+                  const count = (() => {
+                    if (isPPL) {
+                      return cartons.length > 0 ? cartons.length : shipmentLabelsFromDB.length;
+                    } else if (isGLS || isDHL) {
+                      return cartons.length;
+                    } else {
+                      return shipmentLabelsFromDB.length > 0 ? shipmentLabelsFromDB.length : cartons.length;
+                    }
+                  })();
+                  
+                  return t('shippingLabelsWithCount', { count });
+                })()}
                 {(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
+                  const isPickup = shippingMethod === 'PICKUP';
+                  const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
+                  
+                  if (isPickup || isHandDelivery) {
+                    return <CheckCircle className="h-5 w-5 ml-auto" />;
+                  }
                   
                   if (isGLS && cartons.length > 0) {
                     const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
@@ -13175,6 +13222,55 @@ export default function PickPack() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
+              {/* Pickup Section - No shipping required */}
+              {activePackingOrder.shippingMethod?.toUpperCase() === 'PICKUP' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 rounded-lg">
+                    <div className="h-12 w-12 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center flex-shrink-0">
+                      <Package className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-green-800 dark:text-green-200 text-lg">{t('orders:pickupOrder', 'Pickup Order')}</p>
+                      <p className="text-sm text-green-600 dark:text-green-400">{t('orders:noShippingLabelRequired', 'No shipping label required - customer will pick up from store')}</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-green-500 dark:text-green-400 flex-shrink-0" />
+                  </div>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                      {t('orders:pickupReadyNote', 'Once packing is complete, the order will be ready for customer pickup.')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Hand-Delivery Section - Personal delivery */}
+              {activePackingOrder.shippingMethod?.toUpperCase() === 'HAND-DELIVERY' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-cyan-50 dark:to-cyan-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg">
+                    <div className="h-12 w-12 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center flex-shrink-0">
+                      <Truck className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-blue-800 dark:text-blue-200 text-lg">{t('orders:handDeliveryOrder', 'Hand Delivery')}</p>
+                      <p className="text-sm text-blue-600 dark:text-blue-400">{t('orders:noShippingLabelRequiredHandDelivery', 'No shipping label required - personal delivery to customer')}</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                  </div>
+                  {/* Show delivery location if available */}
+                  {activePackingOrder.handDeliveryLocation && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">{t('orders:deliveryLocation', 'Delivery Location')}</p>
+                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">{activePackingOrder.handDeliveryLocation}</p>
+                    </div>
+                  )}
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {t('orders:handDeliveryReadyNote', 'Once packing is complete, the order will be ready for personal delivery.')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* PPL-Specific Actions */}
               {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && (() => {
                 // Check if shipping address is provided
@@ -15049,10 +15145,19 @@ export default function PickPack() {
                   const isPPL = shippingMethodUpper.includes('PPL');
                   const isGLS = isGLSShipping;
                   const isDHL = shippingMethodUpper.includes('DHL');
+                  const isPickup = shippingMethodUpper === 'PICKUP';
+                  const isHandDelivery = shippingMethodUpper === 'HAND-DELIVERY';
                   const codAmount = typeof activePackingOrder.codAmount === 'string'
                     ? parseFloat(activePackingOrder.codAmount) 
                     : (activePackingOrder.codAmount || 0);
                   const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+                  
+                  // Pickup and Hand-Delivery: No shipping labels required - skip validation
+                  if (isPickup || isHandDelivery) {
+                    // These methods don't require any shipping labels - proceed to completion
+                    completePacking();
+                    return;
+                  }
                   
                   // Multi-carrier scenario: DHL Nachnahme COD with multiple cartons
                   if (isDHL && showCOD && cartons.length > 1) {
