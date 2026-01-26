@@ -382,6 +382,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
     // Operational Section (Mobile-optimized for warehouse employees)
     {
       type: "section",
+      key: "warehouseOperations", // Key for filtering (not translated)
       name: t('common:warehouseOperations'),
       items: [
         {
@@ -445,10 +446,12 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         },
       ]
     },
-    // Admin/Management Section
+    // Admin/Management Section - Hidden from warehouse operators
     {
       type: "section",
+      key: "administration", // Key for filtering (not translated)
       name: t('common:administration'),
+      adminOnly: true, // Flag to hide from non-admins
       items: [
         {
           name: t('common:dashboard'),
@@ -601,10 +604,10 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
     }
   ];
 
-  // Filter navigation based on user role
-  const filteredNavigation = isWarehouseOperator 
-    ? navigation.filter(section => section.name === "Warehouse Operations")
-    : navigation; // Admins see everything
+  // Filter navigation based on user role - hide admin sections from non-admins
+  const filteredNavigation = isAdministrator 
+    ? navigation // Admins see everything
+    : navigation.filter(section => !section.adminOnly); // Non-admins only see non-admin sections
 
   // Initialize all sections as expanded on first render
   useEffect(() => {

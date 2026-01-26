@@ -119,39 +119,32 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     );
   }
 
+  // If admin access is required and user is not an administrator, redirect to warehouse dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.role && requireAdmin && !isAdministrator) {
+      // Non-admin users trying to access admin pages get redirected to warehouse dashboard
+      navigate('/warehouse-dashboard');
+    }
+  }, [isLoading, isAuthenticated, user?.role, requireAdmin, isAdministrator, navigate]);
+
   // If admin access is required and user is not an administrator
   if (requireAdmin && !isAdministrator) {
+    // Show loading while redirecting
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-4">
-        <Card className="w-full max-w-md" data-testid="access-denied-card">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="rounded-full bg-destructive/10 p-3">
-                <ShieldX className="h-10 w-10 text-destructive" data-testid="icon-access-denied" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl" data-testid="text-access-denied-title">
-              Access Denied
-            </CardTitle>
-            <CardDescription data-testid="text-access-denied-description">
-              Administrator access required
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <AlertDescription data-testid="text-access-denied-message">
-                You don't have permission to access this page. Please contact your administrator if you believe this is an error.
-              </AlertDescription>
-            </Alert>
-            <Button 
-              onClick={() => navigate("/")} 
-              className="w-full"
-              data-testid="button-go-home"
-            >
-              Go to Homepage
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 p-4">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="flex justify-center">
+            <img 
+              src={logoPath} 
+              alt="Logo" 
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+          <div className="flex items-center justify-center gap-2 text-gray-700 dark:text-gray-300">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="font-medium">{t('common:redirecting', 'Redirecting...')}</span>
+          </div>
+        </div>
       </div>
     );
   }
