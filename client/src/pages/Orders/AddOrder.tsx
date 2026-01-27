@@ -10347,9 +10347,14 @@ export default function AddOrder() {
         <Dialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t('orders:outOfStockWarning')}</DialogTitle>
-              <DialogDescription>
-                {t('orders:outOfStockWarningDesc', { productName: pendingOutOfStockProduct?.name || '' })}
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                {t('orders:outOfStockWarning')}
+              </DialogTitle>
+              <DialogDescription className="flex items-start gap-2 pt-2">
+                <span className="text-amber-600 dark:text-amber-400 font-medium">
+                  {t('orders:outOfStockWarningDesc', { productName: pendingOutOfStockProduct?.name || '' })}
+                </span>
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="flex flex-col sm:flex-row gap-2">
