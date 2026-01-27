@@ -973,7 +973,8 @@ function UnifiedDocumentsList({
       }
     });
     orderFiles.forEach((file: any) => {
-      if ((file.fileUrl || file.url) && !file.mimeType?.startsWith('image/')) {
+      // Include all files - images are converted to PDF pages during merge
+      if (file.fileUrl || file.url) {
         urls.push(file.fileUrl || file.url);
       }
     });
