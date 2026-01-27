@@ -11073,7 +11073,7 @@ export default function PickPack() {
               {/* Add Another Carton Button */}
               <Button
                 variant="outline"
-                className="w-full border-2 border-dashed border-purple-400 dark:border-purple-700 text-purple-800 dark:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-900/30 dark:bg-purple-900/30"
+                className="w-full h-14 text-base font-bold border-2 border-dashed border-gray-400 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 touch-manipulation"
                 onClick={() => {
                   if (activePackingOrder) {
                     // Mark as manually modified to prevent AI recalculation
@@ -11173,7 +11173,7 @@ export default function PickPack() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="h-8 px-3 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white border-white/40"
+                  className="h-12 px-4 text-sm font-bold bg-white/20 hover:bg-white/30 text-white border-white/40 touch-manipulation"
                   onClick={async () => {
                     try {
                       setIsPrintingAllDocuments(true);
@@ -15274,12 +15274,12 @@ export default function PickPack() {
                 }
               }}
               disabled={isCompletingPacking}
-              className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
+              className={`w-full h-16 sm:h-18 text-lg sm:text-xl font-bold shadow-lg transition-all touch-manipulation ${
                 isCompletingPacking
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white cursor-wait'
+                  ? 'bg-gray-500 text-white cursor-wait pointer-events-none'
                   : canCompletePacking
-                  ? 'bg-gradient-to-r from-green-600 dark:from-green-500 to-emerald-600 dark:to-emerald-500 hover:from-green-700 dark:hover:from-green-600 hover:to-emerald-700 dark:hover:to-emerald-600 text-white'
-                  : 'bg-yellow-50 dark:bg-yellow-900/300 hover:bg-yellow-600 text-white'
+                  ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white active:scale-[0.98]'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white'
               }`}
               data-testid="button-complete-packing"
             >
@@ -15314,7 +15314,7 @@ export default function PickPack() {
                     completePacking(true); // Force mode - skip all validation checks
                     setShowForceFinishButton(false);
                   }}
-                  className="w-full h-10 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                  className="w-full h-14 text-base font-bold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 touch-manipulation"
                   data-testid="button-force-finish-packing"
                 >
                   <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
