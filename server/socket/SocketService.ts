@@ -28,7 +28,12 @@ export class SocketService {
     this.io = new SocketIOServer(config.httpServer, {
       cors: {
         origin: process.env.NODE_ENV === "production" 
-          ? [process.env.REPLIT_DEV_DOMAIN || "", `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`]
+          ? [
+              process.env.REPLIT_DEV_DOMAIN || "", 
+              `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
+              "https://wms.davie.shop",
+              "https://www.wms.davie.shop"
+            ].filter(Boolean)
           : ["http://localhost:5000", "http://localhost:3000", "http://0.0.0.0:5000"],
         credentials: true,
         methods: ["GET", "POST"]

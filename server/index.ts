@@ -1,12 +1,30 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import helmet from "helmet";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeSocketService } from "./socket/SocketService";
 import { getSession } from "./auth";
 
 const app = express();
+
+// CORS configuration for production custom domain
+const corsOptions = {
+  origin: process.env.NODE_ENV === "production"
+    ? [
+        process.env.REPLIT_DEV_DOMAIN || "",
+        `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
+        "https://wms.davie.shop",
+        "https://www.wms.davie.shop",
+      ].filter(Boolean)
+    : ["http://localhost:5000", "http://localhost:3000", "http://0.0.0.0:5000"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
 
 // Security headers middleware (helmet)
 const isProduction = process.env.NODE_ENV === "production";
