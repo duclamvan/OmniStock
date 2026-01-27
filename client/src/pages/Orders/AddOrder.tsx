@@ -3089,8 +3089,8 @@ export default function AddOrder() {
 
   const handleOutOfStockConfirm = useCallback((always: boolean) => {
     if (always) {
+      // Only set for this order session - no localStorage persistence
       setAlwaysAllowOutOfStock(true);
-      localStorage.setItem('alwaysAllowOutOfStock', 'true');
     }
     if (pendingOutOfStockProduct) {
       addProductToOrder(pendingOutOfStockProduct, true);
