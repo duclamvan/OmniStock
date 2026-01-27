@@ -818,7 +818,7 @@ export default function AddOrder() {
       shippingCost: 0,
       actualShippingCost: 0,
       adjustment: 0,
-      saleType: 'retail',
+      saleType: 'retail' as const,
     };
   }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, financialHelpers]);
 
@@ -1752,7 +1752,7 @@ export default function AddOrder() {
     }
     
     // Update previous payment method ref
-    previousPaymentMethodRef.current = currentPaymentMethod;
+    previousPaymentMethodRef.current = currentPaymentMethod || null;
     
     // If manually edited and neither carrier nor payment changed, skip auto-calculation
     if (shippingCostManuallyEditedRef.current && !carrierChanged && !paymentMethodChanged) {
@@ -1858,7 +1858,7 @@ export default function AddOrder() {
       watchedShippingMethod,
       selectedCustomer.shippingCountry,
       watchedCurrency,
-      { weight: orderWeight, pplRates, paymentMethod }
+      { weight: orderWeight, pplRates: pplRates as any, paymentMethod }
     );
 
     // Priority: Use settings default price if configured, otherwise use calculated cost
@@ -2220,7 +2220,7 @@ export default function AddOrder() {
       
       // Link applied services to this order
       if (appliedServiceIds.size > 0) {
-        for (const serviceId of appliedServiceIds) {
+        for (const serviceId of Array.from(appliedServiceIds)) {
           try {
             await apiRequest('PATCH', `/api/services/${serviceId}`, { 
               orderId: createdOrder.id,
@@ -3767,7 +3767,7 @@ export default function AddOrder() {
     // Add all items to order
     if (newItems.length > 0) {
       setOrderItems(items => [...items, ...newItems]);
-      setAppliedServiceIds(prev => new Set([...prev, service.id]));
+      setAppliedServiceIds(prev => new Set([...Array.from(prev), service.id]));
       // Auto-check Service BILL when a service is applied
       setIncludeServiceBill(true);
       toast({
@@ -3797,7 +3797,7 @@ export default function AddOrder() {
       setOrderItems(items => items.map(item => {
         if (!item.productId) return item; // Skip services
         
-        const product = productMap.get(item.productId);
+        const product = productMap.get(item.productId) as any;
         if (!product) return item;
         
         let newPrice = 0;
@@ -5263,7 +5263,7 @@ export default function AddOrder() {
                     // Clear selected customer when user starts typing to search for a new one
                     if (selectedCustomer) {
                       setSelectedCustomer(null);
-                      form.setValue('customerId', undefined);
+                      form.setValue('customerId', '');
                     }
                   }}
                   className="pl-10"
@@ -5275,7 +5275,7 @@ export default function AddOrder() {
                     // Backspace or Delete: Clear selected customer to allow new search
                     if ((e.key === 'Backspace' || e.key === 'Delete') && selectedCustomer) {
                       setSelectedCustomer(null);
-                      form.setValue('customerId', undefined);
+                      form.setValue('customerId', '');
                       setShowCustomerDropdown(true);
                     }
                     // Enter: Select first customer from dropdown
@@ -5317,7 +5317,7 @@ export default function AddOrder() {
                     onClick={() => {
                       setSelectedCustomer(null);
                       setCustomerSearch("");
-                      form.setValue('customerId', undefined);
+                      form.setValue('customerId', '');
                     }}
                   >
                     <X className="h-4 w-4" />
@@ -5608,7 +5608,7 @@ export default function AddOrder() {
                                 type: selectedCustomer.type,
                                 totalSpent: selectedCustomer.totalSpent,
                                 customerRank: selectedCustomer.customerRank,
-                                country: selectedCustomer.shippingCountry,
+                                shippingCountry: selectedCustomer.shippingCountry,
                                 totalOrders: selectedCustomer.totalOrders,
                                 firstOrderDate: selectedCustomer.firstOrderDate,
                                 lastOrderDate: selectedCustomer.lastOrderDate,
@@ -5661,7 +5661,7 @@ export default function AddOrder() {
                               setQuickCustomerType(null);
                               setQuickCustomerName("");
                               setQuickCustomerPhone("");
-                              form.setValue('customerId', undefined);
+                              form.setValue('customerId', '');
                             }}
                             className="flex-shrink-0 h-8 px-2 sm:px-3"
                           >
@@ -6164,6 +6164,7 @@ export default function AddOrder() {
                         name: "",
                         facebookName: "",
                         facebookUrl: "",
+                        facebookNumericId: "",
                         profilePictureUrl: "",
                         email: "",
                         phone: "",
@@ -6322,6 +6323,7 @@ export default function AddOrder() {
                                   name: "",
                                   facebookName: "",
                                   facebookUrl: "",
+                                  facebookNumericId: "",
                                   profilePictureUrl: "",
                                   email: "",
                                   phone: "",
@@ -8457,10 +8459,10 @@ export default function AddOrder() {
                         setSelectedPickupLocation(point);
                         setShowPPLSmartPopup(false);
                       }}
-                      customerAddress={selectedCustomer?.street || selectedShippingAddress?.street || form.watch('street')}
-                      customerCity={selectedCustomer?.city || selectedShippingAddress?.city || form.watch('city')}
-                      customerZipCode={selectedCustomer?.zipCode || selectedShippingAddress?.zipCode || form.watch('zipCode')}
-                      language={localizationSettings?.language === 'cs' ? 'cs' : 'en'}
+                      customerAddress={selectedCustomer?.street || selectedShippingAddress?.street || ''}
+                      customerCity={selectedCustomer?.city || selectedShippingAddress?.city || ''}
+                      customerZipCode={selectedCustomer?.zipCode || selectedShippingAddress?.zipCode || ''}
+                      language={(localizationSettings?.language as string) === 'cs' ? 'cs' : 'en'}
                     />
                   </div>
                 )}

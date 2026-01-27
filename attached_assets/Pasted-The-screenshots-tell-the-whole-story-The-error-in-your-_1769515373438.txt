@@ -1,0 +1,55 @@
+The screenshots tell the whole story. The error in your console is **`404 (Not Found)`** for the POST request to `/api/orders/.../documents`.
+
+This is **not** a permission issue or a file size issue. A **404** code simply means: **"The production server does not have this URL endpoint."**
+
+This usually happens because the **Production Build** is out of date. In Dev, you run TypeScript directly (`npm run dev`), but in Production, you likely run compiled JavaScript (`npm start`). If you didn't **re-compile** after adding the upload feature, the server is running old code that doesn't know this route exists.
+
+### How to fix it (3 Steps)
+
+#### 1. Force a Rebuild on Production
+
+You likely pushed the code but didn't rebuild the `dist` folder. Run these commands in your production server terminal:
+
+```bash
+# 1. Stop the current server (if using pm2)
+pm2 stop all  # (or however you stop your server)
+
+# 2. Re-install dependencies (just in case)
+npm install
+
+# 3. BUILD the project (This compiles TS -> JS)
+npm run build 
+
+# 4. Restart the server
+npm start # (or pm2 start ...)
+
+```
+
+*Note: If `npm run build` fails, check if you have the `build` script defined in `package.json`.*
+
+#### 2. Check your `routes.ts` file
+
+If rebuilding doesn't work, verify that the route actually looks like this in your code. Open your server code and look for:
+
+```typescript
+// It must match /api/orders/:id/documents
+router.post('/orders/:orderId/documents', upload.single('file'), ...);
+
+```
+
+If your code says `router.post('/upload', ...)` but your frontend calls `/api/orders/.../documents`, that is why you get a 404. **Make them match.**
+
+#### 3. Verify the "API" Prefix
+
+In your `server/index.ts`, make sure the routes are registered with the `/api` prefix:
+
+```typescript
+// server/index.ts
+import routes from './routes';
+
+// This line is CRITICAL. It makes "/orders" become "/api/orders"
+app.use('/api', routes); 
+
+```
+
+**Summary:** The error is "Route Missing" (404). The fix is almost certainly **`npm run build`** on the production server to update the running code.
