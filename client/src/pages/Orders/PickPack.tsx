@@ -10933,8 +10933,8 @@ export default function PickPack() {
           )}
 
           {/* Multi-Carton Packing Section */}
-          <Card className="shadow-sm border-2 border-purple-300 dark:border-purple-700 overflow-hidden" id="checklist-cartons">
-            <CardHeader className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-purple-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+          <Card className={`shadow-sm border-2 overflow-hidden ${allCartonsValid ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`} id="checklist-cartons">
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${allCartonsValid ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
               <CardTitle className="text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -11163,8 +11163,8 @@ export default function PickPack() {
           </Card>
 
           {/* Documents Card - Packing List + Product Files + Order Files */}
-          <Card id="section-documents" className="shadow-sm border-2 border-emerald-200 dark:border-emerald-700 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-emerald-600 dark:from-emerald-700 to-emerald-700 dark:to-emerald-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+          <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden ${documentsCount === 0 || Object.values(printedDocuments).every(Boolean) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${documentsCount === 0 || Object.values(printedDocuments).every(Boolean) ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <FileText className="h-5 w-5" />
@@ -11262,8 +11262,8 @@ export default function PickPack() {
             const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
             return isDHL;
           })() && (
-          <Card className="shadow-sm border-2 border-indigo-200 dark:border-indigo-700 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-700 dark:from-indigo-800 to-indigo-800 dark:to-indigo-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+          <Card className={`shadow-sm border-2 overflow-hidden ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 {t('shippingInformation')}
@@ -12272,7 +12272,7 @@ export default function PickPack() {
               })() && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Shipping Address */}
-                  <div className="sm:col-span-2 p-4 bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
+                  <div className="sm:col-span-2 p-4 bg-gray-50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
                       <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">{t('shippingAddressLabel')}</span>
