@@ -559,13 +559,8 @@ export default function AddOrder() {
     availableStock: number;
     productName: string;
   } | null>(null);
-  const [alwaysAllowOutOfStock, setAlwaysAllowOutOfStock] = useState(() => {
-    // Load preference from localStorage
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('alwaysAllowOutOfStock') === 'true';
-    }
-    return false;
-  });
+  // Session-only flag - resets when user leaves this order page
+  const [alwaysAllowOutOfStock, setAlwaysAllowOutOfStock] = useState(false);
 
   // Auto-enable discount column only for manual discounts (not Buy X Get Y offers)
   useEffect(() => {
