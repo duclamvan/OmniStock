@@ -11073,7 +11073,7 @@ export default function PickPack() {
               {/* Add Another Carton Button */}
               <Button
                 variant="outline"
-                className="w-full h-14 text-base font-bold border-2 border-dashed border-gray-400 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 touch-manipulation"
+                className="w-full h-16 text-lg font-bold bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white border-0 shadow-lg active:scale-[0.98] touch-manipulation"
                 onClick={() => {
                   if (activePackingOrder) {
                     // Mark as manually modified to prevent AI recalculation
