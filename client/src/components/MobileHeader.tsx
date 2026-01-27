@@ -86,7 +86,11 @@ export function MobileHeader({
       // Immediately change UI language BEFORE persisting to backend
       await i18n.changeLanguage(newLang);
       
-      // Save to user's profile instead of global settings
+      // Save to localStorage for persistence across page refreshes
+      localStorage.setItem('i18nextLng', newLang);
+      localStorage.setItem('app_language', newLang);
+      
+      // Save to user's profile for cross-device sync
       await apiRequest('PATCH', '/api/users/me', {
         preferredLanguage: newLang
       });

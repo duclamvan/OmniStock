@@ -214,6 +214,11 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
   const languageMutation = useMutation({
     mutationFn: async (newLang: 'en' | 'vi') => {
       await i18n.changeLanguage(newLang);
+      
+      // Save to localStorage for persistence across page refreshes
+      localStorage.setItem('i18nextLng', newLang);
+      localStorage.setItem('app_language', newLang);
+      
       // Update the current user's preferred language (per-user, not global)
       await apiRequest('PATCH', '/api/users/me', {
         preferredLanguage: newLang
