@@ -5510,10 +5510,13 @@ export default function AddOrder() {
 
               {/* No results message with Add new customer button */}
               {showCustomerDropdown && customerSearch.length >= 2 && !isSearchingCustomers && customerSearch === debouncedCustomerSearch && (!filteredCustomers || filteredCustomers.length === 0) && (
-                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-3 sm:p-4 text-center text-slate-500 dark:text-slate-400 z-50">
-                  <Search className="h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-1.5 sm:mb-2 text-slate-400 dark:text-slate-500" />
-                  <div className="text-sm sm:text-base">No customers found for "{customerSearch}"</div>
-                  <div className="text-[10px] sm:text-xs mt-1">Try searching by name, email, phone, Facebook name, or paste a Facebook URL</div>
+                <div className="absolute top-full left-0 right-0 mt-1 border-2 border-amber-400 dark:border-amber-500 rounded-md bg-amber-50 dark:bg-amber-900/30 shadow-lg p-3 sm:p-4 text-center z-50">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500" />
+                    <span className="text-base sm:text-lg font-bold text-amber-700 dark:text-amber-300">Customer Not Found</span>
+                  </div>
+                  <div className="text-sm text-amber-600 dark:text-amber-400">No existing customer matches "{customerSearch.length > 50 ? customerSearch.substring(0, 50) + '...' : customerSearch}"</div>
+                  <div className="text-[10px] sm:text-xs mt-1 text-amber-500 dark:text-amber-500">You need to create a new customer</div>
                   
                   {/* Show Facebook URL detected message */}
                   {extractFacebookId(customerSearch) && (
