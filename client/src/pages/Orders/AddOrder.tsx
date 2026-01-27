@@ -1671,9 +1671,11 @@ export default function AddOrder() {
     },
   });
 
-  // Update product prices when currency changes
+  // Update product prices when currency changes (skip in edit mode - preserve saved prices)
   const selectedCurrency = form.watch('currency');
   useEffect(() => {
+    // Skip in edit mode - preserve the saved order prices
+    if (isEditMode) return;
     if (!selectedCurrency || orderItems.length === 0 || !allProducts) return;
 
     setOrderItems(items => 
@@ -1698,7 +1700,7 @@ export default function AddOrder() {
         };
       })
     );
-  }, [selectedCurrency, allProducts]);
+  }, [selectedCurrency, allProducts, isEditMode]);
 
   // Auto-calculate shipping cost when shipping method or customer country changes
   const watchedShippingMethod = form.watch('shippingMethod');
