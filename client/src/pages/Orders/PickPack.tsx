@@ -9998,8 +9998,8 @@ export default function PickPack() {
             {/* Item Verification List - Collapsible Accordion (toggleable via settings) */}
             {showItemChecklist && (
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className={`shadow-sm border-2 rounded-lg bg-white overflow-hidden ${(packingChecklist.itemsVerified || allItemsVerified) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`} id="checklist-items-verified">
-                <AccordionTrigger className={`px-4 py-3 hover:no-underline transition-colors -mt-0.5 rounded-t-lg text-white text-lg font-bold ${(packingChecklist.itemsVerified || allItemsVerified) ? 'bg-green-600 dark:bg-green-700' : 'bg-gray-600 dark:bg-gray-700'}`}>
+              <AccordionItem value="items" className={`shadow-sm border-2 rounded-lg bg-white overflow-hidden ${(packingChecklist.itemsVerified || allItemsVerified) ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-items-verified">
+                <AccordionTrigger className={`px-4 py-3 hover:no-underline transition-colors -mt-0.5 rounded-t-lg text-white text-lg font-bold ${(packingChecklist.itemsVerified || allItemsVerified) ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
                       <div
@@ -10918,8 +10918,16 @@ export default function PickPack() {
 
           {/* Packing Materials Section - Hidden when empty for performance */}
           {orderPackingMaterials.length > 0 && (
-            <Card className={`shadow-sm border-2 overflow-hidden ${Object.values(packingMaterialsApplied).length > 0 && Object.values(packingMaterialsApplied).every(Boolean) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
-              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${Object.values(packingMaterialsApplied).length > 0 && Object.values(packingMaterialsApplied).every(Boolean) ? 'bg-green-600 dark:bg-green-700' : 'bg-gray-600 dark:bg-gray-700'}`}>
+            <Card className={`shadow-sm border-2 overflow-hidden ${
+              orderPackingMaterials.every((m: any) => packingMaterialsApplied[m.id]) 
+                ? 'border-green-400 dark:border-green-600' 
+                : 'border-amber-400 dark:border-amber-600'
+            }`}>
+              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${
+                orderPackingMaterials.every((m: any) => packingMaterialsApplied[m.id]) 
+                  ? 'bg-green-600 dark:bg-green-700' 
+                  : 'bg-amber-600 dark:bg-amber-700'
+              }`}>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <Package className="h-6 w-6" />
                   {t('packingMaterials')}
@@ -10976,8 +10984,8 @@ export default function PickPack() {
           )}
 
           {/* Multi-Carton Packing Section */}
-          <Card className={`shadow-sm border-2 overflow-hidden ${cartons.length > 0 ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`} id="checklist-cartons">
-            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 0 ? 'bg-green-600 dark:bg-green-700' : 'bg-gray-600 dark:bg-gray-700'}`}>
+          <Card className={`shadow-sm border-2 overflow-hidden ${cartons.length > 0 ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-cartons">
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 0 ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -11206,8 +11214,24 @@ export default function PickPack() {
           </Card>
 
           {/* Documents Card - Packing List + Product Files + Order Files */}
-          <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden ${documentsCount === 0 || Object.values(printedDocuments).every(Boolean) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
-            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${documentsCount === 0 || Object.values(printedDocuments).every(Boolean) ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
+          <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden ${
+            (() => {
+              const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
+              const packingListPrinted = printedDocuments.packingList;
+              if (packingListRequired && !packingListPrinted) return 'border-red-400 dark:border-red-600'; // Required but not printed
+              if (documentsCount === 0 || (packingListRequired && packingListPrinted) || !packingListRequired) return 'border-green-400 dark:border-green-600'; // OK
+              return 'border-gray-300 dark:border-gray-600';
+            })()
+          }`}>
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${
+              (() => {
+                const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
+                const packingListPrinted = printedDocuments.packingList;
+                if (packingListRequired && !packingListPrinted) return 'bg-red-600 dark:bg-red-700'; // Required but not printed
+                if (documentsCount === 0 || (packingListRequired && packingListPrinted) || !packingListRequired) return 'bg-green-600 dark:bg-green-700'; // OK
+                return 'bg-gray-600 dark:bg-gray-700';
+              })()
+            }`}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <FileText className="h-5 w-5" />
