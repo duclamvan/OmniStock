@@ -11022,7 +11022,7 @@ export default function PickPack() {
           {/* Multi-Carton Packing Section */}
           <div className="flex items-start gap-2" ref={cartonsSectionRef}>
             <Card className={`shadow-sm border-2 overflow-hidden flex-1 ${cartons.length > 0 ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-cartons">
-              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 0 && cartonsScrolledIntoView ? 'bg-green-600 dark:bg-green-700' : cartons.length > 0 ? 'bg-gray-500 dark:bg-gray-600' : 'bg-red-600 dark:bg-red-700'}`}>
+              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 1 ? 'bg-green-600 dark:bg-green-700' : cartons.length > 0 && cartonsScrolledIntoView ? 'bg-green-600 dark:bg-green-700' : cartons.length > 0 ? 'bg-gray-500 dark:bg-gray-600' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -11251,7 +11251,7 @@ export default function PickPack() {
             </Card>
             {/* Tick mark indicator for Cartons */}
             <div className="flex-shrink-0 mt-3">
-              <CheckCircle2 className={`h-8 w-8 ${cartons.length > 0 && cartonsScrolledIntoView ? 'text-green-500' : 'text-gray-300'}`} />
+              <CheckCircle2 className={`h-8 w-8 ${cartons.length > 1 ? 'text-green-500' : cartons.length > 0 && cartonsScrolledIntoView ? 'text-green-500' : 'text-gray-300'}`} />
             </div>
           </div>
 
