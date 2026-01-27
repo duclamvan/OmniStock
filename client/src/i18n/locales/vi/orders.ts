@@ -888,6 +888,7 @@ const orders = {
   filesDocuments: 'Tệp & Tài liệu',
   uploadFilesDocuments: 'Tải lên tệp và quản lý tài liệu sản phẩm',
   uploadedFilesCount: 'Tệp đã tải lên ({{count}})',
+  savedFiles: 'Tệp đã lưu ({{count}})',
   noFilesYet: 'Chưa có tệp nào',
   uploadFilesOrAddProducts: 'Tải lên tệp hoặc thêm sản phẩm có tệp',
   

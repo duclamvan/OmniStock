@@ -539,6 +539,7 @@ export default function AddOrder() {
 
   // File upload state
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [existingUploadedFiles, setExistingUploadedFiles] = useState<{name: string; url: string; size: number}[]>([]);
 
   // Column visibility toggles
   const [showVatColumn, setShowVatColumn] = useState(false);
@@ -1093,8 +1094,12 @@ export default function AddOrder() {
     const order = existingOrder as any;
     if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
       setSelectedDocumentIds(order.selectedDocumentIds);
-      documentsInitialized.current = true;
     }
+    // Load existing uploaded files
+    if (order.includedDocuments?.uploadedFiles && Array.isArray(order.includedDocuments.uploadedFiles)) {
+      setExistingUploadedFiles(order.includedDocuments.uploadedFiles);
+    }
+    documentsInitialized.current = true;
   }, [existingOrder?.id, isEditMode]);
 
   // Debounce search inputs for better performance
@@ -4200,7 +4205,7 @@ export default function AddOrder() {
         isFreeItem: item.isFreeItem || undefined,
       })),
       includedDocuments: {
-        uploadedFiles: uploadedFileUrls,
+        uploadedFiles: [...existingUploadedFiles, ...uploadedFileUrls],
         includeServiceBill: includeServiceBill,
         includePackingList: includePackingList,
       },
@@ -9001,7 +9006,52 @@ export default function AddOrder() {
               
               {/* Files List Section */}
               <div className="space-y-4">
-                {/* Uploaded Files */}
+                {/* Existing Uploaded Files (from previous saves) */}
+                {existingUploadedFiles.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      {t('orders:savedFiles', { count: existingUploadedFiles.length })}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {existingUploadedFiles.map((file, index) => (
+                        <div
+                          key={`existing-${index}`}
+                          className="border border-green-200 dark:border-green-700 rounded-lg p-3 bg-green-50 dark:bg-green-900/20 hover:border-green-300 dark:hover:border-green-600 transition-colors"
+                          data-testid={`existing-file-${index}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                              <div className="mt-0.5 flex-shrink-0">
+                                <FileText className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                                  Saved
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setExistingUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                              className="h-8 w-8 p-0 flex-shrink-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                              data-testid={`button-remove-existing-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* New Uploaded Files */}
                 {uploadedFiles.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
@@ -9046,7 +9096,7 @@ export default function AddOrder() {
                   </div>
                 )}
 
-                {uploadedFiles.length === 0 && (
+                {uploadedFiles.length === 0 && existingUploadedFiles.length === 0 && (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <FileText className="mx-auto h-12 w-12 mb-3 text-slate-400 dark:text-slate-600" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('orders:noFilesYet')}</p>

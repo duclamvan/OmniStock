@@ -884,6 +884,7 @@ const orders = {
   filesDocuments: 'Files & Documents',
   uploadFilesDocuments: 'Upload files and manage product documents',
   uploadedFilesCount: 'Uploaded Files ({{count}})',
+  savedFiles: 'Saved Files ({{count}})',
   noFilesYet: 'No files yet',
   uploadFilesOrAddProducts: 'Upload files or add products with files',
   
