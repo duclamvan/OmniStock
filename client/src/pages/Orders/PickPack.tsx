@@ -10359,7 +10359,23 @@ export default function PickPack() {
                         });
                         
                         let groupIndex = 0;
-                        return Array.from(productGroups.entries()).map(([productId, groupItems]) => {
+                        // Sort groups: verified items go to bottom
+                        const sortedEntries = Array.from(productGroups.entries()).sort(([, itemsA], [, itemsB]) => {
+                          const isAVerified = itemsA.every(item => {
+                            if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                              return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                            }
+                            return (verifiedItems[item.id] || 0) >= item.quantity;
+                          });
+                          const isBVerified = itemsB.every(item => {
+                            if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                              return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                            }
+                            return (verifiedItems[item.id] || 0) >= item.quantity;
+                          });
+                          return isAVerified === isBVerified ? 0 : isAVerified ? 1 : -1;
+                        });
+                        return sortedEntries.map(([productId, groupItems]) => {
                           const isMultiVariant = groupItems.length > 1;
                           const firstItem = groupItems[0];
                           const parentName = isMultiVariant 
