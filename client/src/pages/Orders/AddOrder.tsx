@@ -4103,17 +4103,41 @@ export default function AddOrder() {
           formData.append('files', file);
         });
         
-        const response = await fetch('/api/orders/documents/upload', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-        });
+        // Retry logic for file upload (production can have intermittent issues)
+        let retries = 2;
+        let response: Response | null = null;
         
-        if (response.ok) {
+        while (retries > 0) {
+          try {
+            response = await fetch('/api/orders/documents/upload', {
+              method: 'POST',
+              body: formData,
+              credentials: 'include',
+            });
+            
+            if (response.ok) {
+              break;
+            }
+            retries--;
+            if (retries > 0) {
+              console.log(`Document upload failed (${response.status}), retrying... (${retries} attempts left)`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } catch (fetchError) {
+            console.error('Fetch error during document upload:', fetchError);
+            retries--;
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+        
+        if (response?.ok) {
           const result = await response.json();
           uploadedFileUrls = result.uploadedFiles || [];
         } else {
-          console.error('Failed to upload documents');
+          const errorText = response ? await response.text().catch(() => 'Unknown error') : 'No response';
+          console.error('Failed to upload documents:', response?.status, errorText);
           toast({
             title: t('common:error'),
             description: t('orders:failedToUploadDocuments'),
@@ -4122,6 +4146,11 @@ export default function AddOrder() {
         }
       } catch (error) {
         console.error('Error uploading documents:', error);
+        toast({
+          title: t('common:error'),
+          description: t('orders:failedToUploadDocuments'),
+          variant: 'destructive',
+        });
       }
     }
 
