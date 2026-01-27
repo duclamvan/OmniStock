@@ -403,3 +403,7 @@ export function useOrderDetailPrinter() {
 export function useWarehouseLabelPrinter() {
   return usePrinter({ context: 'warehouse_label_printer' });
 }
+
+export function useDocumentPrinter() {
+  return usePrinter({ context: 'document_printer_name' });
+}

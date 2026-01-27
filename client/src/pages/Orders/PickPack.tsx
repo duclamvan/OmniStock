@@ -55,7 +55,7 @@ import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { DHLAutofillButton } from "@/components/shipping/DHLAutofillButton";
 import { getCountryForCarrier, countryToIso, getLocalizedCountryName, getCountryFlag, type ShippingCarrier } from '@shared/utils/countryNormalizer';
 import { useTranslation } from 'react-i18next';
-import { usePPLLabelPrinter, usePackingListPrinter } from "@/hooks/usePrinter";
+import { usePPLLabelPrinter, usePackingListPrinter, useDocumentPrinter } from "@/hooks/usePrinter";
 import { 
   Dialog, 
   DialogContent, 
@@ -829,6 +829,46 @@ function UnifiedDocumentsList({
 }) {
   const { t } = useTranslation('orders');
   
+  // Use QZ Tray for fast printing
+  const { printDocument, isPrinting: isPrintingDoc, isConnected: isQZConnected } = useDocumentPrinter();
+  const [printingFileId, setPrintingFileId] = useState<string | null>(null);
+  
+  // Helper function to fetch PDF from URL and print via QZ Tray
+  const printViaQZTray = async (url: string, fileId: string, onPrinted: () => void) => {
+    setPrintingFileId(fileId);
+    try {
+      // Fetch the PDF from the URL
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF');
+      }
+      
+      const blob = await response.blob();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      
+      // Print via QZ Tray (falls back to browser if not connected)
+      await printDocument(base64, true);
+      onPrinted();
+    } catch (error) {
+      console.error('QZ Tray print error:', error);
+      // Fallback to opening PDF in browser
+      openPDFAndPrint(url);
+      onPrinted();
+    } finally {
+      setPrintingFileId(null);
+    }
+  };
+  
   // Fetch product documents
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
@@ -873,7 +913,7 @@ function UnifiedDocumentsList({
 
   // Filter to only show uploaded files (source: 'uploaded')
   // Product files are already shown separately via productFiles array
-  const orderFilesFromApi = (orderFilesData || []).filter((f: any) => f.source === 'uploaded' || !f.source);
+  const orderFilesFromApi = (orderFilesData || []).filter((f: any) => f.source === 'uploaded' || f.source === 'order-upload' || !f.source);
   
   // Also include uploadedFiles from includedDocuments (files attached during order creation)
   const includedUploadedFiles = (includedDocuments?.uploadedFiles || []).map((file: any, index: number) => ({
@@ -958,6 +998,7 @@ function UnifiedDocumentsList({
     name, 
     subtitle, 
     isPrinted, 
+    isPrintingThis = false,
     onPrint, 
     onView, 
     testId 
@@ -966,6 +1007,7 @@ function UnifiedDocumentsList({
     name: string; 
     subtitle?: string; 
     isPrinted: boolean; 
+    isPrintingThis?: boolean;
     onPrint: () => void; 
     onView: () => void; 
     testId?: string;
@@ -1024,9 +1066,15 @@ function UnifiedDocumentsList({
               : 'hover:bg-emerald-50 dark:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-200 dark:text-emerald-200 hover:border-emerald-300 dark:border-emerald-700'
           }`}
           onClick={onPrint}
+          disabled={isPrintingThis}
           data-testid={`${testId}-print`}
         >
-          {isPrinted ? (
+          {isPrintingThis ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              {t('printing')}
+            </>
+          ) : isPrinted ? (
             <>
               <CheckCircle className="h-3.5 w-3.5 mr-1" />
               {t('printed')}
@@ -1085,9 +1133,9 @@ function UnifiedDocumentsList({
             subtitle={subtitle}
             isPrinted={isPrinted}
             onPrint={() => {
-              openPDFAndPrint(file.fileUrl || file.url);
-              onProductFilePrinted(file.id);
+              printViaQZTray(file.fileUrl || file.url, file.id, () => onProductFilePrinted(file.id));
             }}
+            isPrintingThis={printingFileId === file.id}
             onView={() => window.open(file.fileUrl || file.url, '_blank')}
             testId={`doc-product-${file.id}`}
           />
@@ -1116,9 +1164,9 @@ function UnifiedDocumentsList({
             name={file.fileName || file.name}
             isPrinted={isPrinted}
             onPrint={() => {
-              openPDFAndPrint(file.fileUrl || file.url);
-              onOrderFilePrinted(fileId);
+              printViaQZTray(file.fileUrl || file.url, fileId, () => onOrderFilePrinted(fileId));
             }}
+            isPrintingThis={printingFileId === fileId}
             onView={() => window.open(file.fileUrl || file.url, '_blank')}
             testId={`doc-order-${index}`}
           />
@@ -9990,7 +10038,14 @@ export default function PickPack() {
                 }}
                 title={t('scrollToDocuments')}
                 className={`flex-1 h-1.5 rounded-sm transition-all cursor-pointer hover:opacity-80 hover:scale-y-150 focus:outline-none focus:ring-2 focus:ring-white/50 ${
-                (activePackingOrder?.includedDocuments?.includePackingList !== true || printedDocuments.packingList)
+                (() => {
+                  // Check if all documents are printed
+                  const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
+                  const packingListPrinted = printedDocuments.packingList;
+                  const totalPrinted = (packingListRequired && packingListPrinted ? 1 : 0) + printedProductFiles.size + printedOrderFiles.size;
+                  const allDocumentsPrinted = documentsCount > 0 && totalPrinted >= documentsCount;
+                  return documentsCount === 0 || allDocumentsPrinted;
+                })()
                   ? 'bg-green-500 dark:bg-green-600' 
                   : 'bg-gray-400/50 dark:bg-gray-600/50'
               }`}
@@ -11331,20 +11386,40 @@ export default function PickPack() {
           <div className="flex items-start gap-2">
             <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden flex-1 ${
             (() => {
+              // Check if all documents are printed
               const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
               const packingListPrinted = printedDocuments.packingList;
-              if (packingListRequired && !packingListPrinted) return 'border-red-400 dark:border-red-600'; // Required but not printed
-              if (documentsCount === 0 || (packingListRequired && packingListPrinted) || !packingListRequired) return 'border-green-400 dark:border-green-600'; // OK
-              return 'border-gray-300 dark:border-gray-600';
+              const packingListOk = !packingListRequired || packingListPrinted;
+              
+              // Check if all product files and order files are printed
+              const allProductFilesPrinted = printedProductFiles.size >= 0; // Will be validated with actual count
+              const allOrderFilesPrinted = printedOrderFiles.size >= 0; // Will be validated with actual count
+              
+              // Calculate total printed count vs total document count
+              const totalPrinted = (packingListRequired && packingListPrinted ? 1 : 0) + printedProductFiles.size + printedOrderFiles.size;
+              const allDocumentsPrinted = documentsCount > 0 && totalPrinted >= documentsCount;
+              
+              if (documentsCount === 0) return 'border-green-400 dark:border-green-600'; // No documents needed
+              if (allDocumentsPrinted) return 'border-green-400 dark:border-green-600'; // All printed
+              if (!packingListOk) return 'border-red-400 dark:border-red-600'; // Required packing list not printed
+              return 'border-gray-300 dark:border-gray-600'; // Some documents not printed yet
             })()
           }`}>
             <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${
               (() => {
+                // Check if all documents are printed
                 const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
                 const packingListPrinted = printedDocuments.packingList;
-                if (packingListRequired && !packingListPrinted) return 'bg-red-600 dark:bg-red-700'; // Required but not printed
-                if (documentsCount === 0 || (packingListRequired && packingListPrinted) || !packingListRequired) return 'bg-green-600 dark:bg-green-700'; // OK
-                return 'bg-gray-600 dark:bg-gray-700';
+                const packingListOk = !packingListRequired || packingListPrinted;
+                
+                // Calculate total printed count vs total document count
+                const totalPrinted = (packingListRequired && packingListPrinted ? 1 : 0) + printedProductFiles.size + printedOrderFiles.size;
+                const allDocumentsPrinted = documentsCount > 0 && totalPrinted >= documentsCount;
+                
+                if (documentsCount === 0) return 'bg-green-600 dark:bg-green-700'; // No documents needed
+                if (allDocumentsPrinted) return 'bg-green-600 dark:bg-green-700'; // All printed
+                if (!packingListOk) return 'bg-red-600 dark:bg-red-700'; // Required packing list not printed
+                return 'bg-gray-600 dark:bg-gray-700'; // Some documents not printed yet
               })()
             }`}>
               <div className="flex items-center justify-between">
@@ -11441,9 +11516,16 @@ export default function PickPack() {
             <div className="flex-shrink-0 mt-3">
               <CheckCircle2 className={`h-8 w-8 ${
                 (() => {
+                  // Check if all documents are printed
                   const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
                   const packingListPrinted = printedDocuments.packingList;
-                  return documentsCount === 0 || (packingListRequired && packingListPrinted) || !packingListRequired;
+                  
+                  // Calculate total printed count vs total document count
+                  const totalPrinted = (packingListRequired && packingListPrinted ? 1 : 0) + printedProductFiles.size + printedOrderFiles.size;
+                  const allDocumentsPrinted = documentsCount > 0 && totalPrinted >= documentsCount;
+                  
+                  // Green if no documents needed OR all documents printed
+                  return documentsCount === 0 || allDocumentsPrinted;
                 })() ? 'text-green-500' : 'text-gray-300'
               }`} />
             </div>
