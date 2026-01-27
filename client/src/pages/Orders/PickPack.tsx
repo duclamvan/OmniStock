@@ -1563,7 +1563,7 @@ function PickingListView({
   return (
     <div className="space-y-3">
       {/* Overall Progress Header */}
-      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 sm:p-4 shadow-sm">
+      <div className="bg-gray-50 dark:bg-gray-800/50 border-2 border-gray-300 dark:border-gray-600 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -1580,7 +1580,7 @@ function PickingListView({
         </div>
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+            className="h-full bg-green-500 dark:bg-green-600 transition-all duration-500"
             style={{ width: `${(order.pickedItems / order.totalItems) * 100}%` }}
           />
         </div>
@@ -2240,7 +2240,7 @@ function GroupedPickingListView({
   return (
     <div className="space-y-3">
       {/* Overall Progress Header */}
-      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 sm:p-4 shadow-sm">
+      <div className="bg-gray-50 dark:bg-gray-800/50 border-2 border-gray-300 dark:border-gray-600 rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -2257,7 +2257,7 @@ function GroupedPickingListView({
         </div>
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+            className="h-full bg-green-500 dark:bg-green-600 transition-all duration-500"
             style={{ width: `${(order.pickedItems / order.totalItems) * 100}%` }}
           />
         </div>
@@ -9707,7 +9707,7 @@ export default function PickPack() {
       <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden">
         {/* Optimized Header - Packing Mode */}
-        <div className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-purple-900 text-white shadow-lg sticky top-0 z-20">
+        <div className="bg-gray-700 dark:bg-gray-800 text-white shadow-lg sticky top-0 z-20">
           <div className="px-3 lg:px-6 py-2.5 lg:py-3">
             {/* Top Row: Controls, Order Info, Timer */}
             <div className="flex items-center justify-between gap-2 lg:gap-4">
@@ -9955,8 +9955,8 @@ export default function PickPack() {
             {/* Item Verification List - Collapsible Accordion (toggleable via settings) */}
             {showItemChecklist && (
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className="shadow-sm border-2 border-sky-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-sky-700 dark:from-sky-800 to-sky-800 dark:to-sky-900 text-white transition-colors -mt-0.5 rounded-t-lg">
+              <AccordionItem value="items" className={`shadow-sm border-2 rounded-lg bg-white overflow-hidden ${(packingChecklist.itemsVerified || allItemsVerified) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`} id="checklist-items-verified">
+                <AccordionTrigger className={`px-4 py-3 hover:no-underline transition-colors -mt-0.5 rounded-t-lg text-white text-lg font-bold ${(packingChecklist.itemsVerified || allItemsVerified) ? 'bg-green-600 dark:bg-green-700' : 'bg-gray-600 dark:bg-gray-700'}`}>
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
                       <div
@@ -10875,10 +10875,10 @@ export default function PickPack() {
 
           {/* Packing Materials Section - Hidden when empty for performance */}
           {orderPackingMaterials.length > 0 && (
-            <Card className="shadow-sm border-2 border-slate-300 overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-slate-700 dark:from-slate-800 to-slate-800 dark:to-slate-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+            <Card className={`shadow-sm border-2 overflow-hidden ${Object.values(packingMaterialsApplied).length > 0 && Object.values(packingMaterialsApplied).every(Boolean) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
+              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${Object.values(packingMaterialsApplied).length > 0 && Object.values(packingMaterialsApplied).every(Boolean) ? 'bg-green-600 dark:bg-green-700' : 'bg-gray-600 dark:bg-gray-700'}`}>
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <Package className="h-6 w-6" />
                   {t('packingMaterials')}
                 </CardTitle>
               </CardHeader>
@@ -10933,9 +10933,9 @@ export default function PickPack() {
           )}
 
           {/* Multi-Carton Packing Section */}
-          <Card className={`shadow-sm border-2 overflow-hidden ${allCartonsValid ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`} id="checklist-cartons">
-            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${allCartonsValid ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
-              <CardTitle className="text-base font-bold">
+          <Card className={`shadow-sm border-2 overflow-hidden ${cartons.length > 0 ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`} id="checklist-cartons">
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 0 ? 'bg-green-600 dark:bg-green-700' : 'bg-gray-600 dark:bg-gray-700'}`}>
+              <CardTitle className="text-lg font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Box className="h-5 w-5" />
@@ -10999,7 +10999,7 @@ export default function PickPack() {
               
               {/* AI Carton Plan Banner - Show saved plan from order creation */}
               {packingPlan && packingPlan.cartons && packingPlan.cartons.length > 0 && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-2">
+                <div className="bg-gray-50 dark:bg-gray-800/50 border-2 border-gray-300 dark:border-gray-600 rounded-lg p-3 mb-2">
                   <div className="flex items-start gap-2">
                     <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
@@ -11166,7 +11166,7 @@ export default function PickPack() {
           <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden ${documentsCount === 0 || Object.values(printedDocuments).every(Boolean) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
             <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${documentsCount === 0 || Object.values(printedDocuments).every(Boolean) ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <FileText className="h-5 w-5" />
                   {t('documentsWithCount', { count: documentsCount })}
                 </CardTitle>
@@ -11264,7 +11264,7 @@ export default function PickPack() {
           })() && (
           <Card className={`shadow-sm border-2 overflow-hidden ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
             <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
-              <CardTitle className="text-base font-bold flex items-center gap-2">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 {t('shippingInformation')}
               </CardTitle>
@@ -12020,7 +12020,7 @@ export default function PickPack() {
                 return (
                   <div className="space-y-4 mt-6">
                     {/* Separator */}
-                    <Separator className="my-4 bg-gradient-to-r from-yellow-300 dark:from-yellow-600 via-sky-300 dark:via-sky-600 to-sky-300 dark:to-sky-600 h-1" />
+                    <Separator className="my-4 bg-gray-300 dark:bg-gray-600 h-1" />
 
                     {/* Collapsible GLS Section */}
                     <Collapsible
@@ -12450,8 +12450,8 @@ export default function PickPack() {
 
             return (
               <Card id="section-dhl" className="shadow-sm border-2 border-yellow-400 dark:border-yellow-700 overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-yellow-50 dark:from-yellow-900/300 to-yellow-600 text-black px-4 py-3 rounded-t-lg -mt-0.5">
-                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                <CardHeader className="bg-gray-600 dark:bg-gray-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
                     {t('dhlShipping')}
                   </CardTitle>
@@ -12885,8 +12885,8 @@ export default function PickPack() {
 
             return (
               <Card id="section-gls" className="shadow-sm border-2 border-sky-300 overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-sky-600 dark:from-sky-700 to-sky-700 dark:to-sky-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
-                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                <CardHeader className="bg-gray-600 dark:bg-gray-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
                     {t('glsShippingWithCartons', { count: glsCartons.length, cartonText: glsCartons.length === 1 ? t('cartonSingular') : t('cartonsPlural') })}
                   </CardTitle>
@@ -13188,7 +13188,7 @@ export default function PickPack() {
                   : 'bg-gradient-to-r from-stone-600 dark:from-stone-500 to-stone-700 dark:to-stone-600';
               })()
             }`}>
-              <CardTitle className="text-base font-bold flex items-center gap-2">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
                 {(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                   const isPickup = shippingMethod === 'PICKUP';
@@ -15331,7 +15331,7 @@ export default function PickPack() {
       <Dialog open={showPackingCompletionModal} onOpenChange={setShowPackingCompletionModal}>
         <DialogContent className="max-w-lg sm:max-w-xl p-0 gap-0 overflow-hidden bg-gradient-to-br from-purple-50 dark:from-purple-900/40 to-indigo-50 dark:to-indigo-900/40 border-0 shadow-2xl">
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-4 sm:p-6 text-white text-center relative">
+          <div className="bg-green-600 dark:bg-green-700 p-4 sm:p-6 text-white text-center relative">
             <Button
               variant="ghost"
               size="icon"
@@ -15607,7 +15607,7 @@ export default function PickPack() {
       <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden">
         {/* Header - Ultra Compact for Mobile */}
-        <div className="bg-gradient-to-r from-blue-700 dark:from-blue-900 to-blue-800 dark:to-blue-950 text-white shadow-lg z-20">
+        <div className="bg-gray-700 dark:bg-gray-800 text-white shadow-lg z-20">
           <div className="px-3 lg:px-6 py-2 lg:py-4">
             {/* Mobile Layout - Ultra Compact */}
             <div className="lg:hidden">
@@ -15896,7 +15896,7 @@ export default function PickPack() {
               className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-blue-600 dark:from-blue-700 to-indigo-600 dark:to-indigo-700 text-white p-3 sm:p-4 flex-shrink-0">
+              <div className="bg-gray-600 dark:bg-gray-700 text-white p-3 sm:p-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -18325,7 +18325,7 @@ export default function PickPack() {
             {/* Batch Picking Controls */}
             {batchPickingMode && (
               <Card className="mb-4 border-2 border-purple-500 dark:border-purple-600 overflow-hidden shadow-lg shadow-purple-500/10">
-                <CardHeader className="bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 text-white pb-4 pt-4">
+                <CardHeader className="bg-gray-600 dark:bg-gray-700 text-white pb-4 pt-4">
                   <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span className="flex items-center gap-3">
                       <div className="p-2 bg-white/20 rounded-lg">
