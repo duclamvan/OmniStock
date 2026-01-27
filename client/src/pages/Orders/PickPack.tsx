@@ -10466,7 +10466,7 @@ export default function PickPack() {
                                     <div className={`absolute -bottom-1 -right-1 min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md ${
                                       allVerified ? 'bg-green-600 text-white' : 'bg-purple-600 text-white'
                                     }`}>
-                                      {allVerified ? <CheckCircle className="h-4 w-4" /> : `${groupItems.reduce((sum, item) => sum + (item.quantity || 0), 0)}×`}
+                                      {allVerified ? <CheckCircle className="h-4 w-4" /> : `${t('qty')} ${groupItems.reduce((sum, item) => sum + (item.quantity || 0), 0)}×`}
                                     </div>
                                   </div>
                                   <div className="flex-1 min-w-0">
@@ -10588,7 +10588,7 @@ export default function PickPack() {
                                             </div>
                                           </div>
                                           <div className="flex items-center gap-2 flex-shrink-0">
-                                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{item.productType === 'physical_no_quantity' ? '∞' : `${item.quantity}×`}</span>
+                                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{item.productType === 'physical_no_quantity' ? '∞' : `${t('qty')} ${item.quantity}×`}</span>
                                             <div className="w-8 flex justify-center">
                                               {isVerified ? (
                                                 <CheckCircle className="h-5 w-5 text-green-500" />
@@ -10664,7 +10664,7 @@ export default function PickPack() {
                                       ? 'bg-green-50 dark:bg-green-900/300 text-white' 
                                       : 'bg-blue-50 dark:bg-blue-900/300 text-white'
                                   }`}>
-                                    {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-3.5 w-3.5" /> : `${item.quantity}×`}
+                                    {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-3.5 w-3.5" /> : `${t('qty')} ${item.quantity}×`}
                                   </div>
                                 </div>
                                 
@@ -10800,7 +10800,7 @@ export default function PickPack() {
                                     ? 'bg-green-600 dark:bg-green-700 text-white' 
                                     : 'bg-blue-600 dark:bg-blue-700 text-white'
                                 }`}>
-                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : `${item.quantity}×`}
+                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : `${t('qty')} ${item.quantity}×`}
                                 </div>
                               </div>
 
