@@ -22721,7 +22721,7 @@ Important:
         // Fallback to local filesystem for development
         console.log('[Upload] Using local filesystem for order documents (Object Storage not configured)');
         const uploadDir = 'uploads/order-documents';
-        await fs.promises.mkdir(uploadDir, { recursive: true });
+        await fs.mkdir(uploadDir, { recursive: true });
 
         for (const file of files) {
           const timestamp = Date.now();
@@ -22729,7 +22729,7 @@ Important:
           const filename = `${timestamp}-${sanitizedName}`;
           const filepath = path.join(uploadDir, filename);
           
-          await fs.promises.writeFile(filepath, file.buffer);
+          await fs.writeFile(filepath, file.buffer);
           
           uploadedFiles.push({
             name: file.originalname,
