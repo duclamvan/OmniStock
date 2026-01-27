@@ -4783,54 +4783,8 @@ export default function PickPack() {
     // Auto-show completion modal when 100% is reached and not already completed
     if (allItemsPicked && activePickingOrder.pickStatus !== 'completed' && !showPickingCompletionModal) {
       setShowPickingCompletionModal(true);
-      
-      // Automatically proceed to packing after showing the modal (unless already in progress)
-      if (!isAutoProceeding.current) {
-        isAutoProceeding.current = true;
-        
-        // Auto-proceed to packing after a brief delay to let user see the modal
-        setTimeout(() => {
-          if (isAutoProceeding.current && activePickingOrder) {
-            const orderTopack = {
-              ...activePickingOrder,
-              pickStatus: 'completed' as const,
-              pickEndTime: new Date().toISOString(),
-            };
-            
-            setShowPickingCompletionModal(false);
-            window.scrollTo(0, 0);
-            
-            // Clear picking state first
-            setIsTimerRunning(false);
-            playSound('complete');
-            clearPickedProgress(activePickingOrder.id);
-            
-            // Update order status in database (single update, not duplicate)
-            if (!activePickingOrder.id.startsWith('mock-')) {
-              apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
-                pickStatus: 'completed',
-                pickEndTime: new Date().toISOString(),
-                pickedBy: currentEmployee
-                // Note: packStatus is set by startPacking, not here
-              }).catch(error => {
-                console.error('Error updating order status:', error);
-              });
-            }
-            
-            setActivePickingOrder(null);
-            setPickingTimer(0);
-            setManualItemIndex(0);
-            startPacking(orderTopack);
-            setSelectedTab('packing');
-            
-            // Invalidate queries in background
-            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-            
-            isAutoProceeding.current = false;
-          }
-        }, 1500); // 1.5 second delay to show celebration
-      }
     }
+      
   }, [activePickingOrder?.id, activePickingOrder?.pickStatus, activePickingOrder?.pickedItems, activePickingOrder?.totalItems, showPickingCompletionModal]);
 
   // Preload all product images when picking order is activated
