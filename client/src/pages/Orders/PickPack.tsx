@@ -4915,7 +4915,15 @@ export default function PickPack() {
     staleTime: 60000, // Cache for 1 minute
   });
 
+  // Query for customer's shipping addresses (primary, latest, etc.)
+  const { data: customerShippingAddresses = [] } = useQuery<any[]>({
+    queryKey: ['/api/customers', activePackingOrder?.customerId, 'shipping-addresses'],
+    enabled: !!activePackingOrder?.customerId,
+    staleTime: 60000, // Cache for 1 minute
+  });
+
   // Helper to get effective shipping address (order shipping address or customer's address as fallback)
+  // Priority: Order address > Customer primary address > Customer latest address > Customer inline shipping > Customer billing > Legacy
   const getEffectiveShippingAddress = (order: PickPackOrder | null, customer: any) => {
     if (!order) return null;
     
@@ -4924,7 +4932,42 @@ export default function PickPack() {
       return order.shippingAddress;
     }
     
-    // Fallback to customer's shipping address fields
+    // Fallback 1: Check customer's shipping addresses from address book (primary first, then latest)
+    if (customerShippingAddresses && customerShippingAddresses.length > 0) {
+      // First try to find primary address
+      const primaryAddress = customerShippingAddresses.find((addr: any) => addr.isPrimary);
+      if (primaryAddress) {
+        return {
+          firstName: primaryAddress.firstName || customer?.firstName,
+          lastName: primaryAddress.lastName || customer?.lastName,
+          company: primaryAddress.company,
+          street: primaryAddress.street,
+          streetNumber: primaryAddress.streetNumber,
+          city: primaryAddress.city,
+          zipCode: primaryAddress.zipCode,
+          country: primaryAddress.country,
+          tel: primaryAddress.phone || customer?.phone,
+        };
+      }
+      
+      // Otherwise use the latest address (first in array, sorted by createdAt desc)
+      const latestAddress = customerShippingAddresses[0];
+      if (latestAddress) {
+        return {
+          firstName: latestAddress.firstName || customer?.firstName,
+          lastName: latestAddress.lastName || customer?.lastName,
+          company: latestAddress.company,
+          street: latestAddress.street,
+          streetNumber: latestAddress.streetNumber,
+          city: latestAddress.city,
+          zipCode: latestAddress.zipCode,
+          country: latestAddress.country,
+          tel: latestAddress.phone || customer?.phone,
+        };
+      }
+    }
+    
+    // Fallback 2: Customer's inline shipping address fields
     if (customer) {
       const hasShippingAddress = customer.shippingStreet || customer.shippingCity || customer.shippingCountry;
       if (hasShippingAddress) {
@@ -4941,7 +4984,7 @@ export default function PickPack() {
         };
       }
       
-      // Fallback to billing address if no shipping address
+      // Fallback 3: Billing address if no shipping address
       const hasBillingAddress = customer.billingStreet || customer.billingCity || customer.billingCountry;
       if (hasBillingAddress) {
         return {
@@ -4957,7 +5000,7 @@ export default function PickPack() {
         };
       }
       
-      // Fallback to legacy address field if available
+      // Fallback 4: Legacy address field if available
       if (customer.address) {
         return customer.address;
       }
