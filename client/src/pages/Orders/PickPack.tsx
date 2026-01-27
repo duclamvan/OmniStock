@@ -11305,8 +11305,8 @@ export default function PickPack() {
             const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
             return isDHL;
           })() && (
-          <Card className={`shadow-sm border-2 overflow-hidden ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'border-green-400 dark:border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
-            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'}`}>
+          <Card className={`shadow-sm border-2 overflow-hidden ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`}>
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 {t('shippingInformation')}
