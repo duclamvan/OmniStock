@@ -4903,7 +4903,7 @@ export default function AddOrder() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label htmlFor="orderStatus-mobile" className="text-xs">{t('orders:orderStatus')}</Label>
-                      <Select value={form.watch('orderStatus')} onValueChange={handleOrderStatusChange}>
+                      <Select value={form.watch('orderStatus') || 'pending'} onValueChange={handleOrderStatusChange}>
                         <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
                         </SelectTrigger>
@@ -4968,7 +4968,7 @@ export default function AddOrder() {
 
                     <div>
                       <Label htmlFor="paymentStatus-mobile" className="text-xs">{t('orders:paymentStatus')}</Label>
-                      <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                      <Select value={form.watch('paymentStatus') || 'pending'} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
                         <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
                         </SelectTrigger>
@@ -9166,7 +9166,7 @@ export default function AddOrder() {
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label htmlFor="orderStatus" className="text-xs">{t('orders:orderStatus')}</Label>
-                          <Select value={form.watch('orderStatus')} onValueChange={handleOrderStatusChange}>
+                          <Select value={form.watch('orderStatus') || 'pending'} onValueChange={handleOrderStatusChange}>
                             <SelectTrigger className="mt-1 h-9">
                               <SelectValue />
                             </SelectTrigger>
@@ -9231,7 +9231,7 @@ export default function AddOrder() {
 
                         <div>
                           <Label htmlFor="paymentStatus" className="text-xs">{t('orders:paymentStatus')}</Label>
-                          <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                          <Select value={form.watch('paymentStatus') || 'pending'} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
                             <SelectTrigger className="mt-1 h-9" data-testid="select-payment-status">
                               <SelectValue />
                             </SelectTrigger>

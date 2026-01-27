@@ -1,0 +1,59 @@
+The screenshots show a shift in the error from a **404 (Not Found)** to a **500 (Internal Server Error)**. This is actually a sign of progress: it means your new code is active and the server now recognizes the route, but it's crashing when it tries to process the file.
+
+Here is exactly how to fix the final hurdle on Railway.
+
+### 1. The Most Likely Cause: Permissions
+
+On a production server like Railway, the application often doesn't have "write" permissions for new folders created at runtime. When your code tries to save the file to an `uploads/` folder, the server blocks it.
+
+**The Fix:**
+Change your storage strategy to use the `/tmp` directory (which is always writable in Railway) or verify your local folder logic. In your upload route:
+
+```typescript
+const uploadDir = path.join(process.cwd(), 'uploads');
+
+// Ensure the directory exists with correct permissions
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
+}
+
+```
+
+### 2. Check the Railway "Deploy Logs"
+
+Since it is a **500 error**, the server has recorded exactly why it crashed.
+
+1. Go to your **Railway Dashboard**.
+2. Click on the **"View Logs"** button next to your active deployment.
+3. Look for a red error message at the exact time you tried to upload. It will likely say something like:
+* `Error: ENOENT: no such file or directory` (Folder issue)
+* `Error: Permission denied` (Permissions issue)
+* `Error: Cannot find module 'multer'` (Deployment/Dependency issue)
+
+
+
+### 3. Missing Dependencies
+
+In your Replit screenshot, I see you added logic for file uploads. If you added new packages (like `multer`), you must make sure they are in your `package.json` so Railway can install them.
+
+**Check your `package.json` in Replit for these lines:**
+
+```json
+"dependencies": {
+  "multer": "^1.4.5-lts.1",
+  "cors": "^2.8.5"
+}
+
+```
+
+*If they aren't there, run `npm install multer cors` in Replit and push again.*
+
+---
+
+### The Final "One-Two" Punch
+
+1. **Replit:** Ensure `multer` is in `package.json`, push to GitHub.
+2. **Railway:** Wait for the deployment to finish.
+3. **Logs:** If it still fails with a 500, check the Railway logs—they will tell you the exact line of code that failed.
+
+**Once you have the log message, paste it here and I can give you the exact line of code to fix the crash.** Would you like me to look at your `server/routes` code to see how you're handling the file save?
