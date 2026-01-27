@@ -1,5 +1,6 @@
-import { createContext, useContext, useCallback, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useCallback, useEffect, useState, useRef, ReactNode } from 'react';
 import { useSettings } from './SettingsContext';
+import { useAuth } from '@/hooks/useAuth';
 import { format as dateFnsFormat } from 'date-fns';
 import { enUS, vi, type Locale } from 'date-fns/locale';
 import i18n from '@/i18n/i18n';
@@ -59,30 +60,57 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 export function LocalizationProvider({ children }: { children: ReactNode }) {
-  const { generalSettings, isLoading } = useSettings();
+  const { generalSettings, isLoading: isLoadingSettings } = useSettings();
+  const { user, isLoading: isLoadingAuth } = useAuth();
   const [settings, setSettings] = useState<LocalizationSettings>(defaultSettings);
+  const languageAppliedRef = useRef(false);
 
+  // Unified language sync: User preference > Global default
+  // This is the SINGLE source of truth for language changes
   useEffect(() => {
-    if (!isLoading && generalSettings) {
-      const newSettings: LocalizationSettings = {
-        language: (generalSettings.defaultLanguage as 'en' | 'vi') || 'en',
-        dateFormat: (generalSettings.defaultDateFormat as LocalizationSettings['dateFormat']) || 'DD/MM/YYYY',
-        timeFormat: (generalSettings.defaultTimeFormat as LocalizationSettings['timeFormat']) || '24-hour',
-        timezone: generalSettings.defaultTimezone || 'Europe/Prague',
-        numberFormat: (generalSettings.numberFormat as LocalizationSettings['numberFormat']) || '1,000.00',
-        numberFormatNoDecimals: generalSettings.numberFormatNoDecimals || false,
-        currency: (generalSettings.defaultCurrency as LocalizationSettings['currency']) || 'CZK',
-        currencyDisplay: (generalSettings.currencyDisplay as LocalizationSettings['currencyDisplay']) || 'symbol',
-      };
-      setSettings(newSettings);
-
-      if (newSettings.language !== i18n.language) {
-        i18n.changeLanguage(newSettings.language);
-        localStorage.setItem('app_language', newSettings.language);
-        localStorage.setItem('i18nextLng', newSettings.language);
-      }
+    // Wait for both settings and auth to load
+    if (isLoadingSettings || isLoadingAuth) return;
+    
+    // Determine the target language:
+    // 1. User's preferredLanguage takes priority (if set)
+    // 2. Fall back to global defaultLanguage
+    // 3. Fall back to 'en' as ultimate default
+    const userPreferredLang = user?.preferredLanguage;
+    const globalDefaultLang = generalSettings?.defaultLanguage;
+    
+    let targetLanguage: 'en' | 'vi' = 'en';
+    
+    if (userPreferredLang === 'en' || userPreferredLang === 'vi') {
+      // User has explicitly set a language preference - always use it
+      targetLanguage = userPreferredLang;
+    } else if (globalDefaultLang === 'en' || globalDefaultLang === 'vi') {
+      // No user preference, use global default
+      targetLanguage = globalDefaultLang;
     }
-  }, [isLoading, generalSettings]);
+    
+    // Build settings object
+    const newSettings: LocalizationSettings = {
+      language: targetLanguage,
+      dateFormat: (generalSettings?.defaultDateFormat as LocalizationSettings['dateFormat']) || 'DD/MM/YYYY',
+      timeFormat: (generalSettings?.defaultTimeFormat as LocalizationSettings['timeFormat']) || '24-hour',
+      timezone: generalSettings?.defaultTimezone || 'Europe/Prague',
+      numberFormat: (generalSettings?.numberFormat as LocalizationSettings['numberFormat']) || '1,000.00',
+      numberFormatNoDecimals: generalSettings?.numberFormatNoDecimals || false,
+      currency: (generalSettings?.defaultCurrency as LocalizationSettings['currency']) || 'CZK',
+      currencyDisplay: (generalSettings?.currencyDisplay as LocalizationSettings['currencyDisplay']) || 'symbol',
+    };
+    setSettings(newSettings);
+
+    // Apply language change only if different from current
+    if (targetLanguage !== i18n.language) {
+      console.log(`[LocalizationContext] Setting language to: ${targetLanguage} (user: ${userPreferredLang || 'none'}, global: ${globalDefaultLang || 'none'})`);
+      i18n.changeLanguage(targetLanguage);
+      localStorage.setItem('app_language', targetLanguage);
+      localStorage.setItem('i18nextLng', targetLanguage);
+    }
+    
+    languageAppliedRef.current = true;
+  }, [isLoadingSettings, isLoadingAuth, generalSettings, user?.preferredLanguage]);
 
   const getLocale = useCallback((): Locale => {
     return settings.language === 'vi' ? vi : enUS;
