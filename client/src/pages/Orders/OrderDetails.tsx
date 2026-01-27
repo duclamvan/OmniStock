@@ -563,9 +563,10 @@ export default function OrderDetails() {
     
     try {
       const dataUrl = await toPng(capturePreviewRef.current, {
-        quality: 0.95,
-        pixelRatio: 2,
+        quality: 1.0,
+        pixelRatio: 4,
         backgroundColor: '#ffffff',
+        cacheBust: true,
       });
       
       const link = document.createElement('a');
