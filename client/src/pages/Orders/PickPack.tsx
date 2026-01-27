@@ -4058,6 +4058,30 @@ export default function PickPack() {
   
   // State for packing materials checklist
   const [packingMaterialsApplied, setPackingMaterialsApplied] = useState<Record<string, boolean>>({});
+
+  // Track if cartons section has been scrolled into view
+  const [cartonsScrolledIntoView, setCartonsScrolledIntoView] = useState(false);
+  const cartonsSectionRef = useRef<HTMLDivElement>(null);
+
+  // Intersection observer for cartons section scroll detection
+  useEffect(() => {
+    if (!cartonsSectionRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !cartonsScrolledIntoView) {
+            setCartonsScrolledIntoView(true);
+          }
+        });
+      },
+      { threshold: 0.3 } // Trigger when 30% visible
+    );
+    
+    observer.observe(cartonsSectionRef.current);
+    
+    return () => observer.disconnect();
+  }, [cartonsScrolledIntoView]);
   
   // State for document printing checklist
   const [printedDocuments, setPrintedDocuments] = useState({
@@ -9997,8 +10021,9 @@ export default function PickPack() {
             
             {/* Item Verification List - Collapsible Accordion (toggleable via settings) */}
             {showItemChecklist && (
-            <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className={`shadow-sm border-2 rounded-lg bg-white overflow-hidden ${(packingChecklist.itemsVerified || allItemsVerified) ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-items-verified">
+            <div className="flex items-start gap-2">
+              <Accordion type="single" collapsible defaultValue="items" className="w-full flex-1">
+                <AccordionItem value="items" className={`shadow-sm border-2 rounded-lg bg-white overflow-hidden ${(packingChecklist.itemsVerified || allItemsVerified) ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-items-verified">
                 <AccordionTrigger className={`px-4 py-3 hover:no-underline transition-colors -mt-0.5 rounded-t-lg text-white text-lg font-bold ${(packingChecklist.itemsVerified || allItemsVerified) ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
@@ -10912,17 +10937,23 @@ export default function PickPack() {
                   </ScrollArea>
                 </div>
               </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              </AccordionItem>
+              </Accordion>
+              {/* Tick mark indicator */}
+              <div className="flex-shrink-0 mt-3">
+                <CheckCircle2 className={`h-8 w-8 ${(packingChecklist.itemsVerified || allItemsVerified) ? 'text-green-500' : 'text-gray-300'}`} />
+              </div>
+            </div>
             )}
 
           {/* Packing Materials Section - Hidden when empty for performance */}
           {orderPackingMaterials.length > 0 && (
-            <Card className={`shadow-sm border-2 overflow-hidden ${
-              orderPackingMaterials.every((m: any) => packingMaterialsApplied[m.id]) 
-                ? 'border-green-400 dark:border-green-600' 
-                : 'border-amber-400 dark:border-amber-600'
-            }`}>
+            <div className="flex items-start gap-2">
+              <Card className={`shadow-sm border-2 overflow-hidden flex-1 ${
+                orderPackingMaterials.every((m: any) => packingMaterialsApplied[m.id]) 
+                  ? 'border-green-400 dark:border-green-600' 
+                  : 'border-amber-400 dark:border-amber-600'
+              }`}>
               <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${
                 orderPackingMaterials.every((m: any) => packingMaterialsApplied[m.id]) 
                   ? 'bg-green-600 dark:bg-green-700' 
@@ -10980,12 +11011,18 @@ export default function PickPack() {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+              </Card>
+              {/* Tick mark indicator */}
+              <div className="flex-shrink-0 mt-3">
+                <CheckCircle2 className={`h-8 w-8 ${orderPackingMaterials.every((m: any) => packingMaterialsApplied[m.id]) ? 'text-green-500' : 'text-gray-300'}`} />
+              </div>
+            </div>
           )}
 
           {/* Multi-Carton Packing Section */}
-          <Card className={`shadow-sm border-2 overflow-hidden ${cartons.length > 0 ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-cartons">
-            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 0 ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
+          <div className="flex items-start gap-2" ref={cartonsSectionRef}>
+            <Card className={`shadow-sm border-2 overflow-hidden flex-1 ${cartons.length > 0 ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-cartons">
+              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 0 && cartonsScrolledIntoView ? 'bg-green-600 dark:bg-green-700' : cartons.length > 0 ? 'bg-gray-500 dark:bg-gray-600' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -11211,10 +11248,16 @@ export default function PickPack() {
               )}
               </CardContent>
             )}
-          </Card>
+            </Card>
+            {/* Tick mark indicator for Cartons */}
+            <div className="flex-shrink-0 mt-3">
+              <CheckCircle2 className={`h-8 w-8 ${cartons.length > 0 && cartonsScrolledIntoView ? 'text-green-500' : 'text-gray-300'}`} />
+            </div>
+          </div>
 
           {/* Documents Card - Packing List + Product Files + Order Files */}
-          <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden ${
+          <div className="flex items-start gap-2">
+            <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden flex-1 ${
             (() => {
               const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
               const packingListPrinted = printedDocuments.packingList;
@@ -11321,7 +11364,18 @@ export default function PickPack() {
                 }}
               />
             </CardContent>
-          </Card>
+            </Card>
+            {/* Tick mark indicator for Documents */}
+            <div className="flex-shrink-0 mt-3">
+              <CheckCircle2 className={`h-8 w-8 ${
+                (() => {
+                  const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
+                  const packingListPrinted = printedDocuments.packingList;
+                  return documentsCount === 0 || (packingListRequired && packingListPrinted) || !packingListRequired;
+                })() ? 'text-green-500' : 'text-gray-300'
+              }`} />
+            </div>
+          </div>
 
           {/* Shipping Information Section - Only for non-DHL orders (DHL has standalone card) */}
           {!(() => {
@@ -11329,8 +11383,9 @@ export default function PickPack() {
             const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
             return isDHL;
           })() && (
-          <Card className={`shadow-sm border-2 overflow-hidden ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`}>
-            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
+          <div className="flex items-start gap-2">
+            <Card className={`shadow-sm border-2 overflow-hidden flex-1 ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`}>
+              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 {t('shippingInformation')}
@@ -12414,8 +12469,13 @@ export default function PickPack() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            {/* Tick mark indicator for Shipping */}
+            <div className="flex-shrink-0 mt-3">
+              <CheckCircle2 className={`h-8 w-8 ${getEffectiveShippingAddress(activePackingOrder, customerData) ? 'text-green-500' : 'text-gray-300'}`} />
+            </div>
+          </div>
           )}
           
           {/* DHL Shipping Card - Only for DHL orders */}
