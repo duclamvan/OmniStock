@@ -873,7 +873,27 @@ function UnifiedDocumentsList({
 
   // Filter to only show uploaded files (source: 'uploaded')
   // Product files are already shown separately via productFiles array
-  const orderFiles = (orderFilesData || []).filter((f: any) => f.source === 'uploaded' || !f.source);
+  const orderFilesFromApi = (orderFilesData || []).filter((f: any) => f.source === 'uploaded' || !f.source);
+  
+  // Also include uploadedFiles from includedDocuments (files attached during order creation)
+  const includedUploadedFiles = (includedDocuments?.uploadedFiles || []).map((file: any, index: number) => ({
+    id: `included-upload-${index}`,
+    fileName: file.name || file.fileName,
+    name: file.name || file.fileName,
+    fileUrl: file.url || file.fileUrl,
+    url: file.url || file.fileUrl,
+    mimeType: file.mimeType || (file.name?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream'),
+    source: 'included'
+  }));
+  
+  // Combine both sources, avoiding duplicates based on URL
+  const seenUrls = new Set<string>();
+  const orderFiles = [...orderFilesFromApi, ...includedUploadedFiles].filter((file: any) => {
+    const url = file.fileUrl || file.url;
+    if (seenUrls.has(url)) return false;
+    seenUrls.add(url);
+    return true;
+  });
 
   // Check if packing list is included (only count if explicitly checked in Add Order)
   const shouldIncludePackingListInCount = includedDocuments?.includePackingList === true;
