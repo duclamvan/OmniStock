@@ -13410,7 +13410,8 @@ export default function PickPack() {
             // Hide unified section for DHL Nachnahme with multiple cartons (they have dedicated sections above)
             return isDHL && showCOD && cartons.length > 1;
           })() && (
-          <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden border-2 ${shippingLabelsComplete ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`}>
+          <div className="flex items-start gap-2">
+          <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden border-2 flex-1 ${shippingLabelsComplete ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`}>
             <CardHeader className={`text-white px-4 py-3 rounded-t-lg -mt-0.5 ${shippingLabelsComplete ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold flex items-center gap-2">
                 {(() => {
@@ -14667,7 +14668,7 @@ export default function PickPack() {
                         data-testid="button-add-ppl-shipment"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        {hasCOD ? t('addCartonLabelCOD', '+ Add Carton (Rebuild)') : t('addCartonLabel')}
+                        {hasCOD ? t('addCartonLabelCOD', 'Add Carton (Rebuild)') : t('addCartonLabel')}
                       </Button>
                     );
                   })()}
@@ -15309,6 +15310,11 @@ export default function PickPack() {
               )}
             </CardContent>
           </Card>
+          {/* Tick mark indicator for Shipping Labels */}
+          <div className="flex-shrink-0 mt-3">
+            <CheckCircle2 className={`h-8 w-8 ${shippingLabelsComplete ? 'text-green-500' : 'text-gray-300'}`} />
+          </div>
+          </div>
           )}
 
           {/* Complete Packing Button - Large, Prominent */}
