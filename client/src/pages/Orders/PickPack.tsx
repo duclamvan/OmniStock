@@ -9818,6 +9818,58 @@ export default function PickPack() {
       return (verifiedItems[item.id] || 0) >= item.quantity;
     });
     
+    // Pre-computed section states for efficient header rendering
+    const itemsVerifiedCount = activePackingOrder.items.filter(item => {
+      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+        return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+      }
+      return (verifiedItems[item.id] || 0) >= item.quantity;
+    }).length;
+    
+    // Documents section state
+    const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
+    const packingListPrinted = printedDocuments.packingList;
+    const totalPrintedDocs = (packingListRequired && packingListPrinted ? 1 : 0) + printedProductFiles.size + printedOrderFiles.size;
+    const allDocumentsPrinted = documentsCount === 0 || (documentsCount > 0 && totalPrintedDocs >= documentsCount);
+    
+    // Cartons section state - green if has valid carton type
+    const cartonsComplete = cartons.length > 0 && cartons.every(c => c.cartonType === 'non-company' || c.cartonId);
+    
+    // Shipping labels section state
+    const shippingLabelsComplete = (() => {
+      const method = shippingMethod || '';
+      const isPickup = method === 'PICKUP';
+      const isHandDelivery = method === 'HAND-DELIVERY';
+      if (isPickup || isHandDelivery) return true;
+      
+      // No cartons yet - not complete
+      if (cartons.length === 0) return false;
+      
+      const isPPL = method.includes('PPL');
+      if (isPPL) {
+        return activePackingOrder.pplStatus === 'created' && shipmentLabelsFromDB.length >= cartons.length;
+      }
+      
+      const isGLS = isGLSShipping;
+      const isDHL = isDHLShipping;
+      if (isGLS || isDHL) {
+        const allHaveTracking = cartons.every(c => {
+          const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
+          return trackingValue !== '';
+        });
+        const trackingNumbers = cartons.map(c => 
+          (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
+        ).filter(t => t !== '');
+        const uniqueTracking = new Set(trackingNumbers);
+        const hasDuplicates = trackingNumbers.length !== uniqueTracking.size;
+        return allHaveTracking && !hasDuplicates;
+      }
+      
+      // For other carriers, consider complete if labels exist in DB
+      return shipmentLabelsFromDB.length >= cartons.length;
+    })();
+
+    
     // Multi-carton validation: all cartons must have type and label
     // Smart weight validation: 1st carton always requires weight, company cartons require weight, non-company 2nd+ optional
     const allCartonsValid = (() => {
@@ -10232,31 +10284,16 @@ export default function PickPack() {
                           }
                         }}
                         className="cursor-pointer hover:scale-110 transition-transform"
-                        title={activePackingOrder.items.every(item => {
-                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
-                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
-                          }
-                          return (verifiedItems[item.id] || 0) >= item.quantity;
-                        }) ? t('clickToUnverifyAllItems') : t('clickToMarkAllItemsAsVerified')}
+                        title={allItemsVerified ? t('clickToUnverifyAllItems') : t('clickToMarkAllItemsAsVerified')}
                       >
-                        {activePackingOrder.items.every(item => {
-                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
-                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
-                          }
-                          return (verifiedItems[item.id] || 0) >= item.quantity;
-                        }) ? (
+                        {allItemsVerified ? (
                           <CheckCircle className="h-5 w-5 text-green-400 dark:text-green-300" />
                         ) : (
                           <Circle className="h-5 w-5 text-white/60" />
                         )}
                       </div>
                       <span className="text-base font-bold">
-                        Items Verified ({activePackingOrder.items.filter(item => {
-                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
-                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
-                          }
-                          return (verifiedItems[item.id] || 0) >= item.quantity;
-                        }).length}/{activePackingOrder.items.length})
+                        Items Verified ({itemsVerifiedCount}/{activePackingOrder.items.length})
                       </span>
                     </div>
                     {/* Barcode Scanner Toggle Icon */}
@@ -11184,8 +11221,8 @@ export default function PickPack() {
 
           {/* Multi-Carton Packing Section */}
           <div className="flex items-start gap-2" ref={cartonsSectionRef}>
-            <Card className={`shadow-sm border-2 overflow-hidden flex-1 ${cartons.length > 0 ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-cartons">
-              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartons.length > 1 ? 'bg-green-600 dark:bg-green-700' : cartons.length > 0 && cartonsScrolledIntoView ? 'bg-green-600 dark:bg-green-700' : cartons.length > 0 ? 'bg-gray-500 dark:bg-gray-600' : 'bg-red-600 dark:bg-red-700'}`}>
+            <Card className={`shadow-sm border-2 overflow-hidden flex-1 ${cartonsComplete ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`} id="checklist-cartons">
+              <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${cartonsComplete ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -11420,44 +11457,8 @@ export default function PickPack() {
 
           {/* Documents Card - Packing List + Product Files + Order Files */}
           <div className="flex items-start gap-2">
-            <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden flex-1 ${
-            (() => {
-              // Check if all documents are printed
-              const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
-              const packingListPrinted = printedDocuments.packingList;
-              const packingListOk = !packingListRequired || packingListPrinted;
-              
-              // Check if all product files and order files are printed
-              const allProductFilesPrinted = printedProductFiles.size >= 0; // Will be validated with actual count
-              const allOrderFilesPrinted = printedOrderFiles.size >= 0; // Will be validated with actual count
-              
-              // Calculate total printed count vs total document count
-              const totalPrinted = (packingListRequired && packingListPrinted ? 1 : 0) + printedProductFiles.size + printedOrderFiles.size;
-              const allDocumentsPrinted = documentsCount > 0 && totalPrinted >= documentsCount;
-              
-              if (documentsCount === 0) return 'border-green-400 dark:border-green-600'; // No documents needed
-              if (allDocumentsPrinted) return 'border-green-400 dark:border-green-600'; // All printed
-              if (!packingListOk) return 'border-red-400 dark:border-red-600'; // Required packing list not printed
-              return 'border-gray-300 dark:border-gray-600'; // Some documents not printed yet
-            })()
-          }`}>
-            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${
-              (() => {
-                // Check if all documents are printed
-                const packingListRequired = activePackingOrder?.includedDocuments?.includePackingList === true;
-                const packingListPrinted = printedDocuments.packingList;
-                const packingListOk = !packingListRequired || packingListPrinted;
-                
-                // Calculate total printed count vs total document count
-                const totalPrinted = (packingListRequired && packingListPrinted ? 1 : 0) + printedProductFiles.size + printedOrderFiles.size;
-                const allDocumentsPrinted = documentsCount > 0 && totalPrinted >= documentsCount;
-                
-                if (documentsCount === 0) return 'bg-green-600 dark:bg-green-700'; // No documents needed
-                if (allDocumentsPrinted) return 'bg-green-600 dark:bg-green-700'; // All printed
-                if (!packingListOk) return 'bg-red-600 dark:bg-red-700'; // Required packing list not printed
-                return 'bg-gray-600 dark:bg-gray-700'; // Some documents not printed yet
-              })()
-            }`}>
+            <Card id="section-documents" className={`shadow-sm border-2 overflow-hidden flex-1 ${allDocumentsPrinted ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`}>
+            <CardHeader className={`px-4 py-3 rounded-t-lg -mt-0.5 text-white ${allDocumentsPrinted ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <FileText className="h-5 w-5" />
@@ -13409,127 +13410,8 @@ export default function PickPack() {
             // Hide unified section for DHL Nachnahme with multiple cartons (they have dedicated sections above)
             return isDHL && showCOD && cartons.length > 1;
           })() && (
-          <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden ${
-            (() => {
-              const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-              const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
-              const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
-              
-              if (isGLS && cartons.length > 0) {
-                // Check if all tracking numbers are filled and valid
-                const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
-                const hasDuplicates = cartons.some((c, i) => 
-                  c.trackingNumber && c.trackingNumber.trim() !== '' && 
-                  cartons.some((other, j) => 
-                    i !== j && 
-                    other.trackingNumber && 
-                    other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
-                  )
-                );
-                
-                if (allHaveTracking && !hasDuplicates) {
-                  return 'border-2 border-green-300 dark:border-green-700';
-                } else if (hasDuplicates) {
-                  return 'border-2 border-red-300 dark:border-red-700';
-                } else {
-                  return 'border-2 border-sky-300';
-                }
-              }
-              
-              if (isDHL && cartons.length > 0) {
-                // Check if all tracking numbers are filled and valid
-                const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
-                const hasDuplicates = cartons.some((c, i) => 
-                  c.trackingNumber && c.trackingNumber.trim() !== '' && 
-                  cartons.some((other, j) => 
-                    i !== j && 
-                    other.trackingNumber && 
-                    other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
-                  )
-                );
-                
-                if (allHaveTracking && !hasDuplicates) {
-                  return 'border-2 border-green-300 dark:border-green-700';
-                } else if (hasDuplicates) {
-                  return 'border-2 border-red-300 dark:border-red-700';
-                } else {
-                  return 'border-2 border-yellow-400 dark:border-yellow-700';
-                }
-              }
-              
-              const isPickup = activePackingOrder.shippingMethod?.toUpperCase() === 'PICKUP';
-              const isHandDelivery = activePackingOrder.shippingMethod?.toUpperCase() === 'HAND-DELIVERY';
-              
-              if (isPickup) return 'border-2 border-green-300 dark:border-green-700';
-              if (isHandDelivery) return 'border-2 border-blue-300 dark:border-blue-700';
-              
-              return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
-                ? 'border-2 border-orange-300 dark:border-orange-700' 
-                : isGLS
-                ? 'border-2 border-sky-300'
-                : isDHL
-                ? 'border-2 border-yellow-400 dark:border-yellow-700'
-                : 'border-2 border-stone-300';
-            })()
-          }`}>
-            <CardHeader className={`text-white px-4 py-3 rounded-t-lg -mt-0.5 ${
-              (() => {
-                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
-                const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
-                const isPickup = shippingMethod === 'PICKUP';
-                const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
-                
-                if (isPickup) return 'bg-gradient-to-r from-green-600 dark:from-green-500 to-green-700 dark:to-green-600';
-                if (isHandDelivery) return 'bg-gradient-to-r from-blue-600 dark:from-blue-500 to-blue-700 dark:to-blue-600';
-                
-                if (isGLS && cartons.length > 0) {
-                  // Check if all tracking numbers are filled and valid
-                  const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
-                  const hasDuplicates = cartons.some((c, i) => 
-                    c.trackingNumber && c.trackingNumber.trim() !== '' && 
-                    cartons.some((other, j) => 
-                      i !== j && 
-                      other.trackingNumber && 
-                      other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
-                    )
-                  );
-                  
-                  if (allHaveTracking && !hasDuplicates) {
-                    return 'bg-gradient-to-r from-green-600 dark:from-green-500 to-green-700 dark:to-green-600';
-                  } else if (hasDuplicates) {
-                    return 'bg-gradient-to-r from-red-600 dark:from-red-500 to-red-700 dark:to-red-600';
-                  }
-                }
-                
-                if (isDHL && cartons.length > 0) {
-                  // Check if all tracking numbers are filled and valid
-                  const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
-                  const hasDuplicates = cartons.some((c, i) => 
-                    c.trackingNumber && c.trackingNumber.trim() !== '' && 
-                    cartons.some((other, j) => 
-                      i !== j && 
-                      other.trackingNumber && 
-                      other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
-                    )
-                  );
-                  
-                  if (allHaveTracking && !hasDuplicates) {
-                    return 'bg-gradient-to-r from-green-600 dark:from-green-500 to-green-700 dark:to-green-600';
-                  } else if (hasDuplicates) {
-                    return 'bg-gradient-to-r from-red-600 dark:from-red-500 to-red-700 dark:to-red-600';
-                  }
-                }
-                
-                return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
-                  ? 'bg-gradient-to-r from-orange-600 dark:from-orange-500 to-orange-700 dark:to-orange-600'
-                  : isGLS
-                  ? 'bg-gradient-to-r from-sky-600 dark:from-sky-700 to-sky-700 dark:to-sky-800'
-                  : isDHL
-                  ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/300 to-yellow-600'
-                  : 'bg-gradient-to-r from-stone-600 dark:from-stone-500 to-stone-700 dark:to-stone-600';
-              })()
-            }`}>
+          <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden border-2 ${shippingLabelsComplete ? 'border-green-400 dark:border-green-600' : 'border-red-400 dark:border-red-600'}`}>
+            <CardHeader className={`text-white px-4 py-3 rounded-t-lg -mt-0.5 ${shippingLabelsComplete ? 'bg-green-600 dark:bg-green-700' : 'bg-red-600 dark:bg-red-700'}`}>
               <CardTitle className="text-lg font-bold flex items-center gap-2">
                 {(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
