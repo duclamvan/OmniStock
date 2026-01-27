@@ -520,7 +520,7 @@ const ProductImage = memo(({
         <div className="flex justify-between items-center px-2">
           <span className="text-sm font-medium text-gray-500">{t('clickToMinimize')}</span>
           <Badge className="bg-gradient-to-r from-orange-50 dark:from-orange-900/300 to-red-500 text-white">
-            {item.quantity}x
+            {t('qty')} {item.quantity}x
           </Badge>
         </div>
       </div>
@@ -559,7 +559,7 @@ const ProductImage = memo(({
         )}
       </div>
       <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-50 dark:from-orange-900/300 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
-        {item.quantity}x
+        {t('qty')} {item.quantity}x
       </div>
     </div>
   );
@@ -1963,7 +1963,7 @@ function PickingListView({
                             
                             {/* Quantity */}
                             <span className={`text-sm font-medium ${itemIsPicked ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                              {item.quantity}x
+                              {t('qty')} {item.quantity}x
                             </span>
                             
                             {/* Status */}
@@ -2574,7 +2574,7 @@ function GroupedPickingListView({
                             
                             {/* Quantity */}
                             <span className={`text-sm font-medium ${isPicked ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                              {item.quantity}x
+                              {t('qty')} {item.quantity}x
                             </span>
                             
                             {/* Status */}
@@ -16775,7 +16775,7 @@ export default function PickPack() {
                                     
                                     {/* Status */}
                                     <div className="flex-shrink-0 flex items-center gap-2">
-                                      <span className="text-base font-black text-gray-900 dark:text-gray-100">{item.quantity}x</span>
+                                      <span className="text-base font-black text-gray-900 dark:text-gray-100">{t('qty')} {item.quantity}x</span>
                                       {isPicked ? (
                                         <CheckCircle className="h-5 w-5 text-green-500" />
                                       ) : (
@@ -20365,7 +20365,7 @@ export default function PickPack() {
         <h4>{item.productName}</h4>
         <span>{item.sku}</span>
       </ItemDetails>
-      <QuantityBadge>{item.quantity}x</QuantityBadge>
+      <QuantityBadge>{t('qty')} {item.quantity}x</QuantityBadge>
       <LocationBadge zone={getZone(item.location)}>
         {item.warehouseLocation}
       </LocationBadge>
