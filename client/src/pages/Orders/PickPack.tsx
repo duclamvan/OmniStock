@@ -2811,7 +2811,8 @@ function BundleComponentLocationSelector({
   const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
     queryKey: ['/api/products', bundleItem.productId, 'locations'],
     enabled: !!bundleItem.productId,
-    staleTime: 30000,
+    staleTime: 0, // Always fetch fresh location data
+    refetchOnMount: true,
   });
   
   // Sort locations alphabetically by code
@@ -3927,7 +3928,8 @@ const ItemPrimaryLocation = memo(({
   const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
     queryKey: ['/api/products', productId, 'locations'],
     enabled: !!productId,
-    staleTime: 30000, // Cache for 30 seconds to reduce API calls in list views
+    staleTime: 0, // Always fetch fresh location data for accurate picking
+    refetchOnMount: true,
   });
   
   // Find primary location, or first with stock, or first location
