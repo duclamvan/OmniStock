@@ -4658,10 +4658,15 @@ export default function PickPack() {
     }
   }, [isTimerRunning]); // Remove pickingTimer from deps to avoid re-runs
 
+  // Track if auto-proceed to packing is in progress to prevent duplicates
+  const isAutoProceeding = useRef(false);
+  
   // Show completion modal when all items are picked (100% progress)
+  // And automatically proceed to packing after a short delay
   useEffect(() => {
     if (!activePickingOrder) {
       setShowPickingCompletionModal(false);
+      isAutoProceeding.current = false;
       return;
     }
 
@@ -4674,6 +4679,53 @@ export default function PickPack() {
     // Auto-show completion modal when 100% is reached and not already completed
     if (allItemsPicked && activePickingOrder.pickStatus !== 'completed' && !showPickingCompletionModal) {
       setShowPickingCompletionModal(true);
+      
+      // Automatically proceed to packing after showing the modal (unless already in progress)
+      if (!isAutoProceeding.current) {
+        isAutoProceeding.current = true;
+        
+        // Auto-proceed to packing after a brief delay to let user see the modal
+        setTimeout(() => {
+          if (isAutoProceeding.current && activePickingOrder) {
+            const orderTopack = {
+              ...activePickingOrder,
+              pickStatus: 'completed' as const,
+              pickEndTime: new Date().toISOString(),
+            };
+            
+            setShowPickingCompletionModal(false);
+            window.scrollTo(0, 0);
+            
+            // Clear picking state first
+            setIsTimerRunning(false);
+            playSound('complete');
+            clearPickedProgress(activePickingOrder.id);
+            
+            // Update order status in database (single update, not duplicate)
+            if (!activePickingOrder.id.startsWith('mock-')) {
+              apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
+                pickStatus: 'completed',
+                pickEndTime: new Date().toISOString(),
+                pickedBy: currentEmployee
+                // Note: packStatus is set by startPacking, not here
+              }).catch(error => {
+                console.error('Error updating order status:', error);
+              });
+            }
+            
+            setActivePickingOrder(null);
+            setPickingTimer(0);
+            setManualItemIndex(0);
+            startPacking(orderTopack);
+            setSelectedTab('packing');
+            
+            // Invalidate queries in background
+            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+            
+            isAutoProceeding.current = false;
+          }
+        }, 1500); // 1.5 second delay to show celebration
+      }
     }
   }, [activePickingOrder?.id, activePickingOrder?.pickStatus, activePickingOrder?.pickedItems, activePickingOrder?.totalItems, showPickingCompletionModal]);
 
@@ -17488,6 +17540,10 @@ export default function PickPack() {
               <Button 
                 size="lg" 
                 onClick={async () => {
+                  // Prevent duplicate processing
+                  if (isAutoProceeding.current) return;
+                  isAutoProceeding.current = true;
+                  
                   const orderTopack = {
                     ...activePickingOrder,
                     pickStatus: 'completed' as const,
@@ -17495,12 +17551,31 @@ export default function PickPack() {
                   };
                   setShowPickingCompletionModal(false);
                   window.scrollTo(0, 0);
+                  
+                  // Clear picking state
+                  setIsTimerRunning(false);
+                  playSound('complete');
+                  if (activePickingOrder) {
+                    clearPickedProgress(activePickingOrder.id);
+                  }
+                  
+                  // Update order status in database (single update)
+                  if (activePickingOrder && !activePickingOrder.id.startsWith('mock-')) {
+                    apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
+                      pickStatus: 'completed',
+                      pickEndTime: new Date().toISOString(),
+                      pickedBy: currentEmployee
+                    }).catch(console.error);
+                  }
+                  
                   setActivePickingOrder(null);
                   setPickingTimer(0);
                   setManualItemIndex(0);
                   startPacking(orderTopack);
-                  completePicking(false).catch(console.error);
                   setSelectedTab('packing');
+                  
+                  queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                  isAutoProceeding.current = false;
                 }}
                 className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
                 data-testid="button-proceed-packing"
@@ -17525,7 +17600,28 @@ export default function PickPack() {
                   return nextOrder && isStartingOrder[nextOrder.id];
                 })()}
                 onClick={async () => {
+                  // Prevent duplicate processing
+                  if (isAutoProceeding.current) return;
+                  isAutoProceeding.current = true;
+                  
                   const justCompletedOrderId = activePickingOrder?.id;
+                  
+                  // Complete picking for current order first
+                  if (activePickingOrder) {
+                    setIsTimerRunning(false);
+                    playSound('complete');
+                    clearPickedProgress(activePickingOrder.id);
+                    
+                    // Update order status (single update)
+                    if (!activePickingOrder.id.startsWith('mock-')) {
+                      apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
+                        pickStatus: 'completed',
+                        pickEndTime: new Date().toISOString(),
+                        pickedBy: currentEmployee,
+                        packStatus: 'not_started'
+                      }).catch(console.error);
+                    }
+                  }
                   
                   const pendingOrders = transformedOrders.filter(o => 
                     o.id !== justCompletedOrderId && 
@@ -17547,10 +17643,10 @@ export default function PickPack() {
                       setPickingTimer(0);
                       setManualItemIndex(0);
                       await startPicking(nextOrder);
-                      completePicking().catch(console.error);
                       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                     } finally {
                       setIsStartingOrder(prev => ({ ...prev, [nextOrder.id]: false }));
+                      isAutoProceeding.current = false;
                     }
                   } else {
                     setShowPickingCompletionModal(false);
@@ -17559,8 +17655,8 @@ export default function PickPack() {
                     setPickingTimer(0);
                     setManualItemIndex(0);
                     setSelectedTab('pending');
-                    completePicking().catch(console.error);
                     queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                    isAutoProceeding.current = false;
                   }
                 }}
                 className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold border-2 border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
