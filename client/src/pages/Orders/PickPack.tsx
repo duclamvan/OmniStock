@@ -10270,7 +10270,7 @@ export default function PickPack() {
                     )}
                   </div>
                 </AccordionTrigger>
-                <AccordionContent>
+                <AccordionContent className={`${(packingChecklist.itemsVerified || allItemsVerified) ? 'bg-green-50/30 dark:bg-green-900/10' : 'bg-red-50/30 dark:bg-red-900/10'}`}>
                   {/* Barcode Scanner Input - Collapsible */}
                   {scanningEnabled && showBarcodeScanner && (
                     <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-sky-50">
@@ -11237,7 +11237,7 @@ export default function PickPack() {
               </CardTitle>
             </CardHeader>
             {!isCartonSectionCollapsed && (
-              <CardContent className="p-4 space-y-3">
+              <CardContent className={`p-4 space-y-3 ${cartonsComplete ? 'bg-green-50/30 dark:bg-green-900/10' : 'bg-red-50/30 dark:bg-red-900/10'}`}>
               
               {/* AI Carton Plan Banner - Show saved plan from order creation */}
               {packingPlan && packingPlan.cartons && packingPlan.cartons.length > 0 && (
@@ -11484,7 +11484,7 @@ export default function PickPack() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className={`p-4 ${allDocumentsPrinted ? 'bg-green-50/30 dark:bg-green-900/10' : 'bg-red-50/30 dark:bg-red-900/10'}`}>
               {/* Unified Documents List */}
               <UnifiedDocumentsList
                 orderId={activePackingOrder.id}
@@ -13432,7 +13432,7 @@ export default function PickPack() {
                 })()}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 space-y-3">
+            <CardContent className={`p-4 space-y-3 ${shippingLabelsComplete ? 'bg-green-50/30 dark:bg-green-900/10' : 'bg-red-50/30 dark:bg-red-900/10'}`}>
               {/* Pickup Section - No shipping required */}
               {activePackingOrder.shippingMethod?.toUpperCase() === 'PICKUP' && (
                 <div className="space-y-3">
