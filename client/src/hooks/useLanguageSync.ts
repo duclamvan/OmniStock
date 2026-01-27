@@ -2,43 +2,33 @@ import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import i18n from '@/i18n/i18n';
 
-const LANGUAGE_STORAGE_KEY = 'app_language';
-
 /**
  * Hook to synchronize the app language with the user's preferred language
- * This ensures that when the user logs in, their language preference is applied
+ * User's profile setting ALWAYS takes priority over localStorage
  */
 export function useLanguageSync() {
   const { user, isLoading } = useAuth();
 
-  // Single unified effect for language synchronization
+  // Apply user's preferred language once user is loaded
   useEffect(() => {
-    let targetLanguage: string | null = null;
+    // Only act once user data is loaded
+    if (isLoading) return;
     
-    // Priority 1: Check user's preferred language (per-user setting)
-    if (!isLoading && user?.preferredLanguage) {
-      targetLanguage = user.preferredLanguage;
-    } 
-    // Priority 2: Check localStorage (fallback when user not loaded)
-    else if (!isLoading) {
-      try {
-        const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-        if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'vi')) {
-          targetLanguage = savedLanguage;
-        }
-      } catch (error) {
-        console.error('Failed to read language from localStorage:', error);
-      }
-    }
-    
-    // Apply the language change if we have a valid target and it's different
-    if (targetLanguage && i18n.language !== targetLanguage) {
-      try {
+    // If user has a preferred language set, ALWAYS use it (overrides localStorage)
+    if (user?.preferredLanguage && (user.preferredLanguage === 'en' || user.preferredLanguage === 'vi')) {
+      const targetLanguage = user.preferredLanguage;
+      
+      // Apply the language if different from current
+      if (i18n.language !== targetLanguage) {
         i18n.changeLanguage(targetLanguage);
-        // Persist to localStorage for next load
-        localStorage.setItem(LANGUAGE_STORAGE_KEY, targetLanguage);
+      }
+      
+      // Sync to localStorage (both keys for compatibility)
+      try {
+        localStorage.setItem('app_language', targetLanguage);
+        localStorage.setItem('i18nextLng', targetLanguage);
       } catch (error) {
-        console.error('Failed to change language:', error);
+        console.error('Failed to save language to localStorage:', error);
       }
     }
   }, [user?.preferredLanguage, isLoading]);

@@ -81,25 +81,37 @@ export const resources = {
   },
 } as const;
 
+// Get initial language from localStorage (check both keys for compatibility)
+const getInitialLanguage = (): string => {
+  try {
+    // Priority 1: Check app_language (our preferred key)
+    const appLang = localStorage.getItem('app_language');
+    if (appLang === 'en' || appLang === 'vi') {
+      return appLang;
+    }
+    // Priority 2: Check i18nextLng (legacy key)
+    const i18nLang = localStorage.getItem('i18nextLng');
+    if (i18nLang === 'en' || i18nLang === 'vi') {
+      return i18nLang;
+    }
+  } catch (e) {
+    // localStorage might not be available
+  }
+  return 'en'; // Default fallback
+};
+
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
     defaultNS,
     fallbackLng: 'en',
-    lng: 'en',
+    lng: getInitialLanguage(),
     
     debug: false,
     
     interpolation: {
       escapeValue: false,
-    },
-    
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'i18nextLng',
     },
     
     react: {
