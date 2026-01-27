@@ -4134,6 +4134,22 @@ export default function PickPack() {
     localStorage.setItem('pickpack_audio_enabled', String(audioEnabled));
   }, [audioEnabled]);
   
+  
+  // Auto-navigate to ready tab when packing completion modal is shown
+  useEffect(() => {
+    if (showPackingCompletionModal) {
+      const timer = setTimeout(() => {
+        setShowPackingCompletionModal(false);
+        window.scrollTo(0, 0);
+        setActivePackingOrder(null);
+        setPackingTimer(0);
+        setSelectedTab('ready');
+      }, 2500); // 2.5 second delay to show success message
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showPackingCompletionModal]);
+
   // State for packing process
   const [packingChecklist, setPackingChecklist] = useState({
     itemsVerified: false,
