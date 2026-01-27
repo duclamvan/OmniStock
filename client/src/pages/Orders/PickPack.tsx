@@ -705,7 +705,8 @@ const openPDFAndPrint = (url: string) => {
 };
 
 // Function to merge multiple PDFs and images into one and open for printing
-const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
+// Merge PDFs and return base64 for QZ Tray or fallback to browser printing
+const mergeAndPrintPDFs = async (pdfUrls: string[], printViaQZ?: (base64: string) => Promise<{ success: boolean }>) => {
   try {
     if (pdfUrls.length === 0) {
       throw new Error('No files to merge');
@@ -782,10 +783,28 @@ const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
     
     // Save the merged PDF
     const mergedPdfBytes = await mergedPdf.save();
+    
+    // Try QZ Tray printing first if provided
+    if (printViaQZ) {
+      try {
+        // Convert to base64 for QZ Tray
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(mergedPdfBytes)));
+        console.log('Sending merged PDF to QZ Tray...');
+        const result = await printViaQZ(base64);
+        if (result.success) {
+          console.log('Successfully printed via QZ Tray');
+          return;
+        }
+      } catch (qzError) {
+        console.error('QZ Tray print failed, falling back to browser:', qzError);
+      }
+    }
+    
+    // Fallback to browser printing
     const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(blob);
     
-    console.log('Opening merged PDF for printing');
+    console.log('Opening merged PDF for browser printing');
     
     // Open and print
     const printWindow = window.open(blobUrl, '_blank');
@@ -11434,7 +11453,11 @@ export default function PickPack() {
                   onClick={async () => {
                     try {
                       setIsPrintingAllDocuments(true);
-                      await mergeAndPrintPDFs(allDocumentUrls);
+                      // Use QZ Tray for fast printing if available
+                      await mergeAndPrintPDFs(allDocumentUrls, async (base64) => {
+                        const result = await printPackingDoc(base64, true);
+                        return result;
+                      });
                       
                       // Mark all documents as printed
                       setPrintedDocuments(prev => ({ ...prev, packingList: true }));
@@ -11498,10 +11521,31 @@ export default function PickPack() {
                 printedDocuments={printedDocuments}
                 printedProductFiles={printedProductFiles}
                 printedOrderFiles={printedOrderFiles}
-                onPackingListPrinted={() => {
-                  openPDFAndPrint(`/api/orders/${activePackingOrder.id}/packing-list.pdf`);
-                  setPrintedDocuments(prev => ({ ...prev, packingList: true }));
-                  playSound('success');
+                onPackingListPrinted={async () => {
+                  const url = `/api/orders/${activePackingOrder.id}/packing-list.pdf`;
+                  try {
+                    // Fetch PDF and print via QZ Tray
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Failed to fetch packing list');
+                    const blob = await response.blob();
+                    const base64 = await new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        const result = reader.result as string;
+                        resolve(result.split(',')[1]);
+                      };
+                      reader.onerror = reject;
+                      reader.readAsDataURL(blob);
+                    });
+                    await printPackingDoc(base64, true);
+                    setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                    playSound('success');
+                  } catch (error) {
+                    console.error('Packing list print error:', error);
+                    openPDFAndPrint(url);
+                    setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                    playSound('success');
+                  }
                 }}
                 onProductFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
                 onOrderFilePrinted={(fileId) => setPrintedOrderFiles(prev => new Set([...Array.from(prev), fileId]))}
