@@ -14859,7 +14859,9 @@ Important:
       res.json(completeOrder);
     } catch (error) {
       console.error("Error creating order:", error);
-      res.status(500).json({ message: "Failed to create order" });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Order creation error details:", errorMessage);
+      res.status(500).json({ message: "Failed to create order", error: errorMessage });
     }
   });
 
