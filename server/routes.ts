@@ -29103,7 +29103,7 @@ Other rules:
       // Items - proper height estimation with more space for Vietnamese
       for (const item of items) {
         const itemName = `${item.quantity || 1}x ${item.name || 'Item'}`;
-        const estimatedLines = Math.ceil(itemName.length / 24);
+        const estimatedLines = Math.ceil(itemName.length / 18);
         estimatedHeight += Math.max(baseLineHeight, estimatedLines * smallLineHeight) + 5;
       }
       
@@ -29289,7 +29289,7 @@ Other rules:
         const qtyRaw = Number(item.quantity);
         const qty = Number.isFinite(qtyRaw) && qtyRaw > 0 ? qtyRaw : 1;
         const rawName = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Item';
-        const name = abbreviateProductName(rawName, 18);
+        const name = rawName; // Use full product name, allow text to wrap
         const priceRaw = Number(item.price);
         const unitPrice = Number.isFinite(priceRaw) ? priceRaw : 0;
         const lineTotal = unitPrice * qty;
