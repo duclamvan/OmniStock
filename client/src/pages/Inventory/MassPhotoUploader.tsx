@@ -653,19 +653,14 @@ export default function MassPhotoUploader() {
               
               {/* Product Info */}
               <CardContent className="p-2">
-                <p className="text-sm font-medium truncate" title={product.name}>
+                <p className="text-sm font-medium leading-tight line-clamp-2" title={product.name}>
                   {product.name}
                 </p>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                {product.sku && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
                     {product.sku}
                   </p>
-                  {product.categoryId && (
-                    <Badge variant="outline" className="text-[10px] px-1 py-0 truncate max-w-[60px]">
-                      {getCategoryName(product.categoryId)}
-                    </Badge>
-                  )}
-                </div>
+                )}
               </CardContent>
             </Card>
           );
