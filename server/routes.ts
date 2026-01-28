@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.sendFile(filePath);
     } catch (error) {
       console.error('[Profile Picture] Error serving image:', error);
-      res.status(500).json({ message: 'Failed to serve profile picture' });
+      res.status(500).json({ message: 'Failed to serve profile picture', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -459,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ path: `/api/profile-pictures/${filename}` });
     } catch (error) {
       console.error('[Profile Picture Upload] Error:', error);
-      res.status(500).json({ message: 'Failed to upload profile picture' });
+      res.status(500).json({ message: 'Failed to upload profile picture', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -474,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userCount = await storage.getUserCount();
       res.json({ hasUsers: userCount > 0 });
     } catch (error) {
-      res.status(500).json({ message: 'Failed to check users' });
+      res.status(500).json({ message: 'Failed to check users', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -506,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Product lookup error:', error);
-      res.status(500).json({ message: 'Failed to lookup product' });
+      res.status(500).json({ message: 'Failed to lookup product', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -648,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching authenticated user:', error);
-      res.status(500).json({ message: 'Failed to fetch user data' });
+      res.status(500).json({ message: 'Failed to fetch user data', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -708,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching current user:', error);
-      res.status(500).json({ message: 'Failed to fetch user information' });
+      res.status(500).json({ message: 'Failed to fetch user information', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -783,7 +783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error updating user profile:', error);
-      res.status(500).json({ message: 'Failed to update user profile' });
+      res.status(500).json({ message: 'Failed to update user profile', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -802,7 +802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(sanitizedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
-      res.status(500).json({ message: 'Failed to fetch users' });
+      res.status(500).json({ message: 'Failed to fetch users', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -828,7 +828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(sanitizedUser);
     } catch (error) {
       console.error('Error fetching user:', error);
-      res.status(500).json({ message: 'Failed to fetch user' });
+      res.status(500).json({ message: 'Failed to fetch user', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -847,7 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'User role updated successfully' });
     } catch (error) {
       console.error('Error updating user role:', error);
-      res.status(500).json({ message: 'Failed to update user role' });
+      res.status(500).json({ message: 'Failed to update user role', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -866,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Failed to delete user' });
+      res.status(500).json({ message: 'Failed to delete user', error: error instanceof Error ? error.message : String(error) });
     }
   });
   // POST /api/admin/users - Create a new user (admin-only)
@@ -931,7 +931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error creating user:', error);
-      res.status(500).json({ message: 'Failed to create user' });
+      res.status(500).json({ message: 'Failed to create user', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -986,7 +986,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error updating user:', error);
-      res.status(500).json({ message: 'Failed to update user' });
+      res.status(500).json({ message: 'Failed to update user', error: error instanceof Error ? error.message : String(error) });
     }
   });
   app.delete('/api/admin/users/:userId', requireRole(['administrator']), async (req, res) => {
@@ -1010,7 +1010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Failed to delete user' });
+      res.status(500).json({ message: 'Failed to delete user', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1183,7 +1183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(rolesWithPermissions);
     } catch (error) {
       console.error('Error fetching roles:', error);
-      res.status(500).json({ message: 'Failed to fetch roles' });
+      res.status(500).json({ message: 'Failed to fetch roles', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1210,7 +1210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching role:', error);
-      res.status(500).json({ message: 'Failed to fetch role' });
+      res.status(500).json({ message: 'Failed to fetch role', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1256,7 +1256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation failed', errors: error.errors });
       }
-      res.status(500).json({ message: 'Failed to create role' });
+      res.status(500).json({ message: 'Failed to create role', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1321,7 +1321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error updating role:', error);
-      res.status(500).json({ message: 'Failed to update role' });
+      res.status(500).json({ message: 'Failed to update role', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1355,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'Role deleted successfully' });
     } catch (error) {
       console.error('Error deleting role:', error);
-      res.status(500).json({ message: 'Failed to delete role' });
+      res.status(500).json({ message: 'Failed to delete role', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1393,7 +1393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching permissions:', error);
-      res.status(500).json({ message: 'Failed to fetch permissions' });
+      res.status(500).json({ message: 'Failed to fetch permissions', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1420,7 +1420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'User role updated successfully', role });
     } catch (error) {
       console.error('Error assigning role:', error);
-      res.status(500).json({ message: 'Failed to assign role' });
+      res.status(500).json({ message: 'Failed to assign role', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1433,7 +1433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(employees);
     } catch (error) {
       console.error('Error fetching employees:', error);
-      res.status(500).json({ message: 'Failed to fetch employees' });
+      res.status(500).json({ message: 'Failed to fetch employees', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1450,7 +1450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(employee);
     } catch (error) {
       console.error('Error fetching employee:', error);
-      res.status(500).json({ message: 'Failed to fetch employee' });
+      res.status(500).json({ message: 'Failed to fetch employee', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1496,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(employee);
     } catch (error) {
       console.error('Error creating employee:', error);
-      res.status(500).json({ message: 'Failed to create employee' });
+      res.status(500).json({ message: 'Failed to create employee', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1513,7 +1513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(employee);
     } catch (error) {
       console.error('Error updating employee:', error);
-      res.status(500).json({ message: 'Failed to update employee' });
+      res.status(500).json({ message: 'Failed to update employee', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1525,7 +1525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'Employee deleted successfully' });
     } catch (error) {
       console.error('Error deleting employee:', error);
-      res.status(500).json({ message: 'Failed to delete employee' });
+      res.status(500).json({ message: 'Failed to delete employee', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1587,7 +1587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'User assigned to employee successfully' });
     } catch (error) {
       console.error('Error assigning user to employee:', error);
-      res.status(500).json({ message: 'Failed to assign user to employee' });
+      res.status(500).json({ message: 'Failed to assign user to employee', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1599,7 +1599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error('Error getting employee stats:', error);
-      res.status(500).json({ message: 'Failed to get employee stats' });
+      res.status(500).json({ message: 'Failed to get employee stats', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1611,7 +1611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(incidents);
     } catch (error) {
       console.error('Error getting employee incidents:', error);
-      res.status(500).json({ message: 'Failed to get employee incidents' });
+      res.status(500).json({ message: 'Failed to get employee incidents', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1637,7 +1637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(incident);
     } catch (error) {
       console.error('Error creating employee incident:', error);
-      res.status(500).json({ message: 'Failed to create incident' });
+      res.status(500).json({ message: 'Failed to create incident', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1671,7 +1671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(incident);
     } catch (error) {
       console.error('Error updating employee incident:', error);
-      res.status(500).json({ message: 'Failed to update incident' });
+      res.status(500).json({ message: 'Failed to update incident', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1683,7 +1683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'Incident deleted successfully' });
     } catch (error) {
       console.error('Error deleting employee incident:', error);
-      res.status(500).json({ message: 'Failed to delete incident' });
+      res.status(500).json({ message: 'Failed to delete incident', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1701,7 +1701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tasks);
     } catch (error) {
       console.error('Error getting employee tasks:', error);
-      res.status(500).json({ message: 'Failed to get employee tasks' });
+      res.status(500).json({ message: 'Failed to get employee tasks', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1739,7 +1739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(combined);
     } catch (error) {
       console.error('Error getting employee activity:', error);
-      res.status(500).json({ message: 'Failed to get employee activity' });
+      res.status(500).json({ message: 'Failed to get employee activity', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1774,7 +1774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       console.error('Error fetching activity logs:', error);
-      res.status(500).json({ message: 'Failed to fetch activity logs' });
+      res.status(500).json({ message: 'Failed to fetch activity logs', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1786,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       console.error('Error fetching activity logs for user:', error);
-      res.status(500).json({ message: 'Failed to fetch activity logs for user' });
+      res.status(500).json({ message: 'Failed to fetch activity logs for user', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -1806,7 +1806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(log);
     } catch (error) {
       console.error('Error creating activity log:', error);
-      res.status(500).json({ message: 'Failed to create activity log' });
+      res.status(500).json({ message: 'Failed to create activity log', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2035,7 +2035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(metricsWithConversion);
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
-      res.status(500).json({ message: "Failed to fetch dashboard metrics" });
+      res.status(500).json({ message: "Failed to fetch dashboard metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2167,7 +2167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(monthlySummary);
     } catch (error) {
       console.error("Error fetching financial summary:", error);
-      res.status(500).json({ message: "Failed to fetch financial summary" });
+      res.status(500).json({ message: "Failed to fetch financial summary", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2178,7 +2178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(activities);
     } catch (error) {
       console.error("Error fetching user activities:", error);
-      res.status(500).json({ message: "Failed to fetch user activities" });
+      res.status(500).json({ message: "Failed to fetch user activities", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2214,7 +2214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching recently received items:", error);
-      res.status(500).json({ message: "Failed to fetch recently received items" });
+      res.status(500).json({ message: "Failed to fetch recently received items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2284,7 +2284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching operations pulse metrics:", error);
-      res.status(500).json({ message: "Failed to fetch operations pulse metrics" });
+      res.status(500).json({ message: "Failed to fetch operations pulse metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2403,7 +2403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching financial control metrics:", error);
-      res.status(500).json({ message: "Failed to fetch financial control metrics" });
+      res.status(500).json({ message: "Failed to fetch financial control metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2471,7 +2471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching inventory risk metrics:", error);
-      res.status(500).json({ message: "Failed to fetch inventory risk metrics" });
+      res.status(500).json({ message: "Failed to fetch inventory risk metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2981,7 +2981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching inventory dashboard:", error);
-      res.status(500).json({ message: "Failed to fetch inventory dashboard" });
+      res.status(500).json({ message: "Failed to fetch inventory dashboard", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3055,7 +3055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching fulfillment efficiency metrics:", error);
-      res.status(500).json({ message: "Failed to fetch fulfillment efficiency metrics" });
+      res.status(500).json({ message: "Failed to fetch fulfillment efficiency metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3151,7 +3151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching customer support metrics:", error);
-      res.status(500).json({ message: "Failed to fetch customer support metrics" });
+      res.status(500).json({ message: "Failed to fetch customer support metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3236,7 +3236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching system alerts metrics:", error);
-      res.status(500).json({ message: "Failed to fetch system alerts metrics" });
+      res.status(500).json({ message: "Failed to fetch system alerts metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3377,7 +3377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching dashboard action items:", error);
-      res.status(500).json({ message: "Failed to fetch dashboard action items" });
+      res.status(500).json({ message: "Failed to fetch dashboard action items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3470,7 +3470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching fulfillment pipeline:", error);
-      res.status(500).json({ message: "Failed to fetch fulfillment pipeline" });
+      res.status(500).json({ message: "Failed to fetch fulfillment pipeline", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3670,7 +3670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching sales growth metrics:", error);
-      res.status(500).json({ message: "Failed to fetch sales growth metrics" });
+      res.status(500).json({ message: "Failed to fetch sales growth metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3833,7 +3833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching inventory health metrics:", error);
-      res.status(500).json({ message: "Failed to fetch inventory health metrics" });
+      res.status(500).json({ message: "Failed to fetch inventory health metrics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3861,7 +3861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ period, leaderboard });
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
-      res.status(500).json({ message: 'Failed to fetch leaderboard' });
+      res.status(500).json({ message: 'Failed to fetch leaderboard', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3877,7 +3877,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(performance);
     } catch (error) {
       console.error('Error fetching user performance:', error);
-      res.status(500).json({ message: 'Failed to fetch performance data' });
+      res.status(500).json({ message: 'Failed to fetch performance data', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3889,7 +3889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(performance);
     } catch (error) {
       console.error('Error fetching user performance:', error);
-      res.status(500).json({ message: 'Failed to fetch performance data' });
+      res.status(500).json({ message: 'Failed to fetch performance data', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3900,7 +3900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(badges);
     } catch (error) {
       console.error('Error fetching badges:', error);
-      res.status(500).json({ message: 'Failed to fetch badges' });
+      res.status(500).json({ message: 'Failed to fetch badges', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3912,7 +3912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(badges);
     } catch (error) {
       console.error('Error fetching user badges:', error);
-      res.status(500).json({ message: 'Failed to fetch user badges' });
+      res.status(500).json({ message: 'Failed to fetch user badges', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3925,7 +3925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(events);
     } catch (error) {
       console.error('Error fetching performance events:', error);
-      res.status(500).json({ message: 'Failed to fetch performance events' });
+      res.status(500).json({ message: 'Failed to fetch performance events', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3992,7 +3992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error uploading and compressing file:", error);
-      res.status(500).json({ message: "Failed to upload and compress file" });
+      res.status(500).json({ message: "Failed to upload and compress file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4443,7 +4443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error in global search:", error);
-      res.status(500).json({ message: "Search failed" });
+      res.status(500).json({ message: "Search failed", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4549,7 +4549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error in search preload:", error);
-      res.status(500).json({ message: "Preload failed" });
+      res.status(500).json({ message: "Preload failed", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4560,7 +4560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(categories);
     } catch (error) {
       console.error("Error fetching categories:", error);
-      res.status(500).json({ message: "Failed to fetch categories" });
+      res.status(500).json({ message: "Failed to fetch categories", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4581,7 +4581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(category);
     } catch (error) {
       console.error("Error creating category:", error);
-      res.status(500).json({ message: "Failed to create category" });
+      res.status(500).json({ message: "Failed to create category", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4599,7 +4599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(category);
     } catch (error) {
       console.error("Error fetching category:", error);
-      res.status(500).json({ message: "Failed to fetch category" });
+      res.status(500).json({ message: "Failed to fetch category", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4619,7 +4619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(category);
     } catch (error) {
       console.error("Error updating category:", error);
-      res.status(500).json({ message: "Failed to update category" });
+      res.status(500).json({ message: "Failed to update category", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4653,7 +4653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting category:", error);
-      res.status(500).json({ message: "Failed to delete category" });
+      res.status(500).json({ message: "Failed to delete category", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4717,7 +4717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error importing categories:", error);
-      res.status(500).json({ message: "Failed to import categories" });
+      res.status(500).json({ message: "Failed to import categories", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4732,7 +4732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const apiKey = process.env.DEEPSEEK_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ message: 'Translation API not configured' });
+        return res.status(500).json({ message: 'Translation API not configured', error: error instanceof Error ? error.message : String(error) });
       }
 
       const OpenAI = (await import('openai')).default;
@@ -4786,7 +4786,7 @@ Important:
       res.json(translations);
     } catch (error) {
       console.error('Translation error:', error);
-      res.status(500).json({ message: 'Failed to translate category name' });
+      res.status(500).json({ message: 'Failed to translate category name', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4817,7 +4817,7 @@ Important:
       res.json({ code: nextCode, number: nextNumber });
     } catch (error) {
       console.error("Error getting next warehouse code:", error);
-      res.status(500).json({ message: "Failed to get next warehouse code" });
+      res.status(500).json({ message: "Failed to get next warehouse code", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -4853,7 +4853,7 @@ Important:
       res.json(warehousesWithCounts);
     } catch (error) {
       console.error("Error fetching warehouses:", error);
-      res.status(500).json({ message: "Failed to fetch warehouses" });
+      res.status(500).json({ message: "Failed to fetch warehouses", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4893,7 +4893,7 @@ Important:
       res.json(warehouse);
     } catch (error) {
       console.error("Error creating warehouse:", error);
-      res.status(500).json({ message: "Failed to create warehouse" });
+      res.status(500).json({ message: "Failed to create warehouse", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4904,7 +4904,7 @@ Important:
       res.json([]);
     } catch (error) {
       console.error("Error fetching warehouse map files:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse map files" });
+      res.status(500).json({ message: "Failed to fetch warehouse map files", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4917,7 +4917,7 @@ Important:
       res.json(warehouse);
     } catch (error) {
       console.error("Error fetching warehouse:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse" });
+      res.status(500).json({ message: "Failed to fetch warehouse", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4937,7 +4937,7 @@ Important:
       res.json(warehouse);
     } catch (error) {
       console.error("Error updating warehouse:", error);
-      res.status(500).json({ message: "Failed to update warehouse" });
+      res.status(500).json({ message: "Failed to update warehouse", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4969,7 +4969,7 @@ Important:
         });
       }
 
-      res.status(500).json({ message: "Failed to delete warehouse" });
+      res.status(500).json({ message: "Failed to delete warehouse", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -4990,7 +4990,7 @@ Important:
       });
     } catch (error) {
       console.error("Error fetching warehouse map config:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse map configuration" });
+      res.status(500).json({ message: "Failed to fetch warehouse map configuration", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5053,7 +5053,7 @@ Important:
       });
     } catch (error) {
       console.error("Error updating warehouse map config:", error);
-      res.status(500).json({ message: "Failed to update warehouse map configuration" });
+      res.status(500).json({ message: "Failed to update warehouse map configuration", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5116,7 +5116,7 @@ Important:
       });
     } catch (error) {
       console.error("Error updating aisle config:", error);
-      res.status(500).json({ message: "Failed to update aisle configuration" });
+      res.status(500).json({ message: "Failed to update aisle configuration", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5174,7 +5174,7 @@ Important:
       res.json(productLocationDetails);
     } catch (error) {
       console.error("Error fetching product locations:", error);
-      res.status(500).json({ message: "Failed to fetch product locations" });
+      res.status(500).json({ message: "Failed to fetch product locations", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5212,7 +5212,7 @@ Important:
       res.json(enrichedProducts);
     } catch (error) {
       console.error("Error fetching warehouse products:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse products" });
+      res.status(500).json({ message: "Failed to fetch warehouse products", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5466,7 +5466,7 @@ Important:
       });
     } catch (error) {
       console.error("Error fetching warehouse location inventory:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse location inventory" });
+      res.status(500).json({ message: "Failed to fetch warehouse location inventory", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5477,7 +5477,7 @@ Important:
       res.json(files);
     } catch (error) {
       console.error("Error fetching warehouse files:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse files" });
+      res.status(500).json({ message: "Failed to fetch warehouse files", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5508,7 +5508,7 @@ Important:
       res.json(file);
     } catch (error) {
       console.error("Error creating warehouse file:", error);
-      res.status(500).json({ message: "Failed to create warehouse file" });
+      res.status(500).json({ message: "Failed to create warehouse file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5532,7 +5532,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting warehouse file:", error);
-      res.status(500).json({ message: "Failed to delete warehouse file" });
+      res.status(500).json({ message: "Failed to delete warehouse file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5543,7 +5543,7 @@ Important:
       res.json(contracts);
     } catch (error) {
       console.error("Error fetching warehouse financial contracts:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse financial contracts" });
+      res.status(500).json({ message: "Failed to fetch warehouse financial contracts", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5556,7 +5556,7 @@ Important:
       res.json(contract);
     } catch (error) {
       console.error("Error fetching financial contract:", error);
-      res.status(500).json({ message: "Failed to fetch financial contract" });
+      res.status(500).json({ message: "Failed to fetch financial contract", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5579,7 +5579,7 @@ Important:
       res.json(contract);
     } catch (error) {
       console.error("Error creating financial contract:", error);
-      res.status(500).json({ message: "Failed to create financial contract" });
+      res.status(500).json({ message: "Failed to create financial contract", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5603,7 +5603,7 @@ Important:
       res.json(contract);
     } catch (error) {
       console.error("Error updating financial contract:", error);
-      res.status(500).json({ message: "Failed to update financial contract" });
+      res.status(500).json({ message: "Failed to update financial contract", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5627,7 +5627,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting financial contract:", error);
-      res.status(500).json({ message: "Failed to delete financial contract" });
+      res.status(500).json({ message: "Failed to delete financial contract", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5641,7 +5641,7 @@ Important:
       res.json(layout);
     } catch (error) {
       console.error("Error fetching warehouse layout:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse layout" });
+      res.status(500).json({ message: "Failed to fetch warehouse layout", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5661,7 +5661,7 @@ Important:
       res.json(layout);
     } catch (error) {
       console.error("Error generating warehouse layout:", error);
-      res.status(500).json({ message: "Failed to generate warehouse layout" });
+      res.status(500).json({ message: "Failed to generate warehouse layout", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5676,7 +5676,7 @@ Important:
       res.json(bins);
     } catch (error) {
       console.error("Error fetching warehouse bins:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse bins" });
+      res.status(500).json({ message: "Failed to fetch warehouse bins", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5691,7 +5691,7 @@ Important:
       res.json(stats);
     } catch (error) {
       console.error("Error fetching layout statistics:", error);
-      res.status(500).json({ message: "Failed to fetch layout statistics" });
+      res.status(500).json({ message: "Failed to fetch layout statistics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5715,7 +5715,7 @@ Important:
       res.json(bin);
     } catch (error) {
       console.error("Error updating bin:", error);
-      res.status(500).json({ message: "Failed to update bin" });
+      res.status(500).json({ message: "Failed to update bin", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5762,7 +5762,7 @@ Important:
       res.json(enrichedSuppliers);
     } catch (error) {
       console.error("Error fetching suppliers:", error);
-      res.status(500).json({ message: "Failed to fetch suppliers" });
+      res.status(500).json({ message: "Failed to fetch suppliers", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5775,7 +5775,7 @@ Important:
       res.json(supplier);
     } catch (error) {
       console.error("Error fetching supplier:", error);
-      res.status(500).json({ message: "Failed to fetch supplier" });
+      res.status(500).json({ message: "Failed to fetch supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5808,7 +5808,7 @@ Important:
       res.json(supplier);
     } catch (error) {
       console.error("Error creating supplier:", error);
-      res.status(500).json({ message: "Failed to create supplier" });
+      res.status(500).json({ message: "Failed to create supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5827,7 +5827,7 @@ Important:
       res.json(supplier);
     } catch (error) {
       console.error("Error updating supplier:", error);
-      res.status(500).json({ message: "Failed to update supplier" });
+      res.status(500).json({ message: "Failed to update supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5859,7 +5859,7 @@ Important:
         });
       }
 
-      res.status(500).json({ message: "Failed to delete supplier" });
+      res.status(500).json({ message: "Failed to delete supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5968,7 +5968,7 @@ Important:
       res.json(purchasesWithItems);
     } catch (error) {
       console.error("Error fetching supplier purchases:", error);
-      res.status(500).json({ message: "Failed to fetch supplier purchases" });
+      res.status(500).json({ message: "Failed to fetch supplier purchases", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5979,7 +5979,7 @@ Important:
       res.json(files);
     } catch (error) {
       console.error("Error fetching supplier files:", error);
-      res.status(500).json({ message: "Failed to fetch supplier files" });
+      res.status(500).json({ message: "Failed to fetch supplier files", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -5991,7 +5991,7 @@ Important:
       res.json({ uploadURL });
     } catch (error) {
       console.error("Error getting upload URL:", error);
-      res.status(500).json({ message: "Failed to get upload URL" });
+      res.status(500).json({ message: "Failed to get upload URL", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6002,7 +6002,7 @@ Important:
       res.json({ uploadURL });
     } catch (error) {
       console.error("Error getting upload URL:", error);
-      res.status(500).json({ message: "Failed to get upload URL" });
+      res.status(500).json({ message: "Failed to get upload URL", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6033,7 +6033,7 @@ Important:
       res.json(file);
     } catch (error) {
       console.error("Error creating supplier file:", error);
-      res.status(500).json({ message: "Failed to create supplier file" });
+      res.status(500).json({ message: "Failed to create supplier file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6047,7 +6047,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting supplier file:", error);
-      res.status(500).json({ message: "Failed to delete supplier file" });
+      res.status(500).json({ message: "Failed to delete supplier file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6061,7 +6061,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting supplier file:", error);
-      res.status(500).json({ message: "Failed to delete supplier file" });
+      res.status(500).json({ message: "Failed to delete supplier file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6138,7 +6138,7 @@ Important:
       });
     } catch (error) {
       console.error("Error importing suppliers:", error);
-      res.status(500).json({ message: "Failed to import suppliers" });
+      res.status(500).json({ message: "Failed to import suppliers", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6211,7 +6211,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching bundles:", error);
-      res.status(500).json({ message: "Failed to fetch bundles" });
+      res.status(500).json({ message: "Failed to fetch bundles", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6249,7 +6249,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching bundle:", error);
-      res.status(500).json({ message: "Failed to fetch bundle" });
+      res.status(500).json({ message: "Failed to fetch bundle", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6262,7 +6262,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching bundle items:", error);
-      res.status(500).json({ message: "Failed to fetch bundle items" });
+      res.status(500).json({ message: "Failed to fetch bundle items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6287,7 +6287,7 @@ Important:
       res.json(bundle);
     } catch (error) {
       console.error("Error creating bundle:", error);
-      res.status(500).json({ message: "Failed to create bundle" });
+      res.status(500).json({ message: "Failed to create bundle", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6316,7 +6316,7 @@ Important:
       res.json(updatedBundle);
     } catch (error) {
       console.error("Error updating bundle:", error);
-      res.status(500).json({ message: "Failed to update bundle" });
+      res.status(500).json({ message: "Failed to update bundle", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6326,7 +6326,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting bundle:", error);
-      res.status(500).json({ message: "Failed to delete bundle" });
+      res.status(500).json({ message: "Failed to delete bundle", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6353,7 +6353,7 @@ Important:
       res.json({ success: true });
     } catch (error) {
       console.error("Error adding bundle items:", error);
-      res.status(500).json({ message: "Failed to add bundle items" });
+      res.status(500).json({ message: "Failed to add bundle items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6393,7 +6393,7 @@ Important:
       res.json(newBundle);
     } catch (error) {
       console.error("Error duplicating bundle:", error);
-      res.status(500).json({ message: "Failed to duplicate bundle" });
+      res.status(500).json({ message: "Failed to duplicate bundle", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6404,7 +6404,7 @@ Important:
       res.json(updatedBundle);
     } catch (error) {
       console.error("Error updating bundle status:", error);
-      res.status(500).json({ message: "Failed to update bundle status" });
+      res.status(500).json({ message: "Failed to update bundle status", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6420,7 +6420,7 @@ Important:
       res.json({ allocated: allocatedObj });
     } catch (error) {
       console.error("Error fetching inventory availability:", error);
-      res.status(500).json({ message: "Failed to fetch inventory availability" });
+      res.status(500).json({ message: "Failed to fetch inventory availability", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6453,7 +6453,7 @@ Important:
       res.json(locationMap);
     } catch (error) {
       console.error('Error fetching primary locations:', error);
-      res.status(500).json({ message: 'Failed to fetch primary locations' });
+      res.status(500).json({ message: 'Failed to fetch primary locations', error: error instanceof Error ? error.message : String(error) });
     }
   });
   app.get('/api/products', isAuthenticated, async (req: any, res) => {
@@ -6682,7 +6682,7 @@ Important:
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-      res.status(500).json({ message: "Failed to fetch products" });
+      res.status(500).json({ message: "Failed to fetch products", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6695,7 +6695,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching low stock products:", error);
-      res.status(500).json({ message: "Failed to fetch low stock products" });
+      res.status(500).json({ message: "Failed to fetch low stock products", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6748,7 +6748,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching product:", error);
-      res.status(500).json({ message: "Failed to fetch product" });
+      res.status(500).json({ message: "Failed to fetch product", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6803,7 +6803,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching product locations:", error);
-      res.status(500).json({ message: "Failed to fetch product locations" });
+      res.status(500).json({ message: "Failed to fetch product locations", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6817,7 +6817,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching product files:", error);
-      res.status(500).json({ message: "Failed to fetch product files" });
+      res.status(500).json({ message: "Failed to fetch product files", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6845,7 +6845,7 @@ Important:
       });
     } catch (error) {
       console.error("Error fetching product recipe:", error);
-      res.status(500).json({ message: "Failed to fetch product recipe" });
+      res.status(500).json({ message: "Failed to fetch product recipe", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6949,7 +6949,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting ingredient:", error);
-      res.status(500).json({ message: "Failed to delete ingredient" });
+      res.status(500).json({ message: "Failed to delete ingredient", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6971,7 +6971,7 @@ Important:
       res.json(updated);
     } catch (error) {
       console.error("Error updating replenishment method:", error);
-      res.status(500).json({ message: "Failed to update replenishment method" });
+      res.status(500).json({ message: "Failed to update replenishment method", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7007,7 +7007,7 @@ Important:
       });
     } catch (error) {
       console.error("Error calculating production requirements:", error);
-      res.status(500).json({ message: "Failed to calculate production requirements" });
+      res.status(500).json({ message: "Failed to calculate production requirements", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7020,7 +7020,7 @@ Important:
       res.json(manufacturableProducts);
     } catch (error) {
       console.error("Error fetching manufacturable products:", error);
-      res.status(500).json({ message: "Failed to fetch manufacturable products" });
+      res.status(500).json({ message: "Failed to fetch manufacturable products", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7084,7 +7084,7 @@ Important:
       res.json(newFile);
     } catch (error) {
       console.error("Error uploading product file:", error);
-      res.status(500).json({ message: "Failed to upload product file" });
+      res.status(500).json({ message: "Failed to upload product file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7108,7 +7108,7 @@ Important:
       res.json(updatedFile);
     } catch (error) {
       console.error("Error updating product file:", error);
-      res.status(500).json({ message: "Failed to update product file" });
+      res.status(500).json({ message: "Failed to update product file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7136,13 +7136,13 @@ Important:
       const deleted = await storage.deleteProductFile(req.params.fileId);
 
       if (!deleted) {
-        return res.status(500).json({ message: "Failed to delete file" });
+        return res.status(500).json({ message: "Failed to delete file", error: error instanceof Error ? error.message : String(error) });
       }
 
       res.json({ message: "File deleted successfully" });
     } catch (error) {
       console.error("Error deleting product file:", error);
-      res.status(500).json({ message: "Failed to delete product file" });
+      res.status(500).json({ message: "Failed to delete product file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7174,7 +7174,7 @@ Important:
       res.send(fileBuffer);
     } catch (error) {
       console.error("Error downloading product file:", error);
-      res.status(500).json({ message: "Failed to download product file" });
+      res.status(500).json({ message: "Failed to download product file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7236,7 +7236,7 @@ Important:
       res.json(newFile);
     } catch (error) {
       console.error("Error uploading order file:", error);
-      res.status(500).json({ message: "Failed to upload order file" });
+      res.status(500).json({ message: "Failed to upload order file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7262,13 +7262,13 @@ Important:
       const deleted = await storage.deleteOrderFile(req.params.fileId);
 
       if (!deleted) {
-        return res.status(500).json({ message: "Failed to delete file" });
+        return res.status(500).json({ message: "Failed to delete file", error: error instanceof Error ? error.message : String(error) });
       }
 
       res.json({ message: "File deleted successfully" });
     } catch (error) {
       console.error("Error deleting order file:", error);
-      res.status(500).json({ message: "Failed to delete order file" });
+      res.status(500).json({ message: "Failed to delete order file", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7585,7 +7585,7 @@ Important:
       res.json({ deleted, message: `Reverted ${deleted} orders (inventory restored)` });
     } catch (error) {
       console.error("Error reverting import:", error);
-      res.status(500).json({ message: "Failed to revert import" });
+      res.status(500).json({ message: "Failed to revert import", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7595,7 +7595,7 @@ Important:
       res.json(pricing);
     } catch (error) {
       console.error("Error fetching product tiered pricing:", error);
-      res.status(500).json({ message: "Failed to fetch product tiered pricing" });
+      res.status(500).json({ message: "Failed to fetch product tiered pricing", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7618,7 +7618,7 @@ Important:
       res.status(201).json(newPricing);
     } catch (error) {
       console.error("Error creating product tiered pricing:", error);
-      res.status(500).json({ message: "Failed to create product tiered pricing" });
+      res.status(500).json({ message: "Failed to create product tiered pricing", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7645,7 +7645,7 @@ Important:
       res.json(updated);
     } catch (error) {
       console.error("Error updating product tiered pricing:", error);
-      res.status(500).json({ message: "Failed to update product tiered pricing" });
+      res.status(500).json({ message: "Failed to update product tiered pricing", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7660,7 +7660,7 @@ Important:
       res.json({ message: "Tiered pricing deleted successfully" });
     } catch (error) {
       console.error("Error deleting product tiered pricing:", error);
-      res.status(500).json({ message: "Failed to delete product tiered pricing" });
+      res.status(500).json({ message: "Failed to delete product tiered pricing", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7675,7 +7675,7 @@ Important:
       res.json(orderCounts);
     } catch (error) {
       console.error("Error fetching product order counts:", error);
-      res.status(500).json({ message: "Failed to fetch product order counts" });
+      res.status(500).json({ message: "Failed to fetch product order counts", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7726,7 +7726,7 @@ Important:
       res.json(costHistoryWithDetails);
     } catch (error) {
       console.error("Error fetching product cost history:", error);
-      res.status(500).json({ message: "Failed to fetch product cost history" });
+      res.status(500).json({ message: "Failed to fetch product cost history", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7750,7 +7750,7 @@ Important:
       });
     } catch (error) {
       console.error("Error calculating product reorder rate:", error);
-      res.status(500).json({ message: "Failed to calculate product reorder rate" });
+      res.status(500).json({ message: "Failed to calculate product reorder rate", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7787,7 +7787,7 @@ Important:
       });
     } catch (error) {
       console.error("Error calculating reorder rates for all products:", error);
-      res.status(500).json({ message: "Failed to calculate reorder rates" });
+      res.status(500).json({ message: "Failed to calculate reorder rates", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -7896,7 +7896,7 @@ Important:
       res.json(orderHistoryWithProfit);
     } catch (error) {
       console.error("Error fetching product order history:", error);
-      res.status(500).json({ message: "Failed to fetch product order history" });
+      res.status(500).json({ message: "Failed to fetch product order history", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8245,7 +8245,7 @@ Important:
       if (error?.code === '23505' && error?.constraint === 'products_sku_unique') {
         return res.status(409).json({ message: "A product with this SKU already exists. Please use a different SKU." });
       }
-      res.status(500).json({ message: "Failed to create product" });
+      res.status(500).json({ message: "Failed to create product", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8375,7 +8375,7 @@ Important:
       res.json(product);
     } catch (error) {
       console.error("Error updating product:", error);
-      res.status(500).json({ message: "Failed to update product" });
+      res.status(500).json({ message: "Failed to update product", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8407,7 +8407,7 @@ Important:
         });
       }
 
-      res.status(500).json({ message: "Failed to delete product" });
+      res.status(500).json({ message: "Failed to delete product", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8457,7 +8457,7 @@ Important:
       });
     } catch (error) {
       console.error("Error moving product to warehouse:", error);
-      res.status(500).json({ message: "Failed to move product to warehouse" });
+      res.status(500).json({ message: "Failed to move product to warehouse", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8468,7 +8468,7 @@ Important:
       res.json(allVariants);
     } catch (error) {
       console.error("Error fetching all variants:", error);
-      res.status(500).json({ message: "Failed to fetch variants" });
+      res.status(500).json({ message: "Failed to fetch variants", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8540,7 +8540,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching product variants:", error);
-      res.status(500).json({ message: "Failed to fetch product variants" });
+      res.status(500).json({ message: "Failed to fetch product variants", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8587,7 +8587,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create product variant" });
+      res.status(500).json({ message: "Failed to create product variant", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8608,7 +8608,7 @@ Important:
       res.json(filtered[0]);
     } catch (error) {
       console.error("Error fetching product variant:", error);
-      res.status(500).json({ message: "Failed to fetch product variant" });
+      res.status(500).json({ message: "Failed to fetch product variant", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8674,7 +8674,7 @@ Important:
       res.json(variant);
     } catch (error) {
       console.error("Error updating product variant:", error);
-      res.status(500).json({ message: "Failed to update product variant" });
+      res.status(500).json({ message: "Failed to update product variant", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8703,7 +8703,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting product variant:", error);
-      res.status(500).json({ message: "Failed to delete product variant" });
+      res.status(500).json({ message: "Failed to delete product variant", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8762,7 +8762,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create product variants" });
+      res.status(500).json({ message: "Failed to create product variants", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8799,7 +8799,7 @@ Important:
       res.json({ message: `Successfully moved ${productIds.length} products` });
     } catch (error) {
       console.error("Error moving products:", error);
-      res.status(500).json({ message: "Failed to move products" });
+      res.status(500).json({ message: "Failed to move products", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -8830,7 +8830,7 @@ Important:
       res.json({ deletedCount });
     } catch (error) {
       console.error("Error deleting product variants in bulk:", error);
-      res.status(500).json({ message: "Failed to delete product variants" });
+      res.status(500).json({ message: "Failed to delete product variants", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -9545,7 +9545,7 @@ Important:
           errors: error.errors 
         });
       }
-      res.status(500).json({ message: "Failed to update product location" });
+      res.status(500).json({ message: "Failed to update product location", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -9663,7 +9663,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting product location:", error);
-      res.status(500).json({ message: "Failed to delete product location" });
+      res.status(500).json({ message: "Failed to delete product location", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -9746,7 +9746,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching stock adjustment requests:", error);
-      res.status(500).json({ message: "Failed to fetch stock adjustment requests" });
+      res.status(500).json({ message: "Failed to fetch stock adjustment requests", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -9759,7 +9759,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching over-allocated items:", error);
-      res.status(500).json({ message: "Failed to fetch over-allocated items" });
+      res.status(500).json({ message: "Failed to fetch over-allocated items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -9772,7 +9772,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching under-allocated items:", error);
-      res.status(500).json({ message: "Failed to fetch under-allocated items" });
+      res.status(500).json({ message: "Failed to fetch under-allocated items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -9814,7 +9814,7 @@ Important:
       });
     } catch (error) {
       console.error("Error fetching stock inconsistencies:", error);
-      res.status(500).json({ message: "Failed to fetch stock inconsistencies" });
+      res.status(500).json({ message: "Failed to fetch stock inconsistencies", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -9849,7 +9849,7 @@ Important:
           errors: error.errors 
         });
       }
-      res.status(500).json({ message: "Failed to create stock adjustment request" });
+      res.status(500).json({ message: "Failed to create stock adjustment request", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10287,7 +10287,7 @@ Important:
       res.json(materials);
     } catch (error) {
       console.error("Error fetching packing materials:", error);
-      res.status(500).json({ message: "Failed to fetch packing materials" });
+      res.status(500).json({ message: "Failed to fetch packing materials", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10301,7 +10301,7 @@ Important:
       }
     } catch (error) {
       console.error("Error fetching packing material:", error);
-      res.status(500).json({ message: "Failed to fetch packing material" });
+      res.status(500).json({ message: "Failed to fetch packing material", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10321,7 +10321,7 @@ Important:
       res.status(201).json(material);
     } catch (error) {
       console.error("Error creating packing material:", error);
-      res.status(500).json({ message: "Failed to create packing material" });
+      res.status(500).json({ message: "Failed to create packing material", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10341,7 +10341,7 @@ Important:
       res.json(material);
     } catch (error) {
       console.error("Error updating packing material:", error);
-      res.status(500).json({ message: "Failed to update packing material" });
+      res.status(500).json({ message: "Failed to update packing material", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10360,7 +10360,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting packing material:", error);
-      res.status(500).json({ message: "Failed to delete packing material" });
+      res.status(500).json({ message: "Failed to delete packing material", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10387,7 +10387,7 @@ Important:
       res.json({ message: `Successfully deleted ${ids.length} material(s)` });
     } catch (error) {
       console.error("Error bulk deleting packing materials:", error);
-      res.status(500).json({ message: "Failed to bulk delete packing materials" });
+      res.status(500).json({ message: "Failed to bulk delete packing materials", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10420,7 +10420,7 @@ Important:
       res.json(updatedMaterials);
     } catch (error) {
       console.error("Error bulk updating packing materials:", error);
-      res.status(500).json({ message: "Failed to bulk update packing materials" });
+      res.status(500).json({ message: "Failed to bulk update packing materials", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10471,7 +10471,7 @@ Important:
       });
     } catch (error) {
       console.error("Error bulk creating packing materials:", error);
-      res.status(500).json({ message: "Failed to bulk create packing materials" });
+      res.status(500).json({ message: "Failed to bulk create packing materials", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10490,7 +10490,7 @@ Important:
       res.json(suppliers);
     } catch (error) {
       console.error("Error fetching PM suppliers:", error);
-      res.status(500).json({ message: "Failed to fetch PM suppliers" });
+      res.status(500).json({ message: "Failed to fetch PM suppliers", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10504,7 +10504,7 @@ Important:
       }
     } catch (error) {
       console.error("Error fetching PM supplier:", error);
-      res.status(500).json({ message: "Failed to fetch PM supplier" });
+      res.status(500).json({ message: "Failed to fetch PM supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10524,7 +10524,7 @@ Important:
       res.status(201).json(supplier);
     } catch (error) {
       console.error("Error creating PM supplier:", error);
-      res.status(500).json({ message: "Failed to create PM supplier" });
+      res.status(500).json({ message: "Failed to create PM supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10548,7 +10548,7 @@ Important:
       }
     } catch (error) {
       console.error("Error updating PM supplier:", error);
-      res.status(500).json({ message: "Failed to update PM supplier" });
+      res.status(500).json({ message: "Failed to update PM supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10567,7 +10567,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting PM supplier:", error);
-      res.status(500).json({ message: "Failed to delete PM supplier" });
+      res.status(500).json({ message: "Failed to delete PM supplier", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10617,7 +10617,7 @@ Important:
       res.json({ results });
     } catch (error) {
       console.error("Error batch compressing images:", error);
-      res.status(500).json({ message: "Failed to batch compress images" });
+      res.status(500).json({ message: "Failed to batch compress images", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10653,7 +10653,7 @@ Important:
       });
     } catch (error) {
       console.error("Error getting image info:", error);
-      res.status(500).json({ message: "Failed to get image info" });
+      res.status(500).json({ message: "Failed to get image info", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10744,7 +10744,7 @@ Important:
       res.json(customersWithPayLaterBadge);
     } catch (error) {
       console.error("Error fetching customers:", error);
-      res.status(500).json({ message: "Failed to fetch customers" });
+      res.status(500).json({ message: "Failed to fetch customers", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10770,7 +10770,7 @@ Important:
       }
     } catch (error) {
       console.error("Error checking duplicate customer:", error);
-      res.status(500).json({ message: "Failed to check duplicate" });
+      res.status(500).json({ message: "Failed to check duplicate", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10790,7 +10790,7 @@ Important:
       res.json({ count: customerOrders.length });
     } catch (error) {
       console.error("Error fetching customer order count:", error);
-      res.status(500).json({ message: "Failed to fetch order count" });
+      res.status(500).json({ message: "Failed to fetch order count", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -10842,7 +10842,7 @@ Important:
       res.json(customer);
     } catch (error) {
       console.error("Error creating customer:", error);
-      res.status(500).json({ message: "Failed to create customer" });
+      res.status(500).json({ message: "Failed to create customer", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11150,7 +11150,7 @@ Important:
       res.json(customerWithBadge);
     } catch (error) {
       console.error("Error fetching customer:", error);
-      res.status(500).json({ message: "Failed to fetch customer" });
+      res.status(500).json({ message: "Failed to fetch customer", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11745,7 +11745,7 @@ Important:
       res.json(customer);
     } catch (error) {
       console.error("Error updating customer:", error);
-      res.status(500).json({ message: "Failed to update customer" });
+      res.status(500).json({ message: "Failed to update customer", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11777,7 +11777,7 @@ Important:
         });
       }
 
-      res.status(500).json({ message: "Failed to delete customer" });
+      res.status(500).json({ message: "Failed to delete customer", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11810,7 +11810,7 @@ Important:
       res.json(addresses);
     } catch (error) {
       console.error("Error fetching customer shipping addresses:", error);
-      res.status(500).json({ message: "Failed to fetch shipping addresses" });
+      res.status(500).json({ message: "Failed to fetch shipping addresses", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11824,7 +11824,7 @@ Important:
       res.json(address);
     } catch (error) {
       console.error("Error fetching shipping address:", error);
-      res.status(500).json({ message: "Failed to fetch shipping address" });
+      res.status(500).json({ message: "Failed to fetch shipping address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11837,7 +11837,7 @@ Important:
       res.json(customerOrders);
     } catch (error) {
       console.error("Error fetching customer orders:", error);
-      res.status(500).json({ message: "Failed to fetch customer orders" });
+      res.status(500).json({ message: "Failed to fetch customer orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11975,7 +11975,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting shipping address:", error);
-      res.status(500).json({ message: "Failed to delete shipping address" });
+      res.status(500).json({ message: "Failed to delete shipping address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -11995,7 +11995,7 @@ Important:
       res.json({ success: true });
     } catch (error) {
       console.error("Error setting primary shipping address:", error);
-      res.status(500).json({ message: "Failed to set primary shipping address" });
+      res.status(500).json({ message: "Failed to set primary shipping address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12017,7 +12017,7 @@ Important:
       res.json({ success: true });
     } catch (error) {
       console.error("Error removing primary shipping address:", error);
-      res.status(500).json({ message: "Failed to remove primary shipping address" });
+      res.status(500).json({ message: "Failed to remove primary shipping address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12029,7 +12029,7 @@ Important:
       res.json(addresses);
     } catch (error) {
       console.error("Error fetching customer billing addresses:", error);
-      res.status(500).json({ message: "Failed to fetch billing addresses" });
+      res.status(500).json({ message: "Failed to fetch billing addresses", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12043,7 +12043,7 @@ Important:
       res.json(address);
     } catch (error) {
       console.error("Error fetching billing address:", error);
-      res.status(500).json({ message: "Failed to fetch billing address" });
+      res.status(500).json({ message: "Failed to fetch billing address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12074,7 +12074,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create billing address" });
+      res.status(500).json({ message: "Failed to create billing address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12104,7 +12104,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to update billing address" });
+      res.status(500).json({ message: "Failed to update billing address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12127,7 +12127,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting billing address:", error);
-      res.status(500).json({ message: "Failed to delete billing address" });
+      res.status(500).json({ message: "Failed to delete billing address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12152,7 +12152,7 @@ Important:
       res.json({ success: true });
     } catch (error) {
       console.error("Error setting primary billing address:", error);
-      res.status(500).json({ message: "Failed to set primary billing address" });
+      res.status(500).json({ message: "Failed to set primary billing address", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12163,7 +12163,7 @@ Important:
       res.json(prices);
     } catch (error) {
       console.error("Error fetching customer prices:", error);
-      res.status(500).json({ message: "Failed to fetch customer prices" });
+      res.status(500).json({ message: "Failed to fetch customer prices", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12196,7 +12196,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create customer price" });
+      res.status(500).json({ message: "Failed to create customer price", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12227,7 +12227,7 @@ Important:
       res.json(price);
     } catch (error) {
       console.error("Error updating customer price:", error);
-      res.status(500).json({ message: "Failed to update customer price" });
+      res.status(500).json({ message: "Failed to update customer price", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12246,7 +12246,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting customer price:", error);
-      res.status(500).json({ message: "Failed to delete customer price" });
+      res.status(500).json({ message: "Failed to delete customer price", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12285,7 +12285,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to bulk import customer prices" });
+      res.status(500).json({ message: "Failed to bulk import customer prices", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12312,7 +12312,7 @@ Important:
       res.json(price);
     } catch (error) {
       console.error("Error fetching active customer price:", error);
-      res.status(500).json({ message: "Failed to fetch active customer price" });
+      res.status(500).json({ message: "Failed to fetch active customer price", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12486,7 +12486,7 @@ Important:
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
-      res.status(500).json({ message: "Failed to fetch orders" });
+      res.status(500).json({ message: "Failed to fetch orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12499,7 +12499,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching unpaid orders:", error);
-      res.status(500).json({ message: "Failed to fetch unpaid orders" });
+      res.status(500).json({ message: "Failed to fetch unpaid orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12510,7 +12510,7 @@ Important:
       res.json(archivedOrders);
     } catch (error) {
       console.error("Error fetching trashed orders:", error);
-      res.status(500).json({ message: "Failed to fetch trashed orders" });
+      res.status(500).json({ message: "Failed to fetch trashed orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12524,7 +12524,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching all order items:", error);
-      res.status(500).json({ message: "Failed to fetch order items" });
+      res.status(500).json({ message: "Failed to fetch order items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12781,7 +12781,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching pick-pack orders:", error);
-      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
+      res.status(500).json({ message: "Failed to fetch pick-pack orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12793,7 +12793,7 @@ Important:
       res.json(predictions);
     } catch (error) {
       console.error("Error fetching pick-pack predictions:", error);
-      res.status(500).json({ message: "Failed to fetch predictions" });
+      res.status(500).json({ message: "Failed to fetch predictions", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12839,7 +12839,7 @@ Important:
       }
     } catch (error) {
       console.error("Error starting pick:", error);
-      res.status(500).json({ message: "Failed to start picking order" });
+      res.status(500).json({ message: "Failed to start picking order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12897,7 +12897,7 @@ Important:
       }
     } catch (error) {
       console.error("Error completing pick:", error);
-      res.status(500).json({ message: "Failed to complete picking order" });
+      res.status(500).json({ message: "Failed to complete picking order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -12943,7 +12943,7 @@ Important:
       }
     } catch (error) {
       console.error("Error starting pack:", error);
-      res.status(500).json({ message: "Failed to start packing order" });
+      res.status(500).json({ message: "Failed to start packing order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13109,7 +13109,7 @@ Important:
       }
     } catch (error) {
       console.error("Error completing pack:", error);
-      res.status(500).json({ message: "Failed to complete packing order" });
+      res.status(500).json({ message: "Failed to complete packing order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13146,7 +13146,7 @@ Important:
       res.json(session);
     } catch (error) {
       console.error('Error creating packing session:', error);
-      res.status(500).json({ message: 'Failed to create packing session' });
+      res.status(500).json({ message: 'Failed to create packing session', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13166,7 +13166,7 @@ Important:
       res.json(updatedSession);
     } catch (error) {
       console.error('Error updating packing session:', error);
-      res.status(500).json({ message: 'Failed to update packing session' });
+      res.status(500).json({ message: 'Failed to update packing session', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13192,7 +13192,7 @@ Important:
       res.json(session);
     } catch (error) {
       console.error('Error fetching packing session:', error);
-      res.status(500).json({ message: 'Failed to fetch packing session' });
+      res.status(500).json({ message: 'Failed to fetch packing session', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13258,7 +13258,7 @@ Important:
       res.json({ success: true, packingDetails });
     } catch (error) {
       console.error("Error saving packing details:", error);
-      res.status(500).json({ message: "Failed to save packing details" });
+      res.status(500).json({ message: "Failed to save packing details", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13529,7 +13529,7 @@ Important:
       res.json(response);
     } catch (error) {
       console.error("Error updating picked quantity:", error);
-      res.status(500).json({ message: "Failed to update picked quantity" });
+      res.status(500).json({ message: "Failed to update picked quantity", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13632,7 +13632,7 @@ Important:
       });
     } catch (error) {
       console.error("Error handling bundle component pick:", error);
-      res.status(500).json({ message: "Failed to process bundle component pick" });
+      res.status(500).json({ message: "Failed to process bundle component pick", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13893,7 +13893,7 @@ Important:
       });
     } catch (error) {
       console.error("Error resetting order picking:", error);
-      res.status(500).json({ message: "Failed to reset order picking" });
+      res.status(500).json({ message: "Failed to reset order picking", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13917,7 +13917,7 @@ Important:
       res.json(orderItem);
     } catch (error) {
       console.error("Error updating packed quantity:", error);
-      res.status(500).json({ message: "Failed to update packed quantity" });
+      res.status(500).json({ message: "Failed to update packed quantity", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13928,7 +13928,7 @@ Important:
       res.json(logs);
     } catch (error) {
       console.error("Error getting pick/pack logs:", error);
-      res.status(500).json({ message: "Failed to get pick/pack logs" });
+      res.status(500).json({ message: "Failed to get pick/pack logs", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13939,7 +13939,7 @@ Important:
       res.json(labels);
     } catch (error) {
       console.error("Error getting shipment labels:", error);
-      res.status(500).json({ message: "Failed to get shipment labels" });
+      res.status(500).json({ message: "Failed to get shipment labels", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -14175,7 +14175,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching order:", error);
-      res.status(500).json({ message: "Failed to fetch order" });
+      res.status(500).json({ message: "Failed to fetch order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -14235,7 +14235,7 @@ Important:
       res.json(enhancedItems);
     } catch (error) {
       console.error("Error fetching order items:", error);
-      res.status(500).json({ message: "Failed to fetch order items" });
+      res.status(500).json({ message: "Failed to fetch order items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15061,7 +15061,7 @@ Important:
       res.json(order);
     } catch (error) {
       console.error("Error updating order:", error);
-      res.status(500).json({ message: "Failed to update order" });
+      res.status(500).json({ message: "Failed to update order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15087,7 +15087,7 @@ Important:
       res.json(updatedItem);
     } catch (error) {
       console.error("Error updating order item:", error);
-      res.status(500).json({ message: "Failed to update order item" });
+      res.status(500).json({ message: "Failed to update order item", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15135,7 +15135,7 @@ Important:
       }
     } catch (error) {
       console.error('Error checking order modifications:', error);
-      res.status(500).json({ message: 'Failed to check order modifications' });
+      res.status(500).json({ message: 'Failed to check order modifications', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15217,7 +15217,7 @@ Important:
 
     } catch (error) {
       console.error("Error in batch undo ship orders:", error);
-      res.status(500).json({ message: "Failed to batch undo ship orders" });
+      res.status(500).json({ message: "Failed to batch undo ship orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15302,7 +15302,7 @@ Important:
 
     } catch (error) {
       console.error("Error in batch ship orders:", error);
-      res.status(500).json({ message: "Failed to batch ship orders" });
+      res.status(500).json({ message: "Failed to batch ship orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15416,7 +15416,7 @@ Important:
       }
     } catch (error) {
       console.error("Error updating order status:", error);
-      res.status(500).json({ message: "Failed to update order status" });
+      res.status(500).json({ message: "Failed to update order status", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15612,7 +15612,7 @@ Important:
       // Note: Pick/pack data (pickedFromLocations, pickedQuantity, etc.) is preserved on order items
       const archivedOrder = await storage.archiveOrder(req.params.id);
       if (!archivedOrder) {
-        return res.status(500).json({ message: "Failed to archive order" });
+        return res.status(500).json({ message: "Failed to archive order", error: error instanceof Error ? error.message : String(error) });
       }
 
       // Invalidate allocated quantities cache after archiving order
@@ -15629,7 +15629,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error archiving order:", error);
-      res.status(500).json({ message: "Failed to move order to trash" });
+      res.status(500).json({ message: "Failed to move order to trash", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15788,7 +15788,7 @@ Important:
 
       const restoredOrder = await storage.restoreOrder(req.params.id);
       if (!restoredOrder) {
-        return res.status(500).json({ message: "Failed to restore order" });
+        return res.status(500).json({ message: "Failed to restore order", error: error instanceof Error ? error.message : String(error) });
       }
 
       // Invalidate allocated quantities cache after restoring order
@@ -15805,7 +15805,7 @@ Important:
       res.json(restoredOrder);
     } catch (error) {
       console.error("Error restoring order:", error);
-      res.status(500).json({ message: "Failed to restore order" });
+      res.status(500).json({ message: "Failed to restore order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15833,7 +15833,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error permanently deleting order:", error);
-      res.status(500).json({ message: "Failed to permanently delete order" });
+      res.status(500).json({ message: "Failed to permanently delete order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15849,7 +15849,7 @@ Important:
       res.json({ sku });
     } catch (error) {
       console.error("Error generating SKU:", error);
-      res.status(500).json({ message: "Failed to generate SKU" });
+      res.status(500).json({ message: "Failed to generate SKU", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15860,7 +15860,7 @@ Important:
       res.json(preOrders);
     } catch (error) {
       console.error("Error fetching pre-orders:", error);
-      res.status(500).json({ message: "Failed to fetch pre-orders" });
+      res.status(500).json({ message: "Failed to fetch pre-orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15871,7 +15871,7 @@ Important:
       res.json(expenses);
     } catch (error) {
       console.error("Error fetching expenses:", error);
-      res.status(500).json({ message: "Failed to fetch expenses" });
+      res.status(500).json({ message: "Failed to fetch expenses", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15884,7 +15884,7 @@ Important:
       res.json(expense);
     } catch (error) {
       console.error("Error fetching expense:", error);
-      res.status(500).json({ message: "Failed to fetch expense" });
+      res.status(500).json({ message: "Failed to fetch expense", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15923,7 +15923,7 @@ Important:
       res.json(expense);
     } catch (error) {
       console.error("Error creating expense:", error);
-      res.status(500).json({ message: "Failed to create expense" });
+      res.status(500).json({ message: "Failed to create expense", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15948,7 +15948,7 @@ Important:
       res.json(expense);
     } catch (error) {
       console.error("Error updating expense:", error);
-      res.status(500).json({ message: "Failed to update expense" });
+      res.status(500).json({ message: "Failed to update expense", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -15972,7 +15972,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting expense:", error);
-      res.status(500).json({ message: "Failed to delete expense" });
+      res.status(500).json({ message: "Failed to delete expense", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16087,7 +16087,7 @@ Important:
       res.json(tickets);
     } catch (error) {
       console.error("Error fetching tickets:", error);
-      res.status(500).json({ message: "Failed to fetch tickets" });
+      res.status(500).json({ message: "Failed to fetch tickets", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16100,7 +16100,7 @@ Important:
       res.json(ticket);
     } catch (error) {
       console.error("Error fetching ticket:", error);
-      res.status(500).json({ message: "Failed to fetch ticket" });
+      res.status(500).json({ message: "Failed to fetch ticket", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16153,7 +16153,7 @@ Important:
       res.status(201).json(ticket);
     } catch (error) {
       console.error("Error creating ticket:", error);
-      res.status(500).json({ message: "Failed to create ticket" });
+      res.status(500).json({ message: "Failed to create ticket", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16216,7 +16216,7 @@ Important:
       res.json(translations);
     } catch (error) {
       console.error('Translation error:', error);
-      res.status(500).json({ message: 'Failed to translate category name' });
+      res.status(500).json({ message: 'Failed to translate category name', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16267,7 +16267,7 @@ Important:
       res.json(ticket);
     } catch (error) {
       console.error("Error updating ticket:", error);
-      res.status(500).json({ message: "Failed to update ticket" });
+      res.status(500).json({ message: "Failed to update ticket", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16291,7 +16291,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting ticket:", error);
-      res.status(500).json({ message: "Failed to delete ticket" });
+      res.status(500).json({ message: "Failed to delete ticket", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16419,7 +16419,7 @@ Important:
       res.json(comments);
     } catch (error) {
       console.error("Error fetching ticket comments:", error);
-      res.status(500).json({ message: "Failed to fetch ticket comments" });
+      res.status(500).json({ message: "Failed to fetch ticket comments", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16450,7 +16450,7 @@ Important:
       res.status(201).json(comment);
     } catch (error) {
       console.error("Error adding ticket comment:", error);
-      res.status(500).json({ message: "Failed to add ticket comment" });
+      res.status(500).json({ message: "Failed to add ticket comment", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16487,7 +16487,7 @@ Important:
       next();
     } catch (error) {
       console.error('[Security] Error validating user from database:', error);
-      return res.status(500).json({ message: 'Authentication validation failed' });
+      return res.status(500).json({ message: 'Authentication validation failed', error: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -16571,7 +16571,7 @@ Important:
       res.json(result);
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      res.status(500).json({ message: "Failed to fetch notifications" });
+      res.status(500).json({ message: "Failed to fetch notifications", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16593,7 +16593,7 @@ Important:
       res.json({ count: result[0]?.count || 0 });
     } catch (error) {
       console.error("Error fetching unread count:", error);
-      res.status(500).json({ message: "Failed to fetch unread count" });
+      res.status(500).json({ message: "Failed to fetch unread count", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16616,7 +16616,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create notification" });
+      res.status(500).json({ message: "Failed to create notification", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16652,7 +16652,7 @@ Important:
       res.json(result[0]);
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "Failed to mark notification as read" });
+      res.status(500).json({ message: "Failed to mark notification as read", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16679,7 +16679,7 @@ Important:
       });
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
-      res.status(500).json({ message: "Failed to mark all notifications as read" });
+      res.status(500).json({ message: "Failed to mark all notifications as read", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16756,7 +16756,7 @@ Important:
       res.status(201).json({ success: true, subscription: newSub, message: 'Subscription created' });
     } catch (error) {
       console.error('Error creating push subscription:', error);
-      res.status(500).json({ message: 'Failed to create push subscription' });
+      res.status(500).json({ message: 'Failed to create push subscription', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16790,7 +16790,7 @@ Important:
       res.json({ success: true, message: 'Subscription removed' });
     } catch (error) {
       console.error('Error removing push subscription:', error);
-      res.status(500).json({ message: 'Failed to remove push subscription' });
+      res.status(500).json({ message: 'Failed to remove push subscription', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16818,7 +16818,7 @@ Important:
       res.json(subs);
     } catch (error) {
       console.error('Error fetching push subscriptions:', error);
-      res.status(500).json({ message: 'Failed to fetch push subscriptions' });
+      res.status(500).json({ message: 'Failed to fetch push subscriptions', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -16853,7 +16853,7 @@ Important:
       res.json({ success: true, subscription: updated });
     } catch (error) {
       console.error('Error updating notification types:', error);
-      res.status(500).json({ message: 'Failed to update notification types' });
+      res.status(500).json({ message: 'Failed to update notification types', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17067,7 +17067,7 @@ Important:
       });
     } catch (error) {
       console.error("Error fetching warehouse dashboard:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse dashboard" });
+      res.status(500).json({ message: "Failed to fetch warehouse dashboard", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17098,7 +17098,7 @@ Important:
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching warehouse tasks:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse tasks" });
+      res.status(500).json({ message: "Failed to fetch warehouse tasks", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17120,7 +17120,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create warehouse task" });
+      res.status(500).json({ message: "Failed to create warehouse task", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17173,7 +17173,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to update warehouse task" });
+      res.status(500).json({ message: "Failed to update warehouse task", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17192,7 +17192,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting warehouse task:", error);
-      res.status(500).json({ message: "Failed to delete warehouse task" });
+      res.status(500).json({ message: "Failed to delete warehouse task", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17207,7 +17207,7 @@ Important:
       res.json(labels);
     } catch (error) {
       console.error("Error fetching warehouse labels:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse labels" });
+      res.status(500).json({ message: "Failed to fetch warehouse labels", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17221,7 +17221,7 @@ Important:
       res.json(label);
     } catch (error) {
       console.error("Error fetching warehouse label:", error);
-      res.status(500).json({ message: "Failed to fetch warehouse label" });
+      res.status(500).json({ message: "Failed to fetch warehouse label", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17247,7 +17247,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create warehouse label" });
+      res.status(500).json({ message: "Failed to create warehouse label", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17269,7 +17269,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to update warehouse label" });
+      res.status(500).json({ message: "Failed to update warehouse label", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17286,7 +17286,7 @@ Important:
       res.json(label);
     } catch (error) {
       console.error("Error incrementing print count:", error);
-      res.status(500).json({ message: "Failed to increment print count" });
+      res.status(500).json({ message: "Failed to increment print count", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17304,7 +17304,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting warehouse label:", error);
-      res.status(500).json({ message: "Failed to delete warehouse label" });
+      res.status(500).json({ message: "Failed to delete warehouse label", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17321,7 +17321,7 @@ Important:
       res.json({ deletedCount });
     } catch (error) {
       console.error("Error bulk deleting warehouse labels:", error);
-      res.status(500).json({ message: "Failed to delete warehouse labels" });
+      res.status(500).json({ message: "Failed to delete warehouse labels", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17341,7 +17341,7 @@ Important:
       res.json({ updatedCount: results.filter(r => r !== undefined).length });
     } catch (error) {
       console.error("Error bulk printing warehouse labels:", error);
-      res.status(500).json({ message: "Failed to update print counts" });
+      res.status(500).json({ message: "Failed to update print counts", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17501,7 +17501,7 @@ Important:
       });
     } catch (error) {
       console.error("Error looking up tracking numbers:", error);
-      res.status(500).json({ message: "Failed to look up tracking numbers" });
+      res.status(500).json({ message: "Failed to look up tracking numbers", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17512,7 +17512,7 @@ Important:
       res.json(services);
     } catch (error) {
       console.error("Error fetching services:", error);
-      res.status(500).json({ message: "Failed to fetch services" });
+      res.status(500).json({ message: "Failed to fetch services", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17527,7 +17527,7 @@ Important:
       res.json({ ...service, items });
     } catch (error) {
       console.error("Error fetching service:", error);
-      res.status(500).json({ message: "Failed to fetch service" });
+      res.status(500).json({ message: "Failed to fetch service", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17551,7 +17551,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create service" });
+      res.status(500).json({ message: "Failed to create service", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17575,7 +17575,7 @@ Important:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to update service" });
+      res.status(500).json({ message: "Failed to update service", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17590,7 +17590,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting service:", error);
-      res.status(500).json({ message: "Failed to delete service" });
+      res.status(500).json({ message: "Failed to delete service", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17694,7 +17694,7 @@ Important:
       });
     } catch (error) {
       console.error("Error importing services:", error);
-      res.status(500).json({ message: "Failed to import services" });
+      res.status(500).json({ message: "Failed to import services", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17704,7 +17704,7 @@ Important:
       res.json(items);
     } catch (error) {
       console.error("Error fetching service items:", error);
-      res.status(500).json({ message: "Failed to fetch service items" });
+      res.status(500).json({ message: "Failed to fetch service items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17714,7 +17714,7 @@ Important:
       res.json(pendingServices);
     } catch (error) {
       console.error("Error fetching customer pending services:", error);
-      res.status(500).json({ message: "Failed to fetch pending services" });
+      res.status(500).json({ message: "Failed to fetch pending services", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17728,7 +17728,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching pre-orders:", error);
-      res.status(500).json({ message: "Failed to fetch pre-orders" });
+      res.status(500).json({ message: "Failed to fetch pre-orders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17748,7 +17748,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching pre-order:", error);
-      res.status(500).json({ message: "Failed to fetch pre-order" });
+      res.status(500).json({ message: "Failed to fetch pre-order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17774,7 +17774,7 @@ Important:
       res.status(201).json(preOrder);
     } catch (error) {
       console.error("Error creating pre-order:", error);
-      res.status(500).json({ message: "Failed to create pre-order" });
+      res.status(500).json({ message: "Failed to create pre-order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17790,7 +17790,7 @@ Important:
       res.json(updatedPreOrder);
     } catch (error) {
       console.error("Error updating pre-order:", error);
-      res.status(500).json({ message: "Failed to update pre-order" });
+      res.status(500).json({ message: "Failed to update pre-order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17805,7 +17805,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting pre-order:", error);
-      res.status(500).json({ message: "Failed to delete pre-order" });
+      res.status(500).json({ message: "Failed to delete pre-order", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17819,7 +17819,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching pre-order items:", error);
-      res.status(500).json({ message: "Failed to fetch pre-order items" });
+      res.status(500).json({ message: "Failed to fetch pre-order items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17833,7 +17833,7 @@ Important:
       res.status(201).json(item);
     } catch (error) {
       console.error("Error creating pre-order item:", error);
-      res.status(500).json({ message: "Failed to create pre-order item" });
+      res.status(500).json({ message: "Failed to create pre-order item", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17844,7 +17844,7 @@ Important:
       res.json(item);
     } catch (error) {
       console.error("Error updating pre-order item:", error);
-      res.status(500).json({ message: "Failed to update pre-order item" });
+      res.status(500).json({ message: "Failed to update pre-order item", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17857,7 +17857,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting pre-order item:", error);
-      res.status(500).json({ message: "Failed to delete pre-order item" });
+      res.status(500).json({ message: "Failed to delete pre-order item", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17873,7 +17873,7 @@ Important:
       res.json(reminders);
     } catch (error) {
       console.error("Error fetching pre-order reminders:", error);
-      res.status(500).json({ message: "Failed to fetch reminders" });
+      res.status(500).json({ message: "Failed to fetch reminders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17912,7 +17912,7 @@ Important:
       });
     } catch (error) {
       console.error("Error sending pre-order reminder:", error);
-      res.status(500).json({ message: "Failed to send reminder" });
+      res.status(500).json({ message: "Failed to send reminder", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17923,7 +17923,7 @@ Important:
       res.json(result);
     } catch (error) {
       console.error("Error processing scheduled reminders:", error);
-      res.status(500).json({ message: "Failed to process scheduled reminders" });
+      res.status(500).json({ message: "Failed to process scheduled reminders", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17936,7 +17936,7 @@ Important:
       res.json(discounts);
     } catch (error) {
       console.error("Error fetching discounts:", error);
-      res.status(500).json({ message: "Failed to fetch discounts" });
+      res.status(500).json({ message: "Failed to fetch discounts", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -17947,7 +17947,7 @@ Important:
       res.json({ success: true, updatedCount: count, message: `Updated ${count} expired discounts to 'finished' status` });
     } catch (error) {
       console.error("Error syncing discount statuses:", error);
-      res.status(500).json({ message: "Failed to sync discount statuses" });
+      res.status(500).json({ message: "Failed to sync discount statuses", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17981,7 +17981,7 @@ Important:
       res.json(discount);
     } catch (error) {
       console.error("Error creating discount:", error);
-      res.status(500).json({ message: "Failed to create discount" });
+      res.status(500).json({ message: "Failed to create discount", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -17994,7 +17994,7 @@ Important:
       res.json(discount);
     } catch (error) {
       console.error("Error fetching discount:", error);
-      res.status(500).json({ message: "Failed to fetch discount" });
+      res.status(500).json({ message: "Failed to fetch discount", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18034,7 +18034,7 @@ Important:
       res.json(discount);
     } catch (error) {
       console.error("Error updating discount:", error);
-      res.status(500).json({ message: "Failed to update discount" });
+      res.status(500).json({ message: "Failed to update discount", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18066,7 +18066,7 @@ Important:
         });
       }
 
-      res.status(500).json({ message: "Failed to delete discount" });
+      res.status(500).json({ message: "Failed to delete discount", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18086,7 +18086,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching returns:", error);
-      res.status(500).json({ message: "Failed to fetch returns" });
+      res.status(500).json({ message: "Failed to fetch returns", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18102,7 +18102,7 @@ Important:
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching return:", error);
-      res.status(500).json({ message: "Failed to fetch return" });
+      res.status(500).json({ message: "Failed to fetch return", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18145,7 +18145,7 @@ Important:
       res.json(newReturn);
     } catch (error) {
       console.error("Error creating return:", error);
-      res.status(500).json({ message: "Failed to create return" });
+      res.status(500).json({ message: "Failed to create return", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18324,7 +18324,7 @@ Important:
       res.json(updatedReturn);
     } catch (error) {
       console.error("Error updating return:", error);
-      res.status(500).json({ message: "Failed to update return" });
+      res.status(500).json({ message: "Failed to update return", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18355,7 +18355,7 @@ Important:
         });
       }
 
-      res.status(500).json({ message: "Failed to delete return" });
+      res.status(500).json({ message: "Failed to delete return", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18463,7 +18463,7 @@ Important:
       res.json({ message: "Mock data seeded successfully" });
     } catch (error) {
       console.error("Error seeding mock data:", error);
-      res.status(500).json({ message: "Failed to seed mock data" });
+      res.status(500).json({ message: "Failed to seed mock data", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18486,7 +18486,7 @@ Important:
       res.json({ message: "Order items fixed successfully" });
     } catch (error) {
       console.error("Error fixing order items:", error);
-      res.status(500).json({ message: "Failed to fix order items" });
+      res.status(500).json({ message: "Failed to fix order items", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18570,7 +18570,7 @@ Important:
       });
     } catch (error) {
       console.error("Error reseeding discounts:", error);
-      res.status(500).json({ message: "Failed to reseed discounts data" });
+      res.status(500).json({ message: "Failed to reseed discounts data", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18665,7 +18665,7 @@ Important:
       res.json(summary);
     } catch (error) {
       console.error("Error generating sales summary:", error);
-      res.status(500).json({ message: "Failed to generate sales summary" });
+      res.status(500).json({ message: "Failed to generate sales summary", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18705,7 +18705,7 @@ Important:
       res.json(summary);
     } catch (error) {
       console.error("Error generating inventory summary:", error);
-      res.status(500).json({ message: "Failed to generate inventory summary" });
+      res.status(500).json({ message: "Failed to generate inventory summary", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18755,7 +18755,7 @@ Important:
       res.json(analytics);
     } catch (error) {
       console.error("Error generating customer analytics:", error);
-      res.status(500).json({ message: "Failed to generate customer analytics" });
+      res.status(500).json({ message: "Failed to generate customer analytics", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -18977,7 +18977,7 @@ Important:
       });
     } catch (error) {
       console.error("Error generating business reports:", error);
-      res.status(500).json({ message: "Failed to generate business reports" });
+      res.status(500).json({ message: "Failed to generate business reports", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -19101,7 +19101,7 @@ Important:
       res.json(summary);
     } catch (error) {
       console.error("Error generating financial summary:", error);
-      res.status(500).json({ message: "Failed to generate financial summary" });
+      res.status(500).json({ message: "Failed to generate financial summary", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -19180,7 +19180,7 @@ Important:
       res.json(deadStock);
     } catch (error) {
       console.error("Error generating dead stock report:", error);
-      res.status(500).json({ message: "Failed to generate dead stock report" });
+      res.status(500).json({ message: "Failed to generate dead stock report", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -19191,7 +19191,7 @@ Important:
       res.json(alerts);
     } catch (error) {
       console.error("Error generating reorder alerts:", error);
-      res.status(500).json({ message: "Failed to generate reorder alerts" });
+      res.status(500).json({ message: "Failed to generate reorder alerts", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -19207,7 +19207,7 @@ Important:
       res.json(trends);
     } catch (error) {
       console.error("Error generating color trends report:", error);
-      res.status(500).json({ message: "Failed to generate color trends report" });
+      res.status(500).json({ message: "Failed to generate color trends report", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -19218,7 +19218,7 @@ Important:
       res.json({ message: 'Email notifications feature pending SendGrid setup' });
     } catch (error) {
       console.error("Error sending reorder alert notifications:", error);
-      res.status(500).json({ message: "Failed to send reorder alert notifications" });
+      res.status(500).json({ message: "Failed to send reorder alert notifications", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -19314,7 +19314,7 @@ Important:
       res.json({ message: "Returns seeded successfully" });
     } catch (error) {
       console.error("Error seeding returns:", error);
-      res.status(500).json({ message: "Failed to seed returns" });
+      res.status(500).json({ message: "Failed to seed returns", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -19329,7 +19329,7 @@ Important:
       });
     } catch (error) {
       console.error("Error seeding pick & pack data:", error);
-      res.status(500).json({ message: "Failed to seed pick & pack data" });
+      res.status(500).json({ message: "Failed to seed pick & pack data", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -20169,7 +20169,7 @@ Important:
       res.json(labels);
     } catch (error) {
       console.error('Error fetching shipment labels:', error);
-      res.status(500).json({ message: 'Failed to fetch shipment labels' });
+      res.status(500).json({ message: 'Failed to fetch shipment labels', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -20226,7 +20226,7 @@ Important:
       res.json(labels);
     } catch (error) {
       console.error('Error fetching shipment labels by order ID:', error);
-      res.status(500).json({ message: 'Failed to fetch shipment labels' });
+      res.status(500).json({ message: 'Failed to fetch shipment labels', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -20286,7 +20286,7 @@ Important:
       res.json(label);
     } catch (error) {
       console.error('Error fetching shipment label:', error);
-      res.status(500).json({ message: 'Failed to fetch shipment label' });
+      res.status(500).json({ message: 'Failed to fetch shipment label', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -20297,7 +20297,7 @@ Important:
       res.json(label);
     } catch (error) {
       console.error('Error creating shipment label:', error);
-      res.status(500).json({ message: 'Failed to create shipment label' });
+      res.status(500).json({ message: 'Failed to create shipment label', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -20353,7 +20353,7 @@ Important:
       res.json(label);
     } catch (error) {
       console.error('Error updating shipment label:', error);
-      res.status(500).json({ message: 'Failed to update shipment label' });
+      res.status(500).json({ message: 'Failed to update shipment label', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -20577,13 +20577,13 @@ Important:
       // Cancel the label
       const label = await storage.cancelShipmentLabel(id, reason || 'Cancelled by user');
       if (!label) {
-        return res.status(500).json({ message: 'Failed to update shipment label status' });
+        return res.status(500).json({ message: 'Failed to update shipment label status', error: error instanceof Error ? error.message : String(error) });
       }
 
       res.json(label);
     } catch (error) {
       console.error('Error cancelling shipment label:', error);
-      res.status(500).json({ message: 'Failed to cancel shipment label' });
+      res.status(500).json({ message: 'Failed to cancel shipment label', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -22605,7 +22605,7 @@ Important:
       res.json(files);
     } catch (error) {
       console.error('Error fetching product files:', error);
-      res.status(500).json({ message: 'Failed to fetch product files' });
+      res.status(500).json({ message: 'Failed to fetch product files', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -22692,7 +22692,7 @@ Important:
       res.json(file);
     } catch (error) {
       console.error('Error creating product file:', error);
-      res.status(500).json({ message: 'Failed to create product file' });
+      res.status(500).json({ message: 'Failed to create product file', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -22787,7 +22787,7 @@ Important:
       });
     } catch (error) {
       console.error('Error tracking packing documents:', error);
-      res.status(500).json({ message: 'Failed to track packing documents' });
+      res.status(500).json({ message: 'Failed to track packing documents', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -22844,7 +22844,7 @@ Important:
       });
     } catch (error) {
       console.error('Error completing packing:', error);
-      res.status(500).json({ message: 'Failed to complete packing' });
+      res.status(500).json({ message: 'Failed to complete packing', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -22857,7 +22857,7 @@ Important:
       res.json(cartons);
     } catch (error) {
       console.error('Error fetching packing cartons:', error);
-      res.status(500).json({ message: 'Failed to fetch packing cartons' });
+      res.status(500).json({ message: 'Failed to fetch packing cartons', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -23311,7 +23311,7 @@ Important:
       });
     } catch (error) {
       console.error('Error fetching packing plan:', error);
-      res.status(500).json({ message: 'Failed to fetch packing plan' });
+      res.status(500).json({ message: 'Failed to fetch packing plan', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -23348,7 +23348,7 @@ Important:
           errors: error.errors 
         });
       }
-      res.status(500).json({ message: 'Failed to update packing plan' });
+      res.status(500).json({ message: 'Failed to update packing plan', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -23358,7 +23358,7 @@ Important:
       res.json(file);
     } catch (error) {
       console.error('Error updating product file:', error);
-      res.status(500).json({ message: 'Failed to update product file' });
+      res.status(500).json({ message: 'Failed to update product file', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -23368,7 +23368,7 @@ Important:
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting product file:', error);
-      res.status(500).json({ message: 'Failed to delete product file' });
+      res.status(500).json({ message: 'Failed to delete product file', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -23410,7 +23410,7 @@ Important:
       res.json(formattedResults);
     } catch (error) {
       console.error('Error fetching address autocomplete:', error);
-      res.status(500).json({ message: 'Failed to fetch address suggestions' });
+      res.status(500).json({ message: 'Failed to fetch address suggestions', error: error instanceof Error ? error.message : String(error) });
     }
   });
   // Google Places API Autocomplete - Returns business names and accurate addresses
@@ -23505,7 +23505,7 @@ Important:
       res.json(results.filter(Boolean));
     } catch (error) {
       console.error('Error fetching Google address autocomplete:', error);
-      res.status(500).json({ message: 'Failed to fetch address suggestions from Google' });
+      res.status(500).json({ message: 'Failed to fetch address suggestions from Google', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -24515,7 +24515,7 @@ Other rules:
       res.json(result);
     } catch (error) {
       console.error('Error fetching ARES data:', error);
-      res.status(500).json({ message: 'Failed to fetch company data from ARES' });
+      res.status(500).json({ message: 'Failed to fetch company data from ARES', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -24669,7 +24669,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error extracting Facebook name:', error);
-      res.status(500).json({ message: 'Failed to extract Facebook name' });
+      res.status(500).json({ message: 'Failed to extract Facebook name', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -24760,7 +24760,7 @@ Other rules:
       const apiKey = process.env.BRIGHT_DATA_API_KEY;
       console.log(`[Facebook Profile] API Key available: ${apiKey ? "Yes (length: " + apiKey.length + ")" : "No"}`);
       if (!apiKey) {
-        return res.status(500).json({ message: 'Bright Data API key not configured' });
+        return res.status(500).json({ message: 'Bright Data API key not configured', error: error instanceof Error ? error.message : String(error) });
       }
 
       const username = extractFacebookUsername(facebookUrl);
@@ -24830,7 +24830,7 @@ Other rules:
         if (!asyncResponse.ok) {
           const errorText = await asyncResponse.text();
           console.error('[Facebook Profile] Bright Data API error:', errorText);
-          return res.status(500).json({ message: 'Failed to fetch Facebook profile from Bright Data' });
+          return res.status(500).json({ message: 'Failed to fetch Facebook profile from Bright Data', error: error instanceof Error ? error.message : String(error) });
         }
 
         const snapshotInfo = await asyncResponse.json();
@@ -24915,7 +24915,7 @@ Other rules:
       const apiKey = process.env.BRIGHT_DATA_API_KEY;
       console.log(`[Facebook Profile] API Key available: ${apiKey ? "Yes (length: " + apiKey.length + ")" : "No"}`);
       if (!apiKey) {
-        return res.status(500).json({ message: 'Bright Data API key not configured' });
+        return res.status(500).json({ message: 'Bright Data API key not configured', error: error instanceof Error ? error.message : String(error) });
       }
 
       // Get all customers with Facebook URLs that need updating
@@ -25142,7 +25142,7 @@ Other rules:
       res.json(settings);
     } catch (error) {
       console.error('Error fetching app settings:', error);
-      res.status(500).json({ message: 'Failed to fetch app settings' });
+      res.status(500).json({ message: 'Failed to fetch app settings', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25169,7 +25169,7 @@ Other rules:
       res.json(settingsWithDefaults);
     } catch (error) {
       console.error('Error fetching POS settings:', error);
-      res.status(500).json({ message: 'Failed to fetch POS settings' });
+      res.status(500).json({ message: 'Failed to fetch POS settings', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25202,7 +25202,7 @@ Other rules:
       res.json(results);
     } catch (error) {
       console.error('Error updating POS settings:', error);
-      res.status(500).json({ message: 'Failed to update POS settings' });
+      res.status(500).json({ message: 'Failed to update POS settings', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25222,7 +25222,7 @@ Other rules:
       res.json(setting);
     } catch (error) {
       console.error('Error fetching app setting:', error);
-      res.status(500).json({ message: 'Failed to fetch app setting' });
+      res.status(500).json({ message: 'Failed to fetch app setting', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25250,7 +25250,7 @@ Other rules:
         });
       }
       console.error('Error creating app setting:', error);
-      res.status(500).json({ message: 'Failed to create app setting' });
+      res.status(500).json({ message: 'Failed to create app setting', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25281,7 +25281,7 @@ Other rules:
         });
       }
       console.error('Error updating app setting:', error);
-      res.status(500).json({ message: 'Failed to update app setting' });
+      res.status(500).json({ message: 'Failed to update app setting', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25299,7 +25299,7 @@ Other rules:
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting app setting:', error);
-      res.status(500).json({ message: 'Failed to delete app setting' });
+      res.status(500).json({ message: 'Failed to delete app setting', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25324,7 +25324,7 @@ Other rules:
       res.json(backups);
     } catch (error) {
       console.error('Error fetching backups:', error);
-      res.status(500).json({ message: 'Failed to fetch backups' });
+      res.status(500).json({ message: 'Failed to fetch backups', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25336,7 +25336,7 @@ Other rules:
       res.json({ ...stats, scheduler });
     } catch (error) {
       console.error('Error fetching backup stats:', error);
-      res.status(500).json({ message: 'Failed to fetch backup statistics' });
+      res.status(500).json({ message: 'Failed to fetch backup statistics', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25359,7 +25359,7 @@ Other rules:
       }
     } catch (error) {
       console.error('Error creating backup:', error);
-      res.status(500).json({ message: 'Failed to create backup' });
+      res.status(500).json({ message: 'Failed to create backup', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25376,7 +25376,7 @@ Other rules:
       res.json(backup);
     } catch (error) {
       console.error('Error fetching backup:', error);
-      res.status(500).json({ message: 'Failed to fetch backup' });
+      res.status(500).json({ message: 'Failed to fetch backup', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25404,7 +25404,7 @@ Other rules:
       res.sendFile(backup.filePath, { root: process.cwd() });
     } catch (error) {
       console.error('Error downloading backup:', error);
-      res.status(500).json({ message: 'Failed to download backup' });
+      res.status(500).json({ message: 'Failed to download backup', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25421,7 +25421,7 @@ Other rules:
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting backup:', error);
-      res.status(500).json({ message: 'Failed to delete backup' });
+      res.status(500).json({ message: 'Failed to delete backup', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25435,7 +25435,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error cleaning up backups:', error);
-      res.status(500).json({ message: 'Failed to cleanup backups' });
+      res.status(500).json({ message: 'Failed to cleanup backups', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25462,7 +25462,7 @@ Other rules:
       res.json({ settings, scheduler });
     } catch (error) {
       console.error('Error fetching report status:', error);
-      res.status(500).json({ message: 'Failed to fetch report status' });
+      res.status(500).json({ message: 'Failed to fetch report status', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25473,7 +25473,7 @@ Other rules:
       res.json(reports);
     } catch (error) {
       console.error('Error fetching reports:', error);
-      res.status(500).json({ message: 'Failed to fetch reports' });
+      res.status(500).json({ message: 'Failed to fetch reports', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25493,7 +25493,7 @@ Other rules:
       res.json(report);
     } catch (error) {
       console.error('Error fetching latest report:', error);
-      res.status(500).json({ message: 'Failed to fetch report' });
+      res.status(500).json({ message: 'Failed to fetch report', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25514,7 +25514,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error generating report:', error);
-      res.status(500).json({ message: 'Failed to generate report' });
+      res.status(500).json({ message: 'Failed to generate report', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25531,7 +25531,7 @@ Other rules:
       res.json(report);
     } catch (error) {
       console.error('Error fetching report:', error);
-      res.status(500).json({ message: 'Failed to fetch report' });
+      res.status(500).json({ message: 'Failed to fetch report', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25542,7 +25542,7 @@ Other rules:
       res.json(alerts);
     } catch (error) {
       console.error('Error fetching low stock alerts:', error);
-      res.status(500).json({ message: 'Failed to fetch low stock alerts' });
+      res.status(500).json({ message: 'Failed to fetch low stock alerts', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25559,7 +25559,7 @@ Other rules:
       res.json({ html });
     } catch (error) {
       console.error('Error generating report preview:', error);
-      res.status(500).json({ message: 'Failed to generate report preview' });
+      res.status(500).json({ message: 'Failed to generate report preview', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25587,7 +25587,7 @@ Other rules:
       res.json(report);
     } catch (error: any) {
       console.error('Error fetching latest business report:', error);
-      res.status(500).json({ message: 'Failed to fetch latest business report' });
+      res.status(500).json({ message: 'Failed to fetch latest business report', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25601,7 +25601,7 @@ Other rules:
       res.json(result);
     } catch (error: any) {
       console.error('Error fetching business reports:', error);
-      res.status(500).json({ message: 'Failed to fetch business reports' });
+      res.status(500).json({ message: 'Failed to fetch business reports', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25616,7 +25616,7 @@ Other rules:
       res.json(report);
     } catch (error: any) {
       console.error('Error fetching business report:', error);
-      res.status(500).json({ message: 'Failed to fetch business report' });
+      res.status(500).json({ message: 'Failed to fetch business report', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25759,7 +25759,7 @@ Other rules:
         });
       }
       console.error('Error creating invoice:', error);
-      res.status(500).json({ message: 'Failed to create invoice' });
+      res.status(500).json({ message: 'Failed to create invoice', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25770,7 +25770,7 @@ Other rules:
       res.json(invoices);
     } catch (error) {
       console.error('Error fetching invoices:', error);
-      res.status(500).json({ message: 'Failed to fetch invoices' });
+      res.status(500).json({ message: 'Failed to fetch invoices', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25787,7 +25787,7 @@ Other rules:
       res.json(invoice);
     } catch (error) {
       console.error('Error fetching invoice:', error);
-      res.status(500).json({ message: 'Failed to fetch invoice' });
+      res.status(500).json({ message: 'Failed to fetch invoice', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25799,7 +25799,7 @@ Other rules:
       res.json(invoices);
     } catch (error) {
       console.error('Error fetching invoices for order:', error);
-      res.status(500).json({ message: 'Failed to fetch invoices' });
+      res.status(500).json({ message: 'Failed to fetch invoices', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25826,7 +25826,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error fetching purchase order:', error);
-      res.status(500).json({ message: 'Failed to fetch purchase order' });
+      res.status(500).json({ message: 'Failed to fetch purchase order', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -25975,7 +25975,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error updating purchase order:', error);
-      res.status(500).json({ message: 'Failed to update purchase order' });
+      res.status(500).json({ message: 'Failed to update purchase order', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -26031,7 +26031,7 @@ Other rules:
       res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching to-receive shipments:', error);
-      res.status(500).json({ message: 'Failed to fetch shipments' });
+      res.status(500).json({ message: 'Failed to fetch shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -26078,7 +26078,7 @@ Other rules:
       res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching receiving shipments:', error);
-      res.status(500).json({ message: 'Failed to fetch shipments' });
+      res.status(500).json({ message: 'Failed to fetch shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -26149,7 +26149,7 @@ Other rules:
       res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching storage shipments:', error);
-      res.status(500).json({ message: 'Failed to fetch shipments' });
+      res.status(500).json({ message: 'Failed to fetch shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -26245,7 +26245,7 @@ Other rules:
       res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching completed shipments:', error);
-      res.status(500).json({ message: 'Failed to fetch shipments' });
+      res.status(500).json({ message: 'Failed to fetch shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -27484,7 +27484,7 @@ Other rules:
       }
     } catch (error) {
       console.error('Error updating shipment receiving status:', error);
-      res.status(500).json({ message: 'Failed to update shipment status' });
+      res.status(500).json({ message: 'Failed to update shipment status', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -27536,7 +27536,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error retrying inventory processing:', error);
-      res.status(500).json({ message: 'Failed to retry inventory processing' });
+      res.status(500).json({ message: 'Failed to retry inventory processing', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -27876,7 +27876,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error reverting shipment to receiving:', error);
-      res.status(500).json({ message: 'Failed to revert shipment to receiving' });
+      res.status(500).json({ message: 'Failed to revert shipment to receiving', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -27986,7 +27986,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error deleting shipment:', error);
-      res.status(500).json({ message: 'Failed to delete shipment' });
+      res.status(500).json({ message: 'Failed to delete shipment', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28076,7 +28076,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error bulk deleting shipments:', error);
-      res.status(500).json({ message: 'Failed to bulk delete shipments' });
+      res.status(500).json({ message: 'Failed to bulk delete shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28134,7 +28134,7 @@ Other rules:
       res.send(buffer);
     } catch (error) {
       console.error('Error exporting shipments:', error);
-      res.status(500).json({ message: 'Failed to export shipments' });
+      res.status(500).json({ message: 'Failed to export shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28190,7 +28190,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error importing shipments:', error);
-      res.status(500).json({ message: 'Failed to import shipments' });
+      res.status(500).json({ message: 'Failed to import shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28286,7 +28286,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error bulk importing shipments:', error);
-      res.status(500).json({ message: 'Failed to bulk import shipments' });
+      res.status(500).json({ message: 'Failed to bulk import shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28337,7 +28337,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error undoing shipment:', error);
-      res.status(500).json({ message: 'Failed to undo shipment' });
+      res.status(500).json({ message: 'Failed to undo shipment', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28386,7 +28386,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error deleting consolidation:', error);
-      res.status(500).json({ message: 'Failed to delete consolidation' });
+      res.status(500).json({ message: 'Failed to delete consolidation', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28630,7 +28630,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error fetching shipment report:', error);
-      res.status(500).json({ message: 'Failed to fetch shipment report' });
+      res.status(500).json({ message: 'Failed to fetch shipment report', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28705,7 +28705,7 @@ Other rules:
       res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching archived shipments:', error);
-      res.status(500).json({ message: 'Failed to fetch shipments' });
+      res.status(500).json({ message: 'Failed to fetch shipments', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28719,7 +28719,7 @@ Other rules:
       res.json(receiptsData);
     } catch (error) {
       console.error('Error fetching receipts:', error);
-      res.status(500).json({ message: 'Failed to fetch receipts' });
+      res.status(500).json({ message: 'Failed to fetch receipts', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -28743,7 +28743,7 @@ Other rules:
       res.json(recentReceipts);
     } catch (error) {
       console.error('Error fetching recent receipts:', error);
-      res.status(500).json({ message: 'Failed to fetch recent receipts' });
+      res.status(500).json({ message: 'Failed to fetch recent receipts', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29481,7 +29481,7 @@ Other rules:
       res.json(stats);
     } catch (error) {
       console.error('Error getting job stats:', error);
-      res.status(500).json({ message: 'Failed to get job stats' });
+      res.status(500).json({ message: 'Failed to get job stats', error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -29508,7 +29508,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error getting job:', error);
-      res.status(500).json({ message: 'Failed to get job status' });
+      res.status(500).json({ message: 'Failed to get job status', error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -29534,7 +29534,7 @@ Other rules:
       });
     } catch (error) {
       console.error('Error queuing label job:', error);
-      res.status(500).json({ message: 'Failed to queue label generation' });
+      res.status(500).json({ message: 'Failed to queue label generation', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29639,7 +29639,7 @@ Other rules:
       res.json(result);
     } catch (error) {
       console.error('Error fetching products with BOM:', error);
-      res.status(500).json({ message: 'Failed to fetch products with BOM' });
+      res.status(500).json({ message: 'Failed to fetch products with BOM', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29811,7 +29811,7 @@ Other rules:
       res.json(lowStockAlerts);
     } catch (error) {
       console.error('Error fetching low-stock manufacturing alerts:', error);
-      res.status(500).json({ message: 'Failed to fetch low-stock manufacturing alerts' });
+      res.status(500).json({ message: 'Failed to fetch low-stock manufacturing alerts', error: error instanceof Error ? error.message : String(error) });
     }
   });
   // Calculate production requirements
@@ -29837,7 +29837,7 @@ Other rules:
       res.json(requirements);
     } catch (error) {
       console.error('Error calculating production requirements:', error);
-      res.status(500).json({ message: 'Failed to calculate production requirements' });
+      res.status(500).json({ message: 'Failed to calculate production requirements', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29871,7 +29871,7 @@ Other rules:
       res.json(locationsWithStock);
     } catch (error) {
       console.error('Error fetching manufacturing locations:', error);
-      res.status(500).json({ message: 'Failed to fetch locations' });
+      res.status(500).json({ message: 'Failed to fetch locations', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29898,7 +29898,7 @@ Other rules:
       res.json(enrichedRuns);
     } catch (error) {
       console.error('Error fetching manufacturing runs:', error);
-      res.status(500).json({ message: 'Failed to fetch manufacturing runs' });
+      res.status(500).json({ message: 'Failed to fetch manufacturing runs', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29912,7 +29912,7 @@ Other rules:
       res.json(run);
     } catch (error) {
       console.error('Error fetching manufacturing run:', error);
-      res.status(500).json({ message: 'Failed to fetch manufacturing run' });
+      res.status(500).json({ message: 'Failed to fetch manufacturing run', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29964,7 +29964,7 @@ Other rules:
       res.json(run);
     } catch (error) {
       console.error('Error completing manufacturing run:', error);
-      res.status(500).json({ message: 'Failed to complete manufacturing run' });
+      res.status(500).json({ message: 'Failed to complete manufacturing run', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29984,7 +29984,7 @@ Other rules:
       res.json(run);
     } catch (error) {
       console.error('Error reverting manufacturing run:', error);
-      res.status(500).json({ message: 'Failed to revert manufacturing run' });
+      res.status(500).json({ message: 'Failed to revert manufacturing run', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -29998,7 +29998,7 @@ Other rules:
       res.json(run);
     } catch (error) {
       console.error('Error archiving manufacturing run:', error);
-      res.status(500).json({ message: 'Failed to archive manufacturing run' });
+      res.status(500).json({ message: 'Failed to archive manufacturing run', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -30014,7 +30014,7 @@ Other rules:
       res.json(notifications);
     } catch (error) {
       console.error('Error fetching manufacturing notifications:', error);
-      res.status(500).json({ message: 'Failed to fetch manufacturing notifications' });
+      res.status(500).json({ message: 'Failed to fetch manufacturing notifications', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -30030,7 +30030,7 @@ Other rules:
       res.json({ count });
     } catch (error) {
       console.error('Error fetching unread notification count:', error);
-      res.status(500).json({ message: 'Failed to fetch unread notification count' });
+      res.status(500).json({ message: 'Failed to fetch unread notification count', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -30199,7 +30199,7 @@ Other rules:
       res.json(parentChildStock);
     } catch (error) {
       console.error('Error fetching parent-child stock:', error);
-      res.status(500).json({ message: 'Failed to fetch parent-child stock data' });
+      res.status(500).json({ message: 'Failed to fetch parent-child stock data', error: error instanceof Error ? error.message : String(error) });
     }
   });
   // Mark manufacturing notification as read
@@ -30209,7 +30209,7 @@ Other rules:
       res.json({ success: true });
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      res.status(500).json({ message: 'Failed to mark notification as read' });
+      res.status(500).json({ message: 'Failed to mark notification as read', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -30483,7 +30483,7 @@ Other rules:
       res.json(result);
     } catch (error) {
       console.error('[Bank Import] Error processing bank import:', error);
-      res.status(500).json({ message: 'Failed to process bank import' });
+      res.status(500).json({ message: 'Failed to process bank import', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -30544,7 +30544,7 @@ Other rules:
       });
     } catch (error) {
       console.error('[Bank Import Confirm] Error confirming matches:', error);
-      res.status(500).json({ message: 'Failed to confirm bank import matches' });
+      res.status(500).json({ message: 'Failed to confirm bank import matches', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
