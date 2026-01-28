@@ -1683,6 +1683,12 @@ export default function AllInventory() {
                   {t('inventory:inventoryMatrix')}
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild data-testid="menu-mass-photo-uploader">
+                <Link href="/inventory/photos">
+                  <Cloud className="h-4 w-4 mr-2" />
+                  {t('inventory:massPhotoUploader', 'Mass Photo Uploader')}
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
