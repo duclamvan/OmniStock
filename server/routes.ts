@@ -14638,6 +14638,23 @@ Important:
       // === POS INVENTORY DEDUCTION ===
       // For POS orders with fulfillmentStage 'completed', immediately deduct inventory
       if (orderType === 'pos' && data.fulfillmentStage === 'completed') {
+        // Build maps for POS inventory deduction (scoped locally)
+        const posVariantIds = new Set<string>();
+        const posBundleIds = new Set<string>();
+        for (const item of items) {
+          if (item.variantId) posVariantIds.add(item.variantId);
+          if (item.bundleId) posBundleIds.add(item.bundleId);
+        }
+        const variantsMap = await storage.getProductVariantsByIds(Array.from(posVariantIds));
+        const bundleItemsMap = new Map<string, any[]>();
+        if (posBundleIds.size > 0) {
+          const posBundleItems = await db.select().from(bundleItems).where(inArray(bundleItems.bundleId, Array.from(posBundleIds)));
+          for (const bi of posBundleItems) {
+            if (!bundleItemsMap.has(bi.bundleId)) bundleItemsMap.set(bi.bundleId, []);
+            bundleItemsMap.get(bi.bundleId)!.push(bi);
+          }
+        }
+
         console.log(`[POS Inventory] Processing inventory deduction for POS order ${order.orderId}`);
         
         // Helper function to deduct inventory for a single product/variant
