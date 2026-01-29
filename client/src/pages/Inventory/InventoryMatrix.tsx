@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { normalizeVietnamese } from "@/lib/fuzzySearch";
-import { ArrowLeft, Search, Check, Loader2, RefreshCw, Grid3X3, X } from "lucide-react";
+import { ArrowLeft, Search, Check, Loader2, RefreshCw, Grid3X3, X, SlidersHorizontal, Eye, EyeOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Product {
   id: string;
@@ -98,6 +105,44 @@ export default function InventoryMatrix() {
   const [editingCell, setEditingCell] = useState<{ productId: string; field: string } | null>(null);
   const [tempValue, setTempValue] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
+    const saved = localStorage.getItem('inventoryMatrixVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem('inventoryMatrixVisibleColumns', JSON.stringify(columnVisibility));
+  }, [columnVisibility]);
+
+  const visibleColumns = EDITABLE_COLUMNS.filter(col => columnVisibility[col.key] !== false);
+
+  const toggleColumn = (key: string) => {
+    setColumnVisibility(prev => ({
+      ...prev,
+      [key]: prev[key] === false ? true : false
+    }));
+  };
+
+  const showAllColumns = () => {
+    const allVisible: { [key: string]: boolean } = {};
+    EDITABLE_COLUMNS.forEach(col => { allVisible[col.key] = true; });
+    setColumnVisibility(allVisible);
+  };
+
+  const hideAllColumns = () => {
+    const noneVisible: { [key: string]: boolean } = {};
+    EDITABLE_COLUMNS.forEach(col => { noneVisible[col.key] = false; });
+    noneVisible['name'] = true;
+    setColumnVisibility(noneVisible);
+  };
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ['/api/products'],
@@ -414,6 +459,50 @@ export default function InventoryMatrix() {
               )}
             </div>
             
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 gap-1.5">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span className="hidden sm:inline">Columns</span>
+                  <span className="text-xs text-slate-500">({visibleColumns.length}/{EDITABLE_COLUMNS.length})</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-0">
+                <div className="p-3 border-b">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Toggle Columns</span>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={showAllColumns} className="h-7 px-2 text-xs">
+                        <Eye className="h-3 w-3 mr-1" />
+                        All
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={hideAllColumns} className="h-7 px-2 text-xs">
+                        <EyeOff className="h-3 w-3 mr-1" />
+                        Min
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <ScrollArea className="h-[300px]">
+                  <div className="p-2 space-y-1">
+                    {EDITABLE_COLUMNS.map((col) => (
+                      <div
+                        key={col.key}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                        onClick={() => toggleColumn(col.key)}
+                      >
+                        <Checkbox
+                          checked={columnVisibility[col.key] !== false}
+                          onCheckedChange={() => toggleColumn(col.key)}
+                        />
+                        <span className="text-sm">{col.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+            
             <Button
               variant="outline"
               size="sm"
@@ -436,7 +525,7 @@ export default function InventoryMatrix() {
                       <th className="text-left text-xs font-semibold text-slate-600 dark:text-slate-300 px-2 py-2 border-b border-slate-200 dark:border-slate-700 w-12">
                         #
                       </th>
-                      {EDITABLE_COLUMNS.map((column) => (
+                      {visibleColumns.map((column) => (
                         <th
                           key={column.key}
                           className="text-left text-xs font-semibold text-slate-600 dark:text-slate-300 px-2 py-2 border-b border-slate-200 dark:border-slate-700"
@@ -456,7 +545,7 @@ export default function InventoryMatrix() {
                         <td className="px-2 py-1 text-xs text-slate-500">
                           {index + 1}
                         </td>
-                        {EDITABLE_COLUMNS.map((column) => (
+                        {visibleColumns.map((column) => (
                           <td
                             key={column.key}
                             className="px-0 py-0.5"
@@ -470,7 +559,7 @@ export default function InventoryMatrix() {
                     {filteredProducts.length === 0 && (
                       <tr>
                         <td
-                          colSpan={EDITABLE_COLUMNS.length + 1}
+                          colSpan={visibleColumns.length + 1}
                           className="text-center py-12 text-slate-500"
                         >
                           {searchQuery
